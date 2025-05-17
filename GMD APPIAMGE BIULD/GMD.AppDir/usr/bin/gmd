@@ -1,0 +1,243 @@
+#!/bin/bash
+
+clear
+echo "
+   ____   __  __   ____  
+  / ___| |  \/  | |  _ \ 
+ | |  _  | |\/| | | | | |
+ | |_| | | |  | | | |_| |
+  \____| |_|  |_| |____/ 
+-------------------------
+   GNU MEDIA DOWNLOADER
+-------------------------
+       » BY GNUTUX «
+          » v1.0 «
+
+"
+# ✅ التحقق من التبعيات المطلوبة
+REQUIRED_CMDS=(ffmpeg yt-dlp zenity)
+missing=()
+
+for cmd in "${REQUIRED_CMDS[@]}"; do
+    if ! command -v "$cmd" &>/dev/null; then
+        missing+=("$cmd")
+    fi
+done
+
+if (( ${#missing[@]} > 0 )); then
+    msg="❌ التبعيات التالية غير متوفرة:\n"
+    for m in "${missing[@]}"; do
+        msg+="• $m\n"
+    done
+    msg+="\nيرجى تثبيتها يدويًا."
+
+    if command -v zenity &>/dev/null; then
+        zenity --error --title="نقص التبعيات" --text="$msg"
+    else
+        echo -e "$msg"
+    fi
+
+    exit 1
+fi
+
+
+
+# ✅ إعداد اللغة
+LANGUAGE=$(locale | grep LANG= | cut -d= -f2 | cut -d_ -f1)
+if [[ "$LANGUAGE" == "ar" ]]; then
+  L=ar
+else
+  L=en
+fi
+
+# ✅ أدوات النظام
+YTDLP=$(command -v yt-dlp || command -v youtube-dl)
+FFMPEG=$(command -v ffmpeg)
+FILE_MANAGER=$(command -v xdg-open || command -v nemo || command -v nautilus)
+SAVE_PATH=""
+
+if [[ -z "$YTDLP" || -z "$FFMPEG" ]]; then
+  echo "❌ Please install yt-dlp (or youtube-dl) and ffmpeg first." && exit 1
+fi
+
+# ✅ اختيار مجلد الحفظ
+choose_save_path() {
+  if [[ "$L" == "ar" ]]; then
+    echo "📁 الرجاء اختيار مكان حفظ الملف..."
+  else
+    echo "📁 Please select a save location..."
+  fi
+  SAVE_PATH=$(zenity --file-selection --directory --title="Choose download folder")
+  if [[ -z "$SAVE_PATH" ]]; then
+    echo "❌ No folder selected."
+    exit 1
+  fi
+}
+
+# ✅ اختيار الجودة
+choose_quality() {
+  if [[ "$L" == "ar" ]]; then
+    echo "🎞️ اختر جودة الفيديو:"
+    echo "1) عالية"
+    echo "2) متوسطة"
+    echo "3) منخفضة"
+  else
+    echo "🎞️ Select video quality:"
+    echo "1) High"
+    echo "2) Medium"
+    echo "3) Low"
+  fi
+  read -p "➤ " quality
+
+  case $quality in
+    1) FORMAT="bestvideo+bestaudio/best";;
+    2) FORMAT="bv[height<=720]+ba/best[height<=720]";;
+    3) FORMAT="bv[height<=480]+ba/best[height<=480]";;
+    *) echo "❌ Invalid choice."; return 1;;
+  esac
+  return 0
+}
+
+# ✅ اختيار صيغة التحويل
+choose_conversion_format() {
+  if [[ "$L" == "ar" ]]; then
+    echo "🎧 اختر صيغة الإخراج:"
+    echo "1) mp3"
+    echo "2) mp4"
+    echo "3) webm"
+    echo "4) mkv"
+    echo "5) wav"
+    echo "6) flac"
+  else
+    echo "🎧 Choose output format:"
+    echo "1) mp3"
+    echo "2) mp4"
+    echo "3) webm"
+    echo "4) mkv"
+    echo "5) wav"
+    echo "6) flac"
+  fi
+  read -p "➤ " conv_format
+
+  case $conv_format in
+    1) EXT="mp3";;
+    2) EXT="mp4";;
+    3) EXT="webm";;
+    4) EXT="mkv";;
+    5) EXT="wav";;
+    6) EXT="flac";;
+    *) echo "❌ Invalid choice."; return 1;;
+  esac
+  return 0
+}
+
+# ✅ اختيار صيغة الصوت عند اختيار التحميل كصوت
+choose_audio_format() {
+  if [[ "$L" == "ar" ]]; then
+    echo "🔊 اختر صيغة الصوت:"
+    echo "1) mp3"
+    echo "2) m4a"
+    echo "3) opus"
+    echo "4) flac"
+    echo "5) wav"
+  else
+    echo "🔊 Choose audio format:"
+    echo "1) mp3"
+    echo "2) m4a"
+    echo "3) opus"
+    echo "4) flac"
+    echo "5) wav"
+  fi
+  read -p "➤ " audio_format
+  case $audio_format in
+    1) AUDIO_OPTS="--extract-audio --audio-format mp3";;
+    2) AUDIO_OPTS="--extract-audio --audio-format m4a";;
+    3) AUDIO_OPTS="--extract-audio --audio-format opus";;
+    4) AUDIO_OPTS="--extract-audio --audio-format flac";;
+    5) AUDIO_OPTS="--extract-audio --audio-format wav";;
+    *) AUDIO_OPTS="";;
+  esac
+}
+
+# ✅ خيارات متقدمة عبر أرقام
+get_advanced_options() {
+  if [[ "$L" == "ar" ]]; then
+    echo "➕ اختر خيارات متقدمة (يمكن اختيار أكثر من خيار مفصول بفاصلة):"
+    echo "1) تحميل الصورة المصغرة"
+    echo "2) تحميل الترجمة التلقائية"
+    echo "3) تخطي الأخطاء"
+    echo "4) تحميل كصوت"
+    echo "5) لا شيء"
+  else
+    echo "➕ Choose advanced options (you can select multiple, e.g., 1,2):"
+    echo "1) Download thumbnail"
+    echo "2) Download subtitles"
+    echo "3) Ignore errors"
+    echo "4) Download as audio"
+    echo "5) None"
+  fi
+
+  read -p "➤ " adv_opts
+  EXTRA_OPTS=""
+  AUDIO_OPTS=""
+
+  IFS=',' read -ra CHOICES <<< "$adv_opts"
+  for opt in "${CHOICES[@]}"; do
+    case "$opt" in
+      1) EXTRA_OPTS+=" --write-thumbnail";;
+      2) EXTRA_OPTS+=" --write-auto-sub";;
+      3) EXTRA_OPTS+=" --ignore-errors";;
+      4) choose_audio_format;;
+      5) EXTRA_OPTS+="";;
+    esac
+  done
+}
+
+# ✅ تنزيل فيديو
+download_video() {
+  read -p "🌐 URL: " URL
+  choose_save_path || return
+  choose_quality || return
+  get_advanced_options
+
+  $YTDLP $EXTRA_OPTS $AUDIO_OPTS -f "$FORMAT" -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
+  echo "✅ Done."
+  $FILE_MANAGER "$SAVE_PATH"
+}
+
+# ✅ تحويل ملف
+convert_media() {
+  FILE=$(zenity --file-selection --title="Choose file to convert")
+  if [[ -z "$FILE" ]]; then echo "❌ No file selected."; return; fi
+  choose_save_path || return
+  choose_conversion_format || return
+  BASENAME=$(basename "$FILE")
+  NAME="${BASENAME%.*}"
+
+  $FFMPEG -i "$FILE" "$SAVE_PATH/${NAME}.${EXT}"
+  echo "✅ Conversion done."
+  $FILE_MANAGER "$SAVE_PATH"
+}
+
+# ✅ القائمة الرئيسية
+while true; do
+  if [[ "$L" == "ar" ]]; then
+    echo "🎬 برنامج التحميل والتحويل"
+    echo "1) تنزيل فيديو"
+    echo "2) تحويل ملف وسائط"
+    echo "3) خروج"
+  else
+    echo "🎬 Download & Convert Tool"
+    echo "1) Download Video"
+    echo "2) Convert Media File"
+    echo "3) Exit"
+  fi
+
+  read -p "➤ " option
+  case $option in
+    1) download_video;;
+    2) convert_media;;
+    3) echo "👋"; exit 0;;
+    *) echo "❌ خيار غير صالح / Invalid choice.";;
+  esac
+done

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# تحديد المسار الحقيقي للملف التنفيذي داخل AppDir
+APPDIR_EXEC="$(dirname "$(readlink -f "$0")")/usr/bin/gmd"
+
+# التأكد من أن الملف التنفيذي موجود وقابل للتنفيذ
+if [[ ! -x "$APPDIR_EXEC" ]]; then
+    echo "❌ الملف التنفيذي غير موجود أو غير قابل للتنفيذ: $APPDIR_EXEC"
+    read -p "اضغط Enter للخروج..."
+    exit 1
+fi
+
+# البحث عن الطرفية المتاحة وتشغيل البرنامج بداخلها
+TERMINALS=(konsole gnome-terminal xterm xfce4-terminal lxterminal mate-terminal tilix)
+
+for term in "${TERMINALS[@]}"; do
+    if command -v "$term" &> /dev/null; then
+        case "$term" in
+            konsole)
+                exec konsole -e "$APPDIR_EXEC"
+                ;;
+            gnome-terminal|xfce4-terminal|lxterminal|mate-terminal|tilix)
+                exec "$term" -- bash -c "$APPDIR_EXEC"
+                ;;
+            xterm)
+                exec xterm -e "$APPDIR_EXEC"
+                ;;
+        esac
+    fi
+done
+
+# fallback إذا لم تتوفر أي طرفية
+echo "❌ لم يتم العثور على طرفية مناسبة لتشغيل البرنامج."
+read -p "اضغط Enter للخروج..."
+exit 1

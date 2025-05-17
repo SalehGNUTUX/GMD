@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=GMD - Media Downloader
+Name[ar]=GMD - برنامج تنزيل الوسائط
+Comment=Download and convert media using yt-dlp and ffmpeg
+Comment[ar]=تحميل وتحويل الوسائط باستخدام yt-dlp و ffmpeg
+Exec=gmd
+Icon=gmd-icon
+Terminal=false
+Type=Application
+Categories=AudioVideo;Utility;Network;
+StartupNotify=true
+
