@@ -1,6 +1,19 @@
 # GMD
 أداة تنزيل الوسائط و تحويلها على غنو/لينكس
 
+   ____   __  __   ____  
+  / ___| |  \/  | |  _ \ 
+ | |  _  | |\/| | | | | |
+ | |_| | | |  | | | |_| |
+  \____| |_|  |_| |____/ 
+-------------------------
+   GNU MEDIA DOWNLOADER
+-------------------------
+       » BY GNUTUX «
+          » v1.0 «
+
+
+
 # GMD - GNU Media Downloader
 
 ![GMD Logo](https://github.com/SalehGNUTUX/GMD/blob/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/share/icons/hicolor/256x256/apps/gmd-icon.png?raw=true)
