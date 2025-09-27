@@ -1,55 +1,132 @@
 #!/bin/bash
+# GMD - GNU Media Downloader
+# by gnutux
+
 set -euo pipefail
 
-INSTALL_DIR="$HOME/.local/bin"
-YTDLP_PATH="$INSTALL_DIR/yt-dlp"
+# ----------------------------
+# إعدادات عامة
+# ----------------------------
+APP_NAME="GMD - GNU Media Downloader"
+EXEC_NAME="gmd"
+BIN_DIR="$HOME/.local/bin"
+YTDLP_PATH="$BIN_DIR/yt-dlp"
+UPDATE_MARKER="$HOME/.config/gmd_last_update"
+REPO_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd"
+SELF_PATH="$BIN_DIR/$EXEC_NAME"
 
-# دالة لتحميل yt-dlp من المصدر
+mkdir -p "$(dirname "$UPDATE_MARKER")"
+mkdir -p "$BIN_DIR"
+
+# ----------------------------
+# دوال المساعدة
+# ----------------------------
+
+check_dependencies() {
+    local deps=("ffmpeg")
+    for cmd in "${deps[@]}"; do
+        if ! command -v "$cmd" &>/dev/null; then
+            echo "⚠️ Dependency missing: $cmd"
+            echo "Please install it using your package manager."
+        fi
+    done
+}
+
 install_yt_dlp() {
-    echo "🔍 Checking for yt-dlp..."
-
     if [ -x "$YTDLP_PATH" ]; then
         echo "✅ yt-dlp already installed in $YTDLP_PATH"
     else
         echo "⬇️ Installing yt-dlp from GitHub..."
-        mkdir -p "$INSTALL_DIR"
-
         if command -v aria2c &>/dev/null; then
             aria2c "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
-              --dir "$INSTALL_DIR" -o yt-dlp
+                --dir "$BIN_DIR" -o yt-dlp
         elif command -v curl &>/dev/null; then
             curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
-              -o "$YTDLP_PATH"
+                -o "$YTDLP_PATH"
         elif command -v wget &>/dev/null; then
             wget "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
-              -O "$YTDLP_PATH"
+                -O "$YTDLP_PATH"
         else
             echo "❌ No download tool found (need aria2c, curl or wget)."
             exit 1
         fi
-
         chmod a+rx "$YTDLP_PATH"
         echo "✅ yt-dlp installed successfully."
     fi
-
-    # تأكد من أن المسار مضاف
-    if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
-        echo "⚠️  $INSTALL_DIR not in PATH. Please add it to your shell config."
-    fi
 }
 
-# دالة لتحديث yt-dlp
 update_yt_dlp() {
-    if command -v yt-dlp &>/dev/null; then
-        echo "🔄 Updating yt-dlp..."
-        yt-dlp -U || echo "⚠️ Failed to update yt-dlp, using current version."
+    echo "🔄 Updating yt-dlp..."
+    "$YTDLP_PATH" -U || echo "⚠️ Failed to update yt-dlp, using current version."
+}
+
+self_update() {
+    echo "🔄 Checking for GMD updates..."
+    local now last diff TMP_FILE
+    now=$(date +%s)
+    if [[ -f "$UPDATE_MARKER" ]]; then
+        last=$(cat "$UPDATE_MARKER")
+    else
+        last=0
+    fi
+    diff=$(( (now - last) / 86400 ))
+    if (( diff >= 7 )); then
+        TMP_FILE=$(mktemp)
+        echo "⬇️ Downloading latest GMD..."
+        curl -L "$REPO_URL" -o "$TMP_FILE"
+        chmod a+rx "$TMP_FILE"
+        mv "$TMP_FILE" "$SELF_PATH"
+        echo "$now" > "$UPDATE_MARKER"
+        echo "✅ GMD updated successfully."
     fi
 }
 
-# تثبيت/تحديث yt-dlp
+show_help() {
+    cat <<EOF
+$APP_NAME
+
+الأوامر:
+  --update-yt     تحديث/إعادة تثبيت yt-dlp
+  --help          عرض المساعدة
+
+الاستخدام:
+  $EXEC_NAME "رابط فيديو"
+EOF
+}
+
+# ----------------------------
+# معالجة الأوامر
+# ----------------------------
+case "${1:-}" in
+    --update-yt)
+        install_yt_dlp
+        update_yt_dlp
+        exit 0
+        ;;
+    --help|-h)
+        show_help
+        exit 0
+        ;;
+esac
+
+# ----------------------------
+# تشغيل التحقق والتحديث
+# ----------------------------
+check_dependencies
 install_yt_dlp
 update_yt_dlp
+self_update
 
-# 🚀 هنا يبدأ تشغيل GMD
-echo "🎬 Launching GMD..."
-# exec /usr/bin/gmd-main "$@"   # ← ضع هنا مسار سكربت GMD الرئيسي
+# ----------------------------
+# تنفيذ التحميل
+# ----------------------------
+if [[ $# -eq 0 ]]; then
+    show_help
+    exit 0
+fi
+
+URL="$1"
+shift || true
+
+echo "🎬 Downloading: $URL"
+"$YTDLP_PATH" -f best "$URL" "$@"
