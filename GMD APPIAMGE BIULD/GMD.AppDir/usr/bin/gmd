@@ -1,5 +1,5 @@
 #!/bin/bash
-# GMD - GNU Media Downloader
+# GMD - GNU Media Downloader v1.3
 # by gnutux
 set -euo pipefail
 
@@ -14,7 +14,7 @@ echo "
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.2 «
+         » v1.3 «
 "
 
 # ----------------------------
@@ -24,16 +24,15 @@ BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
 SELF_PATH="$BIN_DIR/gmd"
 YTDLP="$BIN_DIR/yt-dlp"
-UPDATE_MARKER="$HOME/.config/gmd_last_update"
-mkdir -p "$(dirname "$UPDATE_MARKER")"
-
 FILE_MANAGER=$(command -v xdg-open || command -v nemo || command -v nautilus)
 SAVE_PATH=""
+UPDATE_MARKER="$HOME/.config/gmd_last_update"
+mkdir -p "$(dirname "$UPDATE_MARKER")"
 
 # ----------------------------
 # التحقق من التبعيات
 # ----------------------------
-REQUIRED_CMDS=(ffmpeg zenity)
+REQUIRED_CMDS=(ffmpeg zenity curl)
 missing=()
 for cmd in "${REQUIRED_CMDS[@]}"; do
     if ! command -v "$cmd" &>/dev/null; then
@@ -52,13 +51,13 @@ install_deps() {
   elif command -v pacman &>/dev/null; then
     sudo pacman -Sy --noconfirm "${missing[@]}"
   else
-    echo "❌ غير قادر على اكتشاف مدير الحزم تلقائيًا. يرجى تثبيت: ${missing[*]}"
+    echo "❌ لا يمكن اكتشاف مدير الحزم تلقائيًا. يرجى تثبيت: ${missing[*]}"
     exit 1
   fi
 }
 
 if (( ${#missing[@]} > 0 )); then
-  echo "❌ التبعيات التالية غير متوفرة: ${missing[*]}"
+  echo "❌ التبعيات التالية غير موجودة: ${missing[*]}"
   read -p "هل ترغب بمحاولة تثبيتها تلقائيًا؟ [y/N]: " try_install
   if [[ "$try_install" =~ ^[Yy]$ ]]; then install_deps; else exit 1; fi
 fi
@@ -72,8 +71,7 @@ install_yt_dlp() {
   else
     echo "⬇️ تثبيت yt-dlp من GitHub..."
     if command -v aria2c &>/dev/null; then
-      aria2c "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
-        --dir "$BIN_DIR" -o yt-dlp
+      aria2c "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" --dir "$BIN_DIR" -o yt-dlp
     elif command -v curl &>/dev/null; then
       curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -o "$YTDLP"
     elif command -v wget &>/dev/null; then
@@ -93,7 +91,7 @@ update_yt_dlp() {
 }
 
 # ----------------------------
-# تحديث البرنامج نفسه كل 7 أيام
+# تحديث البرنامج نفسه تلقائيًا
 # ----------------------------
 REPO_RAW_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/usr/bin/gmd"
 self_update() {
@@ -109,6 +107,7 @@ self_update() {
     mv "$TMP_FILE" "$SELF_PATH"
     echo "$now" > "$UPDATE_MARKER"
     echo "✅ تم تحديث GMD تلقائيًا."
+    exec "$SELF_PATH" "$@"   # إعادة تشغيل النسخة الجديدة
   fi
 }
 
@@ -220,13 +219,13 @@ convert_media() {
   choose_conversion_format || return
   BASENAME=$(basename "$FILE")
   NAME="${BASENAME%.*}"
-  "$FFMPEG" -i "$FILE" "$SAVE_PATH/${NAME}.${EXT}"
+  ffmpeg -i "$FILE" "$SAVE_PATH/${NAME}.${EXT}"
   echo "✅ Conversion done."
   [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH"
 }
 
 # ----------------------------
-# التثبيت / التحديث عند التشغيل
+# تشغيل التحديثات قبل القائمة
 # ----------------------------
 install_yt_dlp
 update_yt_dlp
