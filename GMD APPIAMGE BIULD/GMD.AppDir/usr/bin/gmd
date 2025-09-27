@@ -3,6 +3,27 @@
 # by gnutux
 set -euo pipefail
 
+# ----------------------------
+# وضع التثبيت المباشر
+# ----------------------------
+if [[ "$1" == "--install" ]]; then
+    mkdir -p ~/.local/bin
+    cp "$0" ~/.local/bin/gmd
+    chmod +x ~/.local/bin/gmd
+    echo "✅ تم تثبيت GMD بنجاح في ~/.local/bin/gmd"
+    echo "🎯 يمكنك الآن استخدام الأمر: gmd"
+    exit 0
+fi
+
+if [[ "$1" == "--update" ]]; then
+    echo "⬇️ جاري تحديث GMD..."
+    curl -L https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh -o ~/.local/bin/gmd.tmp
+    chmod +x ~/.local/bin/gmd.tmp
+    mv ~/.local/bin/gmd.tmp ~/.local/bin/gmd
+    echo "✅ تم تحديث GMD بنجاح!"
+    exit 0
+fi
+
 clear
 echo "
    ____   __  __   ____
