@@ -1,132 +1,257 @@
 #!/bin/bash
 # GMD - GNU Media Downloader
 # by gnutux
-
 set -euo pipefail
 
+clear
+echo "
+   ____   __  __   ____
+  / ___| |  \/  | |  _ \\
+ | |  _  | |\/| | | | | |
+ | |_| | | |  | | | |_| |
+  \\____| |_|  |_| |____/
+-------------------------
+   GNU MEDIA DOWNLOADER
+-------------------------
+       » BY GNUTUX «
+         » v1.2 «
+"
+
 # ----------------------------
-# إعدادات عامة
+# المسارات الأساسية
 # ----------------------------
-APP_NAME="GMD - GNU Media Downloader"
-EXEC_NAME="gmd"
 BIN_DIR="$HOME/.local/bin"
-YTDLP_PATH="$BIN_DIR/yt-dlp"
-UPDATE_MARKER="$HOME/.config/gmd_last_update"
-REPO_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd"
-SELF_PATH="$BIN_DIR/$EXEC_NAME"
-
-mkdir -p "$(dirname "$UPDATE_MARKER")"
 mkdir -p "$BIN_DIR"
+SELF_PATH="$BIN_DIR/gmd"
+YTDLP="$BIN_DIR/yt-dlp"
+UPDATE_MARKER="$HOME/.config/gmd_last_update"
+mkdir -p "$(dirname "$UPDATE_MARKER")"
+
+FILE_MANAGER=$(command -v xdg-open || command -v nemo || command -v nautilus)
+SAVE_PATH=""
 
 # ----------------------------
-# دوال المساعدة
+# التحقق من التبعيات
 # ----------------------------
+REQUIRED_CMDS=(ffmpeg zenity)
+missing=()
+for cmd in "${REQUIRED_CMDS[@]}"; do
+    if ! command -v "$cmd" &>/dev/null; then
+        missing+=("$cmd")
+    fi
+done
 
-check_dependencies() {
-    local deps=("ffmpeg")
-    for cmd in "${deps[@]}"; do
-        if ! command -v "$cmd" &>/dev/null; then
-            echo "⚠️ Dependency missing: $cmd"
-            echo "Please install it using your package manager."
-        fi
-    done
+install_deps() {
+  if [ "${#missing[@]}" -eq 0 ]; then return; fi
+  echo "🔄 محاولة تثبيت التبعيات المطلوبة تلقائيًا:"
+  if command -v apt &>/dev/null; then
+    sudo apt update
+    for m in "${missing[@]}"; do sudo apt install -y "$m"; done
+  elif command -v dnf &>/dev/null; then
+    sudo dnf install -y "${missing[@]}"
+  elif command -v pacman &>/dev/null; then
+    sudo pacman -Sy --noconfirm "${missing[@]}"
+  else
+    echo "❌ غير قادر على اكتشاف مدير الحزم تلقائيًا. يرجى تثبيت: ${missing[*]}"
+    exit 1
+  fi
 }
 
+if (( ${#missing[@]} > 0 )); then
+  echo "❌ التبعيات التالية غير متوفرة: ${missing[*]}"
+  read -p "هل ترغب بمحاولة تثبيتها تلقائيًا؟ [y/N]: " try_install
+  if [[ "$try_install" =~ ^[Yy]$ ]]; then install_deps; else exit 1; fi
+fi
+
+# ----------------------------
+# تثبيت / تحديث yt-dlp
+# ----------------------------
 install_yt_dlp() {
-    if [ -x "$YTDLP_PATH" ]; then
-        echo "✅ yt-dlp already installed in $YTDLP_PATH"
+  if [ -x "$YTDLP" ]; then
+    echo "✅ yt-dlp موجود بالفعل."
+  else
+    echo "⬇️ تثبيت yt-dlp من GitHub..."
+    if command -v aria2c &>/dev/null; then
+      aria2c "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
+        --dir "$BIN_DIR" -o yt-dlp
+    elif command -v curl &>/dev/null; then
+      curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -o "$YTDLP"
+    elif command -v wget &>/dev/null; then
+      wget "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -O "$YTDLP"
     else
-        echo "⬇️ Installing yt-dlp from GitHub..."
-        if command -v aria2c &>/dev/null; then
-            aria2c "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
-                --dir "$BIN_DIR" -o yt-dlp
-        elif command -v curl &>/dev/null; then
-            curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
-                -o "$YTDLP_PATH"
-        elif command -v wget &>/dev/null; then
-            wget "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
-                -O "$YTDLP_PATH"
-        else
-            echo "❌ No download tool found (need aria2c, curl or wget)."
-            exit 1
-        fi
-        chmod a+rx "$YTDLP_PATH"
-        echo "✅ yt-dlp installed successfully."
+      echo "❌ لا يوجد أداة تحميل (aria2c, curl, wget)."
+      exit 1
     fi
+    chmod a+rx "$YTDLP"
+    echo "✅ تم تثبيت yt-dlp بنجاح."
+  fi
 }
 
 update_yt_dlp() {
-    echo "🔄 Updating yt-dlp..."
-    "$YTDLP_PATH" -U || echo "⚠️ Failed to update yt-dlp, using current version."
+  echo "🔄 تحديث yt-dlp..."
+  "$YTDLP" -U || echo "⚠️ فشل التحديث، سيتم استخدام النسخة الحالية."
 }
 
+# ----------------------------
+# تحديث البرنامج نفسه كل 7 أيام
+# ----------------------------
+REPO_RAW_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/usr/bin/gmd"
 self_update() {
-    echo "🔄 Checking for GMD updates..."
-    local now last diff TMP_FILE
-    now=$(date +%s)
-    if [[ -f "$UPDATE_MARKER" ]]; then
-        last=$(cat "$UPDATE_MARKER")
-    else
-        last=0
-    fi
-    diff=$(( (now - last) / 86400 ))
-    if (( diff >= 7 )); then
-        TMP_FILE=$(mktemp)
-        echo "⬇️ Downloading latest GMD..."
-        curl -L "$REPO_URL" -o "$TMP_FILE"
-        chmod a+rx "$TMP_FILE"
-        mv "$TMP_FILE" "$SELF_PATH"
-        echo "$now" > "$UPDATE_MARKER"
-        echo "✅ GMD updated successfully."
-    fi
-}
-
-show_help() {
-    cat <<EOF
-$APP_NAME
-
-الأوامر:
-  --update-yt     تحديث/إعادة تثبيت yt-dlp
-  --help          عرض المساعدة
-
-الاستخدام:
-  $EXEC_NAME "رابط فيديو"
-EOF
+  local now last diff TMP_FILE
+  now=$(date +%s)
+  last=$(cat "$UPDATE_MARKER" 2>/dev/null || echo 0)
+  diff=$(( (now - last) / 86400 ))
+  if (( diff >= 7 )); then
+    TMP_FILE=$(mktemp)
+    echo "⬇️ تنزيل آخر نسخة من GMD..."
+    curl -L "$REPO_RAW_URL" -o "$TMP_FILE"
+    chmod a+rx "$TMP_FILE"
+    mv "$TMP_FILE" "$SELF_PATH"
+    echo "$now" > "$UPDATE_MARKER"
+    echo "✅ تم تحديث GMD تلقائيًا."
+  fi
 }
 
 # ----------------------------
-# معالجة الأوامر
+# التحقق من اللغة
 # ----------------------------
-case "${1:-}" in
-    --update-yt)
-        install_yt_dlp
-        update_yt_dlp
-        exit 0
-        ;;
-    --help|-h)
-        show_help
-        exit 0
-        ;;
-esac
+LANGUAGE=$(locale | grep LANG= | cut -d= -f2 | cut -d_ -f1)
+L=ar
+[[ "$LANGUAGE" != "ar" ]] && L=en
 
 # ----------------------------
-# تشغيل التحقق والتحديث
+# وظائف المساعد
 # ----------------------------
-check_dependencies
+choose_save_path() {
+  SAVE_PATH=$(zenity --file-selection --directory --title="${L=="ar"?"اختر مجلد الحفظ":"Choose download folder"}")
+  [[ -z "$SAVE_PATH" || ! -d "$SAVE_PATH" ]] && { echo "❌ مسار غير صالح."; exit 1; }
+}
+
+choose_file_path() {
+  FILE=$(zenity --file-selection --title="${L=="ar"?"اختر ملف التحويل":"Choose file to convert"}")
+  [[ -z "$FILE" || ! -f "$FILE" ]] && { echo "❌ ملف غير صالح."; return 1; }
+}
+
+choose_quality() {
+  if [[ "$L" == "ar" ]]; then
+    echo "🎞️ اختر جودة الفيديو: 1) عالية 2) متوسطة 3) منخفضة 4) mp4"
+  else
+    echo "🎞️ Select video quality: 1) High 2) Medium 3) Low 4) mp4"
+  fi
+  read -p "➤ " quality
+  case $quality in
+    1) FORMAT="bestvideo+bestaudio/best"; EXT_OPT="";;
+    2) FORMAT="bv[height<=720]+ba/best[height<=720]"; EXT_OPT="";;
+    3) FORMAT="bv[height<=480]+ba/best[height<=480]"; EXT_OPT="";;
+    4) FORMAT="bestvideo+bestaudio/best"; EXT_OPT="--recode-video mp4";;
+    *) echo "❌ خيار غير صالح."; return 1;;
+  esac
+}
+
+choose_conversion_format() {
+  if [[ "$L" == "ar" ]]; then
+    echo "🎧 اختر صيغة الإخراج: 1) mp3 2) mp4 3) webm 4) mkv 5) wav 6) flac"
+  else
+    echo "🎧 Choose output format: 1) mp3 2) mp4 3) webm 4) mkv 5) wav 6) flac"
+  fi
+  read -p "➤ " conv_format
+  case $conv_format in
+    1) EXT="mp3";;
+    2) EXT="mp4";;
+    3) EXT="webm";;
+    4) EXT="mkv";;
+    5) EXT="wav";;
+    6) EXT="flac";;
+    *) echo "❌ خيار غير صالح."; return 1;;
+  esac
+}
+
+choose_audio_format() {
+  if [[ "$L" == "ar" ]]; then
+    echo "🔊 اختر صيغة الصوت: 1) mp3 2) m4a 3) opus 4) flac 5) wav"
+  else
+    echo "🔊 Choose audio format: 1) mp3 2) m4a 3) opus 4) flac 5) wav"
+  fi
+  read -p "➤ " audio_format
+  case $audio_format in
+    1) AUDIO_OPTS="--extract-audio --audio-format mp3";;
+    2) AUDIO_OPTS="--extract-audio --audio-format m4a";;
+    3) AUDIO_OPTS="--extract-audio --audio-format opus";;
+    4) AUDIO_OPTS="--extract-audio --audio-format flac";;
+    5) AUDIO_OPTS="--extract-audio --audio-format wav";;
+    *) AUDIO_OPTS="";;
+  esac
+}
+
+get_advanced_options() {
+  if [[ "$L" == "ar" ]]; then
+    echo "➕ اختر خيارات متقدمة (يمكن اختيار أكثر من خيار مفصول بفاصلة):"
+    echo "1) تحميل الصورة المصغرة 2) تحميل الترجمة التلقائية 3) تخطي الأخطاء 4) تحميل كصوت 5) لا شيء"
+  else
+    echo "➕ Choose advanced options (comma-separated): 1) Thumbnail 2) Subtitles 3) Ignore errors 4) Audio 5) None"
+  fi
+  read -p "➤ " adv_opts
+  EXTRA_OPTS=""; AUDIO_OPTS=""
+  IFS=',' read -ra CHOICES <<< "$adv_opts"
+  for opt in "${CHOICES[@]}"; do
+    case "$opt" in
+      1) EXTRA_OPTS+=" --write-thumbnail";;
+      2) EXTRA_OPTS+=" --write-auto-sub";;
+      3) EXTRA_OPTS+=" --ignore-errors";;
+      4) choose_audio_format;;
+      5) ;;
+    esac
+  done
+}
+
+download_video() {
+  read -p "🌐 URL: " URL
+  choose_save_path || return
+  choose_quality || return
+  get_advanced_options
+  "$YTDLP" $EXTRA_OPTS $AUDIO_OPTS $EXT_OPT -f "$FORMAT" -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
+  echo "✅ Done."
+  [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH"
+}
+
+convert_media() {
+  choose_file_path || return
+  choose_save_path || return
+  choose_conversion_format || return
+  BASENAME=$(basename "$FILE")
+  NAME="${BASENAME%.*}"
+  "$FFMPEG" -i "$FILE" "$SAVE_PATH/${NAME}.${EXT}"
+  echo "✅ Conversion done."
+  [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH"
+}
+
+# ----------------------------
+# التثبيت / التحديث عند التشغيل
+# ----------------------------
 install_yt_dlp
 update_yt_dlp
 self_update
 
 # ----------------------------
-# تنفيذ التحميل
+# القائمة الرئيسية
 # ----------------------------
-if [[ $# -eq 0 ]]; then
-    show_help
-    exit 0
-fi
-
-URL="$1"
-shift || true
-
-echo "🎬 Downloading: $URL"
-"$YTDLP_PATH" -f best "$URL" "$@"
+while true; do
+  if [[ "$L" == "ar" ]]; then
+    echo "🎬 برنامج التحميل والتحويل"
+    echo "1) تنزيل فيديو"
+    echo "2) تحويل ملف وسائط"
+    echo "3) خروج"
+  else
+    echo "🎬 Download & Convert Tool"
+    echo "1) Download Video"
+    echo "2) Convert Media File"
+    echo "3) Exit"
+  fi
+  read -p "➤ " option
+  case $option in
+    1) download_video;;
+    2) convert_media;;
+    3) echo "👋"; exit 0;;
+    *) echo "❌ خيار غير صالح / Invalid choice.";;
+  esac
+done
