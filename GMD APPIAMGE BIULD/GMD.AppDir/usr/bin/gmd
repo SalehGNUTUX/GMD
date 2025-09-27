@@ -1,12 +1,12 @@
 #!/bin/bash
 # GMD - GNU Media Downloader v1.5
 # by gnutux
-set -eo pipefail  # إزالة -u لتجنب مشكلة المتغيرات غير المعرفة
+set -euo pipefail
 
 # ----------------------------
 # وضع التثبيت المباشر
 # ----------------------------
-if [[ "${1:-}" == "--install" ]]; then  # استخدام :- للقيم الافتراضية
+if [[ "${1:-}" == "--install" ]]; then
     echo "⬇️ جاري تثبيت GMD..."
     mkdir -p ~/.local/bin
     
@@ -19,7 +19,7 @@ if [[ "${1:-}" == "--install" ]]; then  # استخدام :- للقيم الاف�
     exit 0
 fi
 
-if [[ "${1:-}" == "--update" ]]; then  # استخدام :- للقيم الافتراضية
+if [[ "${1:-}" == "--update" ]]; then
     echo "⬇️ جاري تحديث GMD..."
     curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd.tmp
     chmod +x ~/.local/bin/gmd.tmp
@@ -49,7 +49,7 @@ BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
 SELF_PATH="$BIN_DIR/gmd"
 YTDLP="$BIN_DIR/yt-dlp"
-FILE_MANAGER=$(command -v xdg-open || command -v nemo || command -v nautilus)
+FILE_MANAGER=$(command -v xdg-open || command -v nemo || command -v nautilus || echo "")
 SAVE_PATH=""
 UPDATE_MARKER="$HOME/.config/gmd_last_update"
 mkdir -p "$(dirname "$UPDATE_MARKER")"
@@ -104,7 +104,7 @@ install_deps() {
 if (( ${#missing[@]} > 0 )); then
   echo "$ICON_ERROR التبعيات التالية غير موجودة: ${missing[*]}"
   read -p "هل ترغب بمحاولة تثبيتها تلقائيًا؟ [y/N]: " try_install
-  if [[ "$try_install" =~ ^[Yy]$ ]]; then install_deps; else exit 1; fi
+  if [[ "${try_install:-}" =~ ^[Yy]$ ]]; then install_deps; else exit 1; fi
 fi
 
 # ----------------------------
@@ -136,17 +136,50 @@ update_yt_dlp() {
 }
 
 # ----------------------------
-# تحديث البرنامج نفسه تلقائيًا
+# تحديث البرنامج نفسه تلقائيًا (مفعّل الآن)
 # ----------------------------
+REPO_RAW_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd"
+
 self_update() {
-  echo "$ICON_INFO التحديث التلقائي موقف مؤقتًا للتصحيح."
-  return 0
+  local now last diff TMP_FILE
+  
+  # التحقق من آخر تحديث (مرة واحدة في الأسبوع)
+  now=$(date +%s)
+  last=$(cat "$UPDATE_MARKER" 2>/dev/null || echo 0)
+  diff=$(( (now - last) / 86400 ))
+  
+  if (( diff >= 7 )); then
+    echo "$ICON_INFO التحقق من وجود تحديثات..."
+    
+    TMP_FILE=$(mktemp)
+    if curl -L "$REPO_RAW_URL" -o "$TMP_FILE" 2>/dev/null; then
+      # مقارنة النسخة الحالية مع الجديدة
+      if ! cmp -s "$SELF_PATH" "$TMP_FILE"; then
+        echo "$ICON_DOWNLOAD تحديث GMD إلى النسخة الأحدث..."
+        chmod a+rx "$TMP_FILE"
+        mv "$TMP_FILE" "$SELF_PATH"
+        echo "$now" > "$UPDATE_MARKER"
+        echo "$ICON_SUCCESS تم تحديث GMD بنجاح!"
+        
+        # إعادة التشغيل بالنسخة المحدثة
+        exec "$SELF_PATH" "$@"
+      else
+        rm -f "$TMP_FILE"
+        echo "$ICON_INFO GMD محدث بالفعل."
+      fi
+    else
+      rm -f "$TMP_FILE"
+      echo "⚠️ لا يمكن التحقق من التحديثات، متابعة بالنسخة الحالية."
+    fi
+  else
+    echo "$ICON_INFO تم التحقق من التحديثات مؤخرًا."
+  fi
 }
 
 # ----------------------------
 # التحقق من اللغة
 # ----------------------------
-LANGUAGE=$(locale | grep LANG= | cut -d= -f2 | cut -d_ -f1)
+LANGUAGE=$(locale | grep LANG= | cut -d= -f2 | cut -d_ -f1 || echo "en")
 if [[ "$LANGUAGE" == "ar" ]]; then
   L=ar
 else
@@ -159,9 +192,9 @@ fi
 choose_save_path() {
   if command -v zenity &>/dev/null; then
     if [[ "$L" == "ar" ]]; then
-      SAVE_PATH=$(zenity --file-selection --directory --title="اختر مجلد الحفظ")
+      SAVE_PATH=$(zenity --file-selection --directory --title="اختر مجلد الحفظ" || echo "")
     else
-      SAVE_PATH=$(zenity --file-selection --directory --title="Choose download folder")
+      SAVE_PATH=$(zenity --file-selection --directory --title="Choose download folder" || echo "")
     fi
   fi
   if [[ -z "$SAVE_PATH" ]]; then
@@ -179,9 +212,9 @@ choose_file_path() {
   local FILE=""
   if command -v zenity &>/dev/null; then
     if [[ "$L" == "ar" ]]; then
-      FILE=$(zenity --file-selection --title="اختر ملف التحويل")
+      FILE=$(zenity --file-selection --title="اختر ملف التحويل" || echo "")
     else
-      FILE=$(zenity --file-selection --title="Choose file to convert")
+      FILE=$(zenity --file-selection --title="Choose file to convert" || echo "")
     fi
   fi
   if [[ -z "$FILE" ]]; then
@@ -301,7 +334,7 @@ get_advanced_options() {
   read -p "➤ " adv_opts
   EXTRA_OPTS=""
   AUDIO_OPTS=""
-  IFS=',' read -ra CHOICES <<< "$adv_opts"
+  IFS=',' read -ra CHOICES <<< "${adv_opts:-}"
   for opt in "${CHOICES[@]}"; do
     case "$opt" in
       1) EXTRA_OPTS+=" --write-thumbnail";;
@@ -313,7 +346,7 @@ get_advanced_options() {
 }
 
 # ----------------------------
-# وظائف التثبيت وإلغاء التثبيت (مبنية على gmd-desktop-installer.sh)
+# وظائف التثبيت وإلغاء التثبيت
 # ----------------------------
 install_desktop_shortcut() {
   local DESKTOP_DIR="$HOME/.local/share/applications"
