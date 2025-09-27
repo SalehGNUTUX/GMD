@@ -1,12 +1,12 @@
 #!/bin/bash
 # GMD - GNU Media Downloader v1.5
 # by gnutux
-set -euo pipefail
+set -eo pipefail  # إزالة -u لتجنب مشكلة المتغيرات غير المعرفة
 
 # ----------------------------
 # وضع التثبيت المباشر
 # ----------------------------
-if [[ "$1" == "--install" ]]; then
+if [[ "${1:-}" == "--install" ]]; then  # استخدام :- للقيم الافتراضية
     echo "⬇️ جاري تثبيت GMD..."
     mkdir -p ~/.local/bin
     
@@ -19,7 +19,7 @@ if [[ "$1" == "--install" ]]; then
     exit 0
 fi
 
-if [[ "$1" == "--update" ]]; then
+if [[ "${1:-}" == "--update" ]]; then  # استخدام :- للقيم الافتراضية
     echo "⬇️ جاري تحديث GMD..."
     curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd.tmp
     chmod +x ~/.local/bin/gmd.tmp
