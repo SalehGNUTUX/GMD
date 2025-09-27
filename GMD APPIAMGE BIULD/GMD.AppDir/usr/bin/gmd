@@ -375,7 +375,7 @@ Exec=$SELF_PATH
 Icon=$ICON_PATH
 Terminal=true
 Type=Application
-Categories=Utility;Network;
+Categories=Utility;Network;AudioVideo;Audio;Video;
 EOF
   
   # تحديث قاعدة بيانات التطبيقات
