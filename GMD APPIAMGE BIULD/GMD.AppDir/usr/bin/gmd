@@ -1,5 +1,5 @@
 #!/bin/bash
-# GMD - GNU Media Downloader v1.3
+# GMD - GNU Media Downloader v1.4
 # by gnutux
 set -euo pipefail
 
@@ -14,7 +14,7 @@ echo "
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.3 «
+         » v1.4 «
 "
 
 # ----------------------------
@@ -107,7 +107,7 @@ self_update() {
     mv "$TMP_FILE" "$SELF_PATH"
     echo "$now" > "$UPDATE_MARKER"
     echo "✅ تم تحديث GMD تلقائيًا."
-    exec "$SELF_PATH" "$@"   # إعادة تشغيل النسخة الجديدة
+    exec "$SELF_PATH" "$@"
   fi
 }
 
@@ -119,18 +119,32 @@ L=ar
 [[ "$LANGUAGE" != "ar" ]] && L=en
 
 # ----------------------------
-# وظائف المساعد
+# وظائف اختيار المجلد / الملف
 # ----------------------------
 choose_save_path() {
-  SAVE_PATH=$(zenity --file-selection --directory --title="${L=="ar"?"اختر مجلد الحفظ":"Choose download folder"}")
-  [[ -z "$SAVE_PATH" || ! -d "$SAVE_PATH" ]] && { echo "❌ مسار غير صالح."; exit 1; }
+  if command -v zenity &>/dev/null; then
+    SAVE_PATH=$(zenity --file-selection --directory --title="${L=="ar"?"اختر مجلد الحفظ":"Choose download folder"}") || SAVE_PATH=""
+  fi
+  if [[ -z "$SAVE_PATH" ]]; then
+    # fallback للطرفية
+    read -p "${L=="ar"?"أدخل مسار الحفظ: ":"Enter save path: "}" SAVE_PATH
+  fi
+  [[ ! -d "$SAVE_PATH" ]] && { echo "❌ مسار غير صالح."; exit 1; }
 }
 
 choose_file_path() {
-  FILE=$(zenity --file-selection --title="${L=="ar"?"اختر ملف التحويل":"Choose file to convert"}")
-  [[ -z "$FILE" || ! -f "$FILE" ]] && { echo "❌ ملف غير صالح."; return 1; }
+  if command -v zenity &>/dev/null; then
+    FILE=$(zenity --file-selection --title="${L=="ar"?"اختر ملف التحويل":"Choose file to convert"}") || FILE=""
+  fi
+  if [[ -z "$FILE" || ! -f "$FILE" ]]; then
+    read -p "${L=="ar"?"أدخل مسار الملف: ":"Enter file path: "}" FILE
+    [[ ! -f "$FILE" ]] && { echo "❌ ملف غير صالح."; return 1; }
+  fi
 }
 
+# ----------------------------
+# باقي الوظائف كما كانت
+# ----------------------------
 choose_quality() {
   if [[ "$L" == "ar" ]]; then
     echo "🎞️ اختر جودة الفيديو: 1) عالية 2) متوسطة 3) منخفضة 4) mp4"
@@ -187,10 +201,11 @@ get_advanced_options() {
     echo "➕ اختر خيارات متقدمة (يمكن اختيار أكثر من خيار مفصول بفاصلة):"
     echo "1) تحميل الصورة المصغرة 2) تحميل الترجمة التلقائية 3) تخطي الأخطاء 4) تحميل كصوت 5) لا شيء"
   else
-    echo "➕ Choose advanced options (comma-separated): 1) Thumbnail 2) Subtitles 3) Ignore errors 4) Audio 5) None"
+    echo "➕ Choose advanced options: 1) thumbnail 2) subtitles 3) ignore errors 4) audio 5) none"
   fi
   read -p "➤ " adv_opts
-  EXTRA_OPTS=""; AUDIO_OPTS=""
+  EXTRA_OPTS=""
+  AUDIO_OPTS=""
   IFS=',' read -ra CHOICES <<< "$adv_opts"
   for opt in "${CHOICES[@]}"; do
     case "$opt" in
@@ -198,15 +213,14 @@ get_advanced_options() {
       2) EXTRA_OPTS+=" --write-auto-sub";;
       3) EXTRA_OPTS+=" --ignore-errors";;
       4) choose_audio_format;;
-      5) ;;
     esac
   done
 }
 
 download_video() {
   read -p "🌐 URL: " URL
-  choose_save_path || return
-  choose_quality || return
+  choose_save_path
+  choose_quality
   get_advanced_options
   "$YTDLP" $EXTRA_OPTS $AUDIO_OPTS $EXT_OPT -f "$FORMAT" -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
   echo "✅ Done."
@@ -214,9 +228,9 @@ download_video() {
 }
 
 convert_media() {
-  choose_file_path || return
-  choose_save_path || return
-  choose_conversion_format || return
+  choose_file_path
+  choose_save_path
+  choose_conversion_format
   BASENAME=$(basename "$FILE")
   NAME="${BASENAME%.*}"
   ffmpeg -i "$FILE" "$SAVE_PATH/${NAME}.${EXT}"
@@ -225,11 +239,11 @@ convert_media() {
 }
 
 # ----------------------------
-# تشغيل التحديثات قبل القائمة
+# تنفيذ التثبيت / التحديث
 # ----------------------------
 install_yt_dlp
 update_yt_dlp
-self_update
+self_update "$@"
 
 # ----------------------------
 # القائمة الرئيسية
@@ -251,6 +265,6 @@ while true; do
     1) download_video;;
     2) convert_media;;
     3) echo "👋"; exit 0;;
-    *) echo "❌ خيار غير صالح / Invalid choice.";;
+    *) echo "❌ خيار غير صالح.";;
   esac
 done
