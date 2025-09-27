@@ -1,7 +1,6 @@
 ```markdown
 # GMD - GNU Media Downloader
 
-```bash
    ____   __  __   ____  
   / ___| |  \/  | |  _ \ 
  | |  _  | |\/| | | | | |
