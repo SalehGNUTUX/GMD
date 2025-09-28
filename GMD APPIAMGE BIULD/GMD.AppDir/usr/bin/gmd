@@ -142,7 +142,40 @@ fi
 # ----------------------------
 # تثبيت / تحديث yt-dlp
 # ----------------------------
+check_system_ytdlp() {
+    local system_ytdlp=$(command -v yt-dlp)
+    if [[ -n "$system_ytdlp" && "$system_ytdlp" != "$YTDLP" ]]; then
+        echo "$ICON_INFO تم العثور على yt-dlp مثبت من مستودعات النظام: $system_ytdlp"
+        echo "$ICON_INFO النسخة من المستودعات قد تكون قديمة مقارنة بالنسخة المباشرة من GitHub"
+        
+        if [[ "$L" == "ar" ]]; then
+            read -p "هل تريد إزالة نسخة النظام واستخدام النسخة الأحدث من GitHub؟ [y/N]: " remove_system
+        else
+            read -p "Do you want to remove system version and use latest from GitHub? [y/N]: " remove_system
+        fi
+        
+        if [[ "${remove_system:-}" =~ ^[Yy]$ ]]; then
+            echo "$ICON_UNINSTALL إزالة نسخة النظام من yt-dlp..."
+            if command -v apt &>/dev/null; then
+                sudo apt remove -y yt-dlp
+            elif command -v dnf &>/dev/null; then
+                sudo dnf remove -y yt-dlp
+            elif command -v pacman &>/dev/null; then
+                sudo pacman -Rs --noconfirm yt-dlp
+            else
+                echo "$ICON_INFO يرجى إزالة yt-dlp يدويًا من مدير الحزم"
+            fi
+        else
+            echo "$ICON_INFO سيتم استخدام نسخة النظام مع العلم أنها قد تكون قديمة"
+            YTDLP="$system_ytdlp"
+        fi
+    fi
+}
+
 install_yt_dlp() {
+  # التحقق من وجود نسخة نظام أولاً
+  check_system_ytdlp
+  
   if [ -x "$YTDLP" ]; then
     echo "$ICON_SUCCESS yt-dlp موجود بالفعل."
   else
@@ -160,11 +193,6 @@ install_yt_dlp() {
     chmod a+rx "$YTDLP"
     echo "$ICON_SUCCESS تم تثبيت yt-dlp بنجاح."
   fi
-}
-
-update_yt_dlp() {
-  echo "$ICON_CONVERT تحديث yt-dlp..."
-  "$YTDLP" -U || echo "⚠️ فشل التحديث، سيتم استخدام النسخة الحالية."
 }
 
 # ----------------------------
@@ -292,20 +320,26 @@ choose_quality() {
 choose_conversion_format() {
   if [[ "$L" == "ar" ]]; then
     echo "$ICON_FORMAT اختر صيغة الإخراج:"
-    echo "  1) MP3 (صوت)"
-    echo "  2) MP4 (فيديو)"
+    echo "  1) MP3 (صوت - موصى به)"
+    echo "  2) MP4 (فيديو - موصى به)"
     echo "  3) WebM (فيديو)"
     echo "  4) MKV (فيديو)"
     echo "  5) WAV (صوت عالي الجودة)"
     echo "  6) FLAC (صوت بدون فقدان)"
+    echo "  7) OGG (صوت مفتوح المصدر)"
+    echo "  8) AVI (فيديو قديم)"
+    echo "  9) MOV (فيديو Apple)"
   else
     echo "$ICON_FORMAT Choose output format:"
-    echo "  1) MP3 (audio)"
-    echo "  2) MP4 (video)"
+    echo "  1) MP3 (audio - recommended)"
+    echo "  2) MP4 (video - recommended)"
     echo "  3) WebM (video)"
     echo "  4) MKV (video)"
     echo "  5) WAV (high quality audio)"
     echo "  6) FLAC (lossless audio)"
+    echo "  7) OGG (open source audio)"
+    echo "  8) AVI (old video format)"
+    echo "  9) MOV (Apple video)"
   fi
   read -p "➤ " conv_format
   case $conv_format in
@@ -315,6 +349,9 @@ choose_conversion_format() {
     4) EXT="mkv";;
     5) EXT="wav";;
     6) EXT="flac";;
+    7) EXT="ogg";;
+    8) EXT="avi";;
+    9) EXT="mov";;
     *) echo "$ICON_ERROR خيار غير صالح."; return 1;;
   esac
   return 0
@@ -323,18 +360,20 @@ choose_conversion_format() {
 choose_audio_format() {
   if [[ "$L" == "ar" ]]; then
     echo "$ICON_AUDIO اختر صيغة الصوت:"
-    echo "  1) MP3 (موصى به)"
-    echo "  2) M4A (Apple)"
-    echo "  3) Opus (كفاءة عالية)"
-    echo "  4) FLAC (بدون فقدان)"
-    echo "  5) WAV (جودة عالية)"
+    echo "  1) MP3 (موصى به - متوافق عالميًا)"
+    echo "  2) M4A (Apple - جودة عالية)"
+    echo "  3) Opus (كفاءة عالية - للحجم الصغير)"
+    echo "  4) FLAC (بدون فقدان - للحفظ الأرشيفي)"
+    echo "  5) WAV (جودة عالية - للتحرير)"
+    echo "  6) OGG (مفتوح المصدر - متوافق مع لينكس)"
   else
     echo "$ICON_AUDIO Choose audio format:"
-    echo "  1) MP3 (recommended)"
-    echo "  2) M4A (Apple)"
-    echo "  3) Opus (high efficiency)"
-    echo "  4) FLAC (lossless)"
-    echo "  5) WAV (high quality)"
+    echo "  1) MP3 (recommended - universal)"
+    echo "  2) M4A (Apple - high quality)"
+    echo "  3) Opus (high efficiency - small size)"
+    echo "  4) FLAC (lossless - archival)"
+    echo "  5) WAV (high quality - editing)"
+    echo "  6) OGG (open source - Linux friendly)"
   fi
   read -p "➤ " audio_format
   case $audio_format in
@@ -343,6 +382,7 @@ choose_audio_format() {
     3) AUDIO_OPTS="--extract-audio --audio-format opus";;
     4) AUDIO_OPTS="--extract-audio --audio-format flac";;
     5) AUDIO_OPTS="--extract-audio --audio-format wav";;
+    6) AUDIO_OPTS="--extract-audio --audio-format ogg";;
     *) AUDIO_OPTS="";;
   esac
 }
@@ -429,21 +469,31 @@ uninstall_gmd() {
     read -p "Are you sure you want to uninstall GMD? [y/N]: " confirm
   fi
   
-  if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+  if [[ ! "${confirm:-}" =~ ^[Yy]$ ]]; then
     echo "$ICON_INFO تم إلغاء العملية."
     return
+  fi
+  
+  # سؤال عن إزالة yt-dlp
+  if [[ -f "$YTDLP" ]]; then
+    if [[ "$L" == "ar" ]]; then
+      read -p "هل تريد أيضًا إزالة yt-dlp؟ [y/N]: " remove_ytdlp
+    else
+      read -p "Do you want to remove yt-dlp too? [y/N]: " remove_ytdlp
+    fi
+    
+    if [[ "${remove_ytdlp:-}" =~ ^[Yy]$ ]]; then
+      rm -f "$YTDLP"
+      echo "$ICON_SUCCESS تمت إزالة yt-dlp"
+    else
+      echo "$ICON_INFO تم الاحتفاظ بـ yt-dlp"
+    fi
   fi
   
   # إزالة الملف التنفيذي
   if [[ -f "$SELF_PATH" ]]; then
     rm -f "$SELF_PATH"
     echo "$ICON_SUCCESS تمت إزالة الملف التنفيذي"
-  fi
-  
-  # إزالة yt-dlp
-  if [[ -f "$YTDLP" ]]; then
-    rm -f "$YTDLP"
-    echo "$ICON_SUCCESS تمت إزالة yt-dlp"
   fi
   
   # إزالة ملف .desktop
@@ -468,6 +518,10 @@ uninstall_gmd() {
   if command -v update-desktop-database &>/dev/null; then
     update-desktop-database ~/.local/share/applications
   fi
+  
+  echo "$ICON_SUCCESS تم إلغاء تثبيت GMD بنجاح!"
+  exit 0
+}
   
   echo "$ICON_SUCCESS تم إلغاء تثبيت GMD بنجاح!"
   exit 0
