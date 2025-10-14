@@ -1,18 +1,34 @@
 #!/bin/bash
-# GMD - GNU Media Downloader v1.6
+# GMD - GNU Media Downloader v1.7
 # by gnutux
+
 set -euo pipefail
 
 # ----------------------------
-# وضع التثبيت المباشر
+# الشعار
+# ----------------------------
+clear
+echo "
+   ____   __  __   ____  
+  / ___| |  \/  | |  _ \ 
+ | |  _  | |\/| | | | | |
+ | |_| | | |  | | | |_| |
+  \____| |_|  |_| |____/ 
+-------------------------
+   GNU MEDIA DOWNLOADER
+-------------------------
+       » BY GNUTUX «
+         » v1.7 «
+"
+
+# ----------------------------
+# وضع التثبيت المباشر وإلغاء التثبيت والتحديث
 # ----------------------------
 if [[ "${1:-}" == "--install" ]]; then
     echo "⬇️ جاري تثبيت GMD..."
     mkdir -p ~/.local/bin
-    
     curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
     chmod +x ~/.local/bin/gmd
-    
     echo "✅ تم تثبيت GMD بنجاح في ~/.local/bin/gmd"
     echo "🎯 يمكنك الآن استخدام الأمر: gmd"
     exit 0
@@ -21,17 +37,12 @@ fi
 if [[ "${1:-}" == "--install-desktop" ]]; then
     echo "⬇️ جاري تثبيت GMD مع اختصار سطح المكتب..."
     mkdir -p ~/.local/bin
-    
     curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
     chmod +x ~/.local/bin/gmd
-    
-    # إنشاء اختصار سطح المكتب تلقائيًا
     DESKTOP_DIR="$HOME/.local/share/applications"
     ICON_DIR="$HOME/.local/share/icons"
     mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
-    
     curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" -o "$ICON_DIR/gmd-icon.png"
-    
     cat > "$DESKTOP_DIR/gmd.desktop" <<EOF
 [Desktop Entry]
 Name=GMD - GNU Media Downloader
@@ -42,9 +53,7 @@ Terminal=true
 Type=Application
 Categories=Utility;Network;AudioVideo;Audio;Video;
 EOF
-    
     update-desktop-database ~/.local/share/applications 2>/dev/null || true
-    
     echo "✅ تم تثبيت GMD بنجاح!"
     echo "📁 تم إضافة اختصار سطح المكتب في قائمة التطبيقات"
     echo "🎯 يمكنك الآن استخدام الأمر: gmd"
@@ -60,22 +69,8 @@ if [[ "${1:-}" == "--update" ]]; then
     exit 0
 fi
 
-clear
-echo "
-   ____   __  __   ____
-  / ___| |  \/  | |  _ \\
- | |  _  | |\/| | | | | |
- | |_| | | |  | | | |_| |
-  \\____| |_|  |_| |____/
--------------------------
-   GNU MEDIA DOWNLOADER
--------------------------
-       » BY GNUTUX «
-         » v1.6 «
-"
-
 # ----------------------------
-# المسارات الأساسية
+# المسارات الأساسية والإعدادات
 # ----------------------------
 BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
@@ -87,7 +82,7 @@ UPDATE_MARKER="$HOME/.config/gmd_last_update"
 mkdir -p "$(dirname "$UPDATE_MARKER")"
 
 # ----------------------------
-# الإعدادات الجمالية والأيقونات
+# أيقونات وجماليات
 # ----------------------------
 ICON_DOWNLOAD="⬇️"
 ICON_CONVERT="🔄"
@@ -147,13 +142,11 @@ check_system_ytdlp() {
     if [[ -n "$system_ytdlp" && "$system_ytdlp" != "$YTDLP" ]]; then
         echo "$ICON_INFO تم العثور على yt-dlp مثبت من مستودعات النظام: $system_ytdlp"
         echo "$ICON_INFO النسخة من المستودعات قد تكون قديمة مقارنة بالنسخة المباشرة من GitHub"
-        
         if [[ "$L" == "ar" ]]; then
             read -p "هل تريد إزالة نسخة النظام واستخدام النسخة الأحدث من GitHub؟ [y/N]: " remove_system
         else
             read -p "Do you want to remove system version and use latest from GitHub? [y/N]: " remove_system
         fi
-        
         if [[ "${remove_system:-}" =~ ^[Yy]$ ]]; then
             echo "$ICON_UNINSTALL إزالة نسخة النظام من yt-dlp..."
             if command -v apt &>/dev/null; then
@@ -173,9 +166,7 @@ check_system_ytdlp() {
 }
 
 install_yt_dlp() {
-  # التحقق من وجود نسخة نظام أولاً
   check_system_ytdlp
-  
   if [ -x "$YTDLP" ]; then
     echo "$ICON_SUCCESS yt-dlp موجود بالفعل."
   else
@@ -204,29 +195,21 @@ update_yt_dlp() {
 # تحديث البرنامج نفسه تلقائيًا
 # ----------------------------
 REPO_RAW_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd"
-
 self_update() {
   local now last diff TMP_FILE
-  
-  # التحقق من آخر تحديث (مرة واحدة في الأسبوع)
   now=$(date +%s)
   last=$(cat "$UPDATE_MARKER" 2>/dev/null || echo 0)
   diff=$(( (now - last) / 86400 ))
-  
   if (( diff >= 7 )); then
     echo "$ICON_INFO التحقق من وجود تحديثات..."
-    
     TMP_FILE=$(mktemp)
     if curl -L "$REPO_RAW_URL" -o "$TMP_FILE" 2>/dev/null; then
-      # مقارنة النسخة الحالية مع الجديدة
       if ! cmp -s "$SELF_PATH" "$TMP_FILE"; then
         echo "$ICON_DOWNLOAD تحديث GMD إلى النسخة الأحدث..."
         chmod a+rx "$TMP_FILE"
         mv "$TMP_FILE" "$SELF_PATH"
         echo "$now" > "$UPDATE_MARKER"
         echo "$ICON_SUCCESS تم تحديث GMD بنجاح!"
-        
-        # إعادة التشغيل بالنسخة المحدثة
         exec "$SELF_PATH" "$@"
       else
         rm -f "$TMP_FILE"
@@ -295,68 +278,50 @@ choose_file_path() {
 }
 
 # ----------------------------
-# وظائف الواجهة المحسنة
+# خيارات الجودة والصيغ المحسنة
 # ----------------------------
+choose_mp4_quality() {
+  if [[ "$L" == "ar" ]]; then
+    echo "$ICON_QUALITY اختر جودة فيديو mp4:"
+    echo "  1) عالية (1080p)"
+    echo "  2) متوسطة (720p)"
+    echo "  3) منخفضة (480p)"
+  else
+    echo "$ICON_QUALITY Select mp4 video quality:"
+    echo "  1) High (1080p)"
+    echo "  2) Medium (720p)"
+    echo "  3) Low (480p)"
+  fi
+  read -p "➤ " mp4_quality
+  case $mp4_quality in
+    1) FORMAT="bv*[ext=mp4][height<=1080]+ba[ext=m4a]/best[ext=mp4][height<=1080]"; EXT_OPT="--merge-output-format mp4";;
+    2) FORMAT="bv*[ext=mp4][height<=720]+ba[ext=m4a]/best[ext=mp4][height<=720]"; EXT_OPT="--merge-output-format mp4";;
+    3) FORMAT="bv*[ext=mp4][height<=480]+ba[ext=m4a]/best[ext=mp4][height<=480]"; EXT_OPT="--merge-output-format mp4";;
+    *) echo "$ICON_ERROR خيار غير صالح."; return 1;;
+  esac
+  return 0
+}
+
 choose_quality() {
   if [[ "$L" == "ar" ]]; then
     echo "$ICON_QUALITY اختر جودة الفيديو:"
-    echo "  1) عالية الجودة"
-    echo "  2) متوسطة الجودة (720p)"
-    echo "  3) منخفضة الجودة (480p)"
-    echo "  4) تحويل إلى MP4"
+    echo "  1) عالية"
+    echo "  2) متوسطة"
+    echo "  3) منخفضة"
+    echo "  4) mp4 (مع اختيار الجودة)"
   else
     echo "$ICON_QUALITY Select video quality:"
-    echo "  1) High quality"
-    echo "  2) Medium quality (720p)"
-    echo "  3) Low quality (480p)"
-    echo "  4) Convert to MP4"
+    echo "  1) High"
+    echo "  2) Medium"
+    echo "  3) Low"
+    echo "  4) mp4 (choose quality)"
   fi
   read -p "➤ " quality
   case $quality in
     1) FORMAT="bestvideo+bestaudio/best"; EXT_OPT="";;
     2) FORMAT="bv[height<=720]+ba/best[height<=720]"; EXT_OPT="";;
     3) FORMAT="bv[height<=480]+ba/best[height<=480]"; EXT_OPT="";;
-    4) FORMAT="bestvideo+bestaudio/best"; EXT_OPT="--recode-video mp4";;
-    *) echo "$ICON_ERROR خيار غير صالح."; return 1;;
-  esac
-  return 0
-}
-
-choose_conversion_format() {
-  if [[ "$L" == "ar" ]]; then
-    echo "$ICON_FORMAT اختر صيغة الإخراج:"
-    echo "  1) MP3 (صوت - موصى به)"
-    echo "  2) MP4 (فيديو - موصى به)"
-    echo "  3) WebM (فيديو)"
-    echo "  4) MKV (فيديو)"
-    echo "  5) WAV (صوت عالي الجودة)"
-    echo "  6) FLAC (صوت بدون فقدان)"
-    echo "  7) OGG (صوت مفتوح المصدر)"
-    echo "  8) AVI (فيديو قديم)"
-    echo "  9) MOV (فيديو Apple)"
-  else
-    echo "$ICON_FORMAT Choose output format:"
-    echo "  1) MP3 (audio - recommended)"
-    echo "  2) MP4 (video - recommended)"
-    echo "  3) WebM (video)"
-    echo "  4) MKV (video)"
-    echo "  5) WAV (high quality audio)"
-    echo "  6) FLAC (lossless audio)"
-    echo "  7) OGG (open source audio)"
-    echo "  8) AVI (old video format)"
-    echo "  9) MOV (Apple video)"
-  fi
-  read -p "➤ " conv_format
-  case $conv_format in
-    1) EXT="mp3";;
-    2) EXT="mp4";;
-    3) EXT="webm";;
-    4) EXT="mkv";;
-    5) EXT="wav";;
-    6) EXT="flac";;
-    7) EXT="ogg";;
-    8) EXT="avi";;
-    9) EXT="mov";;
+    4) choose_mp4_quality || return 1;;
     *) echo "$ICON_ERROR خيار غير صالح."; return 1;;
   esac
   return 0
@@ -364,30 +329,30 @@ choose_conversion_format() {
 
 choose_audio_format() {
   if [[ "$L" == "ar" ]]; then
-    echo "$ICON_AUDIO اختر صيغة الصوت:"
-    echo "  1) MP3 (موصى به - متوافق عالميًا)"
-    echo "  2) M4A (Apple - جودة عالية)"
-    echo "  3) Opus (كفاءة عالية - للحجم الصغير)"
-    echo "  4) FLAC (بدون فقدان - للحفظ الأرشيفي)"
-    echo "  5) WAV (جودة عالية - للتحرير)"
-    echo "  6) OGG (مفتوح المصدر - متوافق مع لينكس)"
+    echo "$ICON_AUDIO تغيير صيغة الصوت (أول خيار):"
+    echo "  1) ogg (حجم صغير)"
+    echo "  2) mp3"
+    echo "  3) m4a"
+    echo "  4) opus"
+    echo "  5) flac"
+    echo "  6) wav"
   else
-    echo "$ICON_AUDIO Choose audio format:"
-    echo "  1) MP3 (recommended - universal)"
-    echo "  2) M4A (Apple - high quality)"
-    echo "  3) Opus (high efficiency - small size)"
-    echo "  4) FLAC (lossless - archival)"
-    echo "  5) WAV (high quality - editing)"
-    echo "  6) OGG (open source - Linux friendly)"
+    echo "$ICON_AUDIO Change audio format (first option):"
+    echo "  1) ogg (small size)"
+    echo "  2) mp3"
+    echo "  3) m4a"
+    echo "  4) opus"
+    echo "  5) flac"
+    echo "  6) wav"
   fi
   read -p "➤ " audio_format
   case $audio_format in
-    1) AUDIO_OPTS="--extract-audio --audio-format mp3";;
-    2) AUDIO_OPTS="--extract-audio --audio-format m4a";;
-    3) AUDIO_OPTS="--extract-audio --audio-format opus";;
-    4) AUDIO_OPTS="--extract-audio --audio-format flac";;
-    5) AUDIO_OPTS="--extract-audio --audio-format wav";;
-    6) AUDIO_OPTS="--extract-audio --audio-format ogg";;
+    1) AUDIO_OPTS="--extract-audio --audio-format vorbis";;
+    2) AUDIO_OPTS="--extract-audio --audio-format mp3";;
+    3) AUDIO_OPTS="--extract-audio --audio-format m4a";;
+    4) AUDIO_OPTS="--extract-audio --audio-format opus";;
+    5) AUDIO_OPTS="--extract-audio --audio-format flac";;
+    6) AUDIO_OPTS="--extract-audio --audio-format wav";;
     *) AUDIO_OPTS="";;
   esac
 }
@@ -395,17 +360,17 @@ choose_audio_format() {
 get_advanced_options() {
   if [[ "$L" == "ar" ]]; then
     echo "$ICON_SETTINGS اختر خيارات متقدمة:"
-    echo "  1) تحميل الصورة المصغرة"
-    echo "  2) تحميل الترجمة التلقائية"
-    echo "  3) تخطي الأخطاء"
-    echo "  4) تحميل كصوت"
+    echo "  1) تغيير الصوت"
+    echo "  2) تحميل الصورة المصغرة"
+    echo "  3) تحميل الترجمة التلقائية"
+    echo "  4) تخطي الأخطاء"
     echo "  5) لا شيء"
   else
     echo "$ICON_SETTINGS Choose advanced options:"
-    echo "  1) Download thumbnail"
-    echo "  2) Download subtitles"
-    echo "  3) Ignore errors"
-    echo "  4) Download as audio"
+    echo "  1) Change audio format"
+    echo "  2) Download thumbnail"
+    echo "  3) Download subtitles"
+    echo "  4) Ignore errors"
     echo "  5) None"
   fi
   read -p "➤ " adv_opts
@@ -414,122 +379,50 @@ get_advanced_options() {
   IFS=',' read -ra CHOICES <<< "${adv_opts:-}"
   for opt in "${CHOICES[@]}"; do
     case "$opt" in
-      1) EXTRA_OPTS+=" --write-thumbnail";;
-      2) EXTRA_OPTS+=" --write-auto-sub";;
-      3) EXTRA_OPTS+=" --ignore-errors";;
-      4) choose_audio_format;;
+      1) choose_audio_format;;
+      2) EXTRA_OPTS+=" --write-thumbnail";;
+      3) EXTRA_OPTS+=" --write-auto-sub";;
+      4) EXTRA_OPTS+=" --ignore-errors";;
     esac
   done
 }
 
-# ----------------------------
-# وظائف التثبيت وإلغاء التثبيت
-# ----------------------------
-install_desktop_shortcut() {
-  local DESKTOP_DIR="$HOME/.local/share/applications"
-  local ICON_DIR="$HOME/.local/share/icons"
-  local ICON_NAME="gmd-icon.png"
-  local ICON_PATH="$ICON_DIR/$ICON_NAME"
-  
-  mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
-  
-  echo "$ICON_INSTALL تثبيت اختصار سطح المكتب..."
-  
-  # تنزيل الأيقونة من المستودع باستخدام المسار الصحيح
-  echo "$ICON_DOWNLOAD تنزيل أيقونة البرنامج..."
-  curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" -o "$ICON_PATH" 2>/dev/null || {
-    echo "$ICON_INFO استخدام أيقونة افتراضية..."
-    ICON_PATH="system-search"
-  }
-  
-  # إنشاء ملف .desktop
-  local DESKTOP_FILE="$DESKTOP_DIR/gmd.desktop"
-  cat > "$DESKTOP_FILE" <<EOF
-[Desktop Entry]
-Name=GMD - GNU Media Downloader
-Comment=Download and convert media
-Exec=$SELF_PATH
-Icon=$ICON_PATH
-Terminal=true
-Type=Application
-Categories=Utility;Network;AudioVideo;Audio;Video;
-EOF
-  
-  # تحديث قاعدة بيانات التطبيقات
-  if command -v update-desktop-database &>/dev/null; then
-    update-desktop-database ~/.local/share/applications
-  fi
-  
-  echo "$ICON_SUCCESS تم إنشاء اختصار سطح المكتب في: $DESKTOP_FILE"
-  echo "$ICON_INFO يمكنك الآن العثور على التطبيق في قوائم: أدوات مساعدة، إنترنت، وسائط"
-}
-
-uninstall_gmd() {
-  echo "$ICON_UNINSTALL بدء عملية إلغاء التثبيت..."
-  
-  # تأكيد الإزالة
+choose_conversion_format() {
   if [[ "$L" == "ar" ]]; then
-    read -p "هل أنت متأكد من إلغاء تثبيت GMD؟ [y/N]: " confirm
+    echo "$ICON_FORMAT اختر صيغة الإخراج:"
+    echo "  1) ogg (حجم صغير)"
+    echo "  2) mp3"
+    echo "  3) mp4 (HEVC)"
+    echo "  4) webm"
+    echo "  5) mkv"
+    echo "  6) wav"
+    echo "  7) flac"
   else
-    read -p "Are you sure you want to uninstall GMD? [y/N]: " confirm
+    echo "$ICON_FORMAT Choose output format:"
+    echo "  1) ogg (small size)"
+    echo "  2) mp3"
+    echo "  3) mp4 (HEVC)"
+    echo "  4) webm"
+    echo "  5) mkv"
+    echo "  6) wav"
+    echo "  7) flac"
   fi
-  
-  if [[ ! "${confirm:-}" =~ ^[Yy]$ ]]; then
-    echo "$ICON_INFO تم إلغاء العملية."
-    return
-  fi
-  
-  # سؤال عن إزالة yt-dlp
-  if [[ -f "$YTDLP" ]]; then
-    if [[ "$L" == "ar" ]]; then
-      read -p "هل تريد أيضًا إزالة yt-dlp؟ [y/N]: " remove_ytdlp
-    else
-      read -p "Do you want to remove yt-dlp too? [y/N]: " remove_ytdlp
-    fi
-    
-    if [[ "${remove_ytdlp:-}" =~ ^[Yy]$ ]]; then
-      rm -f "$YTDLP"
-      echo "$ICON_SUCCESS تمت إزالة yt-dlp"
-    else
-      echo "$ICON_INFO تم الاحتفاظ بـ yt-dlp"
-    fi
-  fi
-  
-  # إزالة الملف التنفيذي
-  if [[ -f "$SELF_PATH" ]]; then
-    rm -f "$SELF_PATH"
-    echo "$ICON_SUCCESS تمت إزالة الملف التنفيذي"
-  fi
-  
-  # إزالة ملف .desktop
-  if [[ -f "$HOME/.local/share/applications/gmd.desktop" ]]; then
-    rm -f "$HOME/.local/share/applications/gmd.desktop"
-    echo "$ICON_SUCCESS تمت إزالة اختصار سطح المكتب"
-  fi
-  
-  # إزالة الأيقونة
-  if [[ -f "$HOME/.local/share/icons/gmd-icon.png" ]]; then
-    rm -f "$HOME/.local/share/icons/gmd-icon.png"
-    echo "$ICON_SUCCESS تمت إزالة الأيقونة"
-  fi
-  
-  # إزالة مجلد الإعدادات
-  if [[ -d "$HOME/.GMD" ]]; then
-    rm -rf "$HOME/.GMD"
-    echo "$ICON_SUCCESS تمت إزالة مجلد الإعدادات"
-  fi
-  
-  # تحديث كاش التطبيقات
-  if command -v update-desktop-database &>/dev/null; then
-    update-desktop-database ~/.local/share/applications
-  fi
-  
-  echo "$ICON_SUCCESS تم إلغاء تثبيت GMD بنجاح!"
-  exit 0
+  read -p "➤ " conv_format
+  case $conv_format in
+    1) EXT="ogg"; CONV_OPTS="-c:a libopus";;
+    2) EXT="mp3"; CONV_OPTS="-c:a libmp3lame";;
+    3) EXT="mp4"; CONV_OPTS="-c:v libx265 -crf 28 -c:a libopus";;
+    4) EXT="webm"; CONV_OPTS="-c:v libvpx-vp9 -c:a libopus";;
+    5) EXT="mkv"; CONV_OPTS="-c:v libx265 -crf 28 -c:a libopus";;
+    6) EXT="wav"; CONV_OPTS="";;
+    7) EXT="flac"; CONV_OPTS="-c:a flac";;
+    *) echo "$ICON_ERROR خيار غير صالح."; return 1;;
+  esac
+  return 0
 }
 
 # ----------------------------
-# الوظائف الرئيسية
+# وظائف البرنامج الرئيسية
 # ----------------------------
 download_video() {
   if [[ "$L" == "ar" ]]; then
@@ -540,7 +433,7 @@ download_video() {
   choose_save_path || return 1
   choose_quality || return 1
   get_advanced_options
-  "$YTDLP" $EXTRA_OPTS $AUDIO_OPTS $EXT_OPT -f "$FORMAT" -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
+  "$YTDLP" $EXTRA_OPTS $AUDIO_OPTS $EXT_OPT -f "$FORMAT" -o "$SAVE_PATH/%(title)s_%(id)s.%(ext)s" "$URL"
   echo "$ICON_SUCCESS تم التحميل بنجاح."
   [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH"
 }
@@ -552,13 +445,13 @@ convert_media() {
   choose_conversion_format || return 1
   BASENAME=$(basename "$FILE")
   NAME="${BASENAME%.*}"
-  ffmpeg -i "$FILE" "$SAVE_PATH/${NAME}.${EXT}"
+  ffmpeg -i "$FILE" $CONV_OPTS "$SAVE_PATH/${NAME}.${EXT}"
   echo "$ICON_SUCCESS تم التحويل بنجاح."
   [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH"
 }
 
 # ----------------------------
-# القائمة الرئيسية المحسنة
+# القائمة الرئيسية
 # ----------------------------
 show_main_menu() {
   echo ""
@@ -567,27 +460,27 @@ show_main_menu() {
     echo "$ICON_VIDEO القائمة الرئيسية - GMD"
     echo "========================================"
     echo "$ICON_DOWNLOAD  1) تحميل فيديو"
-    echo "$ICON_CONVERT  2) تحويل ملف وسائط"
-    echo "$ICON_INSTALL  3) تثبيت اختصار سطح المكتب"
-    echo "$ICON_UNINSTALL  4) إلغاء التثبيت"
-    echo "$ICON_EXIT  5) خروج"
+    echo "$ICON_CONVERT   2) تحويل ملف وسائط"
+    echo "$ICON_INSTALL   3) تثبيت اختصار سطح المكتب"
+    echo "$ICON_UNINSTALL 4) إلغاء التثبيت"
+    echo "$ICON_EXIT      5) خروج"
     echo "========================================"
     read -p "اختر خيارًا [1-5]: " option
   else
     echo "$ICON_VIDEO Main Menu - GMD"
     echo "========================================"
     echo "$ICON_DOWNLOAD  1) Download Video"
-    echo "$ICON_CONVERT  2) Convert Media File"
-    echo "$ICON_INSTALL  3) Install Desktop Shortcut"
-    echo "$ICON_UNINSTALL  4) Uninstall"
-    echo "$ICON_EXIT  5) Exit"
+    echo "$ICON_CONVERT   2) Convert Media File"
+    echo "$ICON_INSTALL   3) Install Desktop Shortcut"
+    echo "$ICON_UNINSTALL 4) Uninstall"
+    echo "$ICON_EXIT      5) Exit"
     echo "========================================"
     read -p "Choose an option [1-5]: " option
   fi
 }
 
 # ----------------------------
-# التنفيذ الرئيسي
+# التشغيل الرئيسي
 # ----------------------------
 install_yt_dlp
 update_yt_dlp
@@ -623,15 +516,15 @@ while true; do
   clear
   # إعادة عرض الشعار بعد كل عملية
   echo "
-   ____   __  __   ____
-  / ___| |  \/  | |  _ \\
+   ____   __  __   ____  
+  / ___| |  \/  | |  _ \ 
  | |  _  | |\/| | | | | |
  | |_| | | |  | | | |_| |
-  \\____| |_|  |_| |____/
+  \____| |_|  |_| |____/ 
 -------------------------
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.6 «
+         » v1.7 «
 "
 done
