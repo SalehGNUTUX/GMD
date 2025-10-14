@@ -1,5 +1,5 @@
 #!/bin/bash
-# GMD - GNU Media Downloader v1.7
+# GMD - GNU Media Downloader v1.8
 # by gnutux
 
 set -euo pipefail
@@ -7,7 +7,7 @@ set -euo pipefail
 # ----------------------------
 # الشعار
 # ----------------------------
-clear
+show_logo() {
 echo "
    ____   __  __   ____  
   / ___| |  \/  | |  _ \ 
@@ -18,8 +18,46 @@ echo "
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.7 «
+         » v1.8 «
 "
+}
+
+show_logo
+
+# ----------------------------
+# إعداد اللغة (قابل للتغيير)
+# ----------------------------
+LANGUAGE="ar"
+L="ar"
+set_lang() {
+  if [[ "$LANGUAGE" == "ar" ]]; then
+    L="ar"
+  else
+    L="en"
+  fi
+}
+
+set_lang
+
+# ----------------------------
+# خيار التبديل بين اللغتين
+# ----------------------------
+toggle_lang() {
+  if [[ "$LANGUAGE" == "ar" ]]; then
+    LANGUAGE="en"
+    L="en"
+  else
+    LANGUAGE="ar"
+    L="ar"
+  fi
+  show_logo
+  echo ""
+  if [[ "$L" == "ar" ]]; then
+    echo "تم تغيير اللغة إلى العربية."
+  else
+    echo "Language switched to English."
+  fi
+}
 
 # ----------------------------
 # وضع التثبيت المباشر وإلغاء التثبيت والتحديث
@@ -100,6 +138,7 @@ ICON_FILE="📄"
 ICON_URL="🌐"
 ICON_QUALITY="🎞️"
 ICON_FORMAT="🎧"
+ICON_LANG="🌐"
 
 # ----------------------------
 # التحقق من التبعيات
@@ -223,16 +262,6 @@ self_update() {
     echo "$ICON_INFO تم التحقق من التحديثات مؤخرًا."
   fi
 }
-
-# ----------------------------
-# التحقق من اللغة
-# ----------------------------
-LANGUAGE=$(locale | grep LANG= | cut -d= -f2 | cut -d_ -f1 || echo "en")
-if [[ "$LANGUAGE" == "ar" ]]; then
-  L=ar
-else
-  L=en
-fi
 
 # ----------------------------
 # وظائف اختيار المجلد / الملف
@@ -450,6 +479,99 @@ convert_media() {
   [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH"
 }
 
+install_desktop_shortcut() {
+  local DESKTOP_DIR="$HOME/.local/share/applications"
+  local ICON_DIR="$HOME/.local/share/icons"
+  local ICON_NAME="gmd-icon.png"
+  local ICON_PATH="$ICON_DIR/$ICON_NAME"
+
+  mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
+
+  echo "$ICON_INSTALL تثبيت اختصار سطح المكتب..."
+
+  echo "$ICON_DOWNLOAD تنزيل أيقونة البرنامج..."
+  curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" -o "$ICON_PATH" 2>/dev/null || {
+    echo "$ICON_INFO استخدام أيقونة افتراضية..."
+    ICON_PATH="system-search"
+  }
+
+  local DESKTOP_FILE="$DESKTOP_DIR/gmd.desktop"
+  cat > "$DESKTOP_FILE" <<EOF
+[Desktop Entry]
+Name=GMD - GNU Media Downloader
+Comment=Download and convert media
+Exec=$SELF_PATH
+Icon=$ICON_PATH
+Terminal=true
+Type=Application
+Categories=Utility;Network;AudioVideo;Audio;Video;
+EOF
+
+  if command -v update-desktop-database &>/dev/null; then
+    update-desktop-database "$DESKTOP_DIR"
+  fi
+
+  echo "$ICON_SUCCESS تم إنشاء اختصار سطح المكتب في: $DESKTOP_FILE"
+  echo "$ICON_INFO يمكنك الآن العثور على التطبيق في قوائم: أدوات مساعدة، إنترنت، وسائط"
+}
+
+uninstall_gmd() {
+  echo "$ICON_UNINSTALL بدء عملية إلغاء التثبيت..."
+
+  if [[ "$L" == "ar" ]]; then
+    read -p "هل أنت متأكد من إلغاء تثبيت GMD؟ [y/N]: " confirm
+  else
+    read -p "Are you sure you want to uninstall GMD? [y/N]: " confirm
+  fi
+
+  if [[ ! "${confirm:-}" =~ ^[Yy]$ ]]; then
+    echo "$ICON_INFO تم إلغاء العملية."
+    return
+  fi
+
+  if [[ -f "$YTDLP" ]]; then
+    if [[ "$L" == "ar" ]]; then
+      read -p "هل تريد أيضًا إزالة yt-dlp؟ [y/N]: " remove_ytdlp
+    else
+      read -p "Do you want to remove yt-dlp too? [y/N]: " remove_ytdlp
+    fi
+
+    if [[ "${remove_ytdlp:-}" =~ ^[Yy]$ ]]; then
+      rm -f "$YTDLP"
+      echo "$ICON_SUCCESS تمت إزالة yt-dlp"
+    else
+      echo "$ICON_INFO تم الاحتفاظ بـ yt-dlp"
+    fi
+  fi
+
+  if [[ -f "$SELF_PATH" ]]; then
+    rm -f "$SELF_PATH"
+    echo "$ICON_SUCCESS تمت إزالة الملف التنفيذي"
+  fi
+
+  if [[ -f "$HOME/.local/share/applications/gmd.desktop" ]]; then
+    rm -f "$HOME/.local/share/applications/gmd.desktop"
+    echo "$ICON_SUCCESS تمت إزالة اختصار سطح المكتب"
+  fi
+
+  if [[ -f "$HOME/.local/share/icons/gmd-icon.png" ]]; then
+    rm -f "$HOME/.local/share/icons/gmd-icon.png"
+    echo "$ICON_SUCCESS تمت إزالة الأيقونة"
+  fi
+
+  if [[ -d "$HOME/.GMD" ]]; then
+    rm -rf "$HOME/.GMD"
+    echo "$ICON_SUCCESS تمت إزالة مجلد الإعدادات"
+  fi
+
+  if command -v update-desktop-database &>/dev/null; then
+    update-desktop-database ~/.local/share/applications
+  fi
+
+  echo "$ICON_SUCCESS تم إلغاء تثبيت GMD بنجاح!"
+  exit 0
+}
+
 # ----------------------------
 # القائمة الرئيسية
 # ----------------------------
@@ -463,9 +585,10 @@ show_main_menu() {
     echo "$ICON_CONVERT   2) تحويل ملف وسائط"
     echo "$ICON_INSTALL   3) تثبيت اختصار سطح المكتب"
     echo "$ICON_UNINSTALL 4) إلغاء التثبيت"
-    echo "$ICON_EXIT      5) خروج"
+    echo "$ICON_LANG      5) AR/EN (تغيير اللغة)"
+    echo "$ICON_EXIT      6) خروج"
     echo "========================================"
-    read -p "اختر خيارًا [1-5]: " option
+    read -p "اختر خيارًا [1-6]: " option
   else
     echo "$ICON_VIDEO Main Menu - GMD"
     echo "========================================"
@@ -473,9 +596,10 @@ show_main_menu() {
     echo "$ICON_CONVERT   2) Convert Media File"
     echo "$ICON_INSTALL   3) Install Desktop Shortcut"
     echo "$ICON_UNINSTALL 4) Uninstall"
-    echo "$ICON_EXIT      5) Exit"
+    echo "$ICON_LANG      5) AR/EN (Switch Language)"
+    echo "$ICON_EXIT      6) Exit"
     echo "========================================"
-    read -p "Choose an option [1-5]: " option
+    read -p "Choose an option [1-6]: " option
   fi
 }
 
@@ -493,7 +617,8 @@ while true; do
     2) convert_media;;
     3) install_desktop_shortcut;;
     4) uninstall_gmd;;
-    5) 
+    5) toggle_lang;;
+    6) 
       if [[ "$L" == "ar" ]]; then
         echo "$ICON_EXIT مع السلامة!"
       else
@@ -514,17 +639,5 @@ while true; do
     read -p "Press Enter to continue..." dummy
   fi
   clear
-  # إعادة عرض الشعار بعد كل عملية
-  echo "
-   ____   __  __   ____  
-  / ___| |  \/  | |  _ \ 
- | |  _  | |\/| | | | | |
- | |_| | | |  | | | |_| |
-  \____| |_|  |_| |____/ 
--------------------------
-   GNU MEDIA DOWNLOADER
--------------------------
-       » BY GNUTUX «
-         » v1.7 «
-"
+  show_logo
 done
