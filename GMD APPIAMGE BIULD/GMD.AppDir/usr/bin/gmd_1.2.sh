@@ -11,8 +11,7 @@ echo "
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.1 «
-
+         » v1.2 (Improved) «
 "
 
 # ✅ التبعيات المطلوبة
@@ -115,109 +114,101 @@ choose_file_path() {
   return 0
 }
 
-# ✅ اختيار الجودة والصيغة
+# ✅ تحسين اختيار جودة الفيديو مع mp4
+choose_mp4_quality() {
+  if [[ "$L" == "ar" ]]; then
+    echo "🎞️ اختر جودة فيديو mp4:"
+    echo "1) عالية (1080p)"
+    echo "2) متوسطة (720p)"
+    echo "3) منخفضة (480p)"
+  else
+    echo "🎞️ Select mp4 video quality:"
+    echo "1) High (1080p)"
+    echo "2) Medium (720p)"
+    echo "3) Low (480p)"
+  fi
+  read -p "➤ " mp4_quality
+  case $mp4_quality in
+    1) FORMAT="bv*[ext=mp4][height<=1080]+ba[ext=m4a]/best[ext=mp4][height<=1080]"; EXT_OPT="--merge-output-format mp4";;
+    2) FORMAT="bv*[ext=mp4][height<=720]+ba[ext=m4a]/best[ext=mp4][height<=720]"; EXT_OPT="--merge-output-format mp4";;
+    3) FORMAT="bv*[ext=mp4][height<=480]+ba[ext=m4a]/best[ext=mp4][height<=480]"; EXT_OPT="--merge-output-format mp4";;
+    *) echo "❌ خيار غير صالح / Invalid choice."; return 1;;
+  esac
+  return 0
+}
+
+# ✅ خيارات جودة الفيديو العامة
 choose_quality() {
   if [[ "$L" == "ar" ]]; then
     echo "🎞️ اختر جودة الفيديو:"
     echo "1) عالية"
     echo "2) متوسطة"
     echo "3) منخفضة"
-    echo "4) mp4 (تحويل مباشر)"
+    echo "4) mp4 (مع اختيار الجودة)"
   else
     echo "🎞️ Select video quality:"
     echo "1) High"
     echo "2) Medium"
     echo "3) Low"
-    echo "4) mp4 (direct convert)"
+    echo "4) mp4 (choose quality)"
   fi
   read -p "➤ " quality
-
   case $quality in
     1) FORMAT="bestvideo+bestaudio/best"; EXT_OPT="";;
     2) FORMAT="bv[height<=720]+ba/best[height<=720]"; EXT_OPT="";;
     3) FORMAT="bv[height<=480]+ba/best[height<=480]"; EXT_OPT="";;
-    4) FORMAT="bestvideo+bestaudio/best"; EXT_OPT="--recode-video mp4";;
+    4) choose_mp4_quality || return 1;;
     *) echo "❌ خيار غير صالح / Invalid choice."; return 1;;
   esac
   return 0
 }
 
-# ✅ اختيار صيغة التحويل
-choose_conversion_format() {
-  if [[ "$L" == "ar" ]]; then
-    echo "🎧 اختر صيغة الإخراج:"
-    echo "1) mp3"
-    echo "2) mp4"
-    echo "3) webm"
-    echo "4) mkv"
-    echo "5) wav"
-    echo "6) flac"
-  else
-    echo "🎧 Choose output format:"
-    echo "1) mp3"
-    echo "2) mp4"
-    echo "3) webm"
-    echo "4) mkv"
-    echo "5) wav"
-    echo "6) flac"
-  fi
-  read -p "➤ " conv_format
-
-  case $conv_format in
-    1) EXT="mp3";;
-    2) EXT="mp4";;
-    3) EXT="webm";;
-    4) EXT="mkv";;
-    5) EXT="wav";;
-    6) EXT="flac";;
-    *) echo "❌ خيار غير صالح / Invalid choice."; return 1;;
-  esac
-  return 0
-}
-
-# ✅ اختيار صيغة الصوت عند اختيار التحميل كصوت
+# ✅ خيارات تحويل الصوت مع خيار ogg أولاً
 choose_audio_format() {
   if [[ "$L" == "ar" ]]; then
-    echo "🔊 اختر صيغة الصوت:"
-    echo "1) mp3"
-    echo "2) m4a"
-    echo "3) opus"
-    echo "4) flac"
-    echo "5) wav"
+    echo "🔊 تغيير صيغة الصوت (أول خيار):"
+    echo "1) ogg (حجم صغير)"
+    echo "2) mp3"
+    echo "3) m4a"
+    echo "4) opus"
+    echo "5) flac"
+    echo "6) wav"
   else
-    echo "🔊 Choose audio format:"
-    echo "1) mp3"
-    echo "2) m4a"
-    echo "3) opus"
-    echo "4) flac"
-    echo "5) wav"
+    echo "🔊 Change audio format (first option):"
+    echo "1) ogg (small size)"
+    echo "2) mp3"
+    echo "3) m4a"
+    echo "4) opus"
+    echo "5) flac"
+    echo "6) wav"
   fi
   read -p "➤ " audio_format
   case $audio_format in
-    1) AUDIO_OPTS="--extract-audio --audio-format mp3";;
-    2) AUDIO_OPTS="--extract-audio --audio-format m4a";;
-    3) AUDIO_OPTS="--extract-audio --audio-format opus";;
-    4) AUDIO_OPTS="--extract-audio --audio-format flac";;
-    5) AUDIO_OPTS="--extract-audio --audio-format wav";;
+    1) AUDIO_OPTS="--extract-audio --audio-format vorbis";;
+    2) AUDIO_OPTS="--extract-audio --audio-format mp3";;
+    3) AUDIO_OPTS="--extract-audio --audio-format m4a";;
+    4) AUDIO_OPTS="--extract-audio --audio-format opus";;
+    5) AUDIO_OPTS="--extract-audio --audio-format flac";;
+    6) AUDIO_OPTS="--extract-audio --audio-format wav";;
     *) AUDIO_OPTS="";;
   esac
 }
 
-# ✅ خيارات متقدمة عبر أرقام
+# ✅ خيارات متقدمة
 get_advanced_options() {
   if [[ "$L" == "ar" ]]; then
     echo "➕ اختر خيارات متقدمة (يمكن اختيار أكثر من خيار مفصول بفاصلة):"
-    echo "1) تحميل الصورة المصغرة"
-    echo "2) تحميل الترجمة التلقائية"
-    echo "3) تخطي الأخطاء"
-    echo "4) تحميل كصوت"
+    echo "1) تغيير الصوت"
+    echo "2) تحميل الصورة المصغرة"
+    echo "3) تحميل الترجمة التلقائية"
+    echo "4) تخطي الأخطاء"
     echo "5) لا شيء"
   else
-    echo "➕ Choose advanced options (you can select multiple, e.g., 1,2):"
-    echo "1) Download thumbnail"
-    echo "2) Download subtitles"
-    echo "3) Ignore errors"
-    echo "4) Download as audio"
+    echo "➕ Choose advanced options (multiple, comma separated):"
+    echo "1) Change audio format"
+    echo "2) Download thumbnail"
+    echo "3) Download subtitles"
+    echo "4) Ignore errors"
     echo "5) None"
   fi
 
@@ -228,10 +219,10 @@ get_advanced_options() {
   IFS=',' read -ra CHOICES <<< "$adv_opts"
   for opt in "${CHOICES[@]}"; do
     case "$opt" in
-      1) EXTRA_OPTS+=" --write-thumbnail";;
-      2) EXTRA_OPTS+=" --write-auto-sub";;
-      3) EXTRA_OPTS+=" --ignore-errors";;
-      4) choose_audio_format;;
+      1) choose_audio_format;;
+      2) EXTRA_OPTS+=" --write-thumbnail";;
+      3) EXTRA_OPTS+=" --write-auto-sub";;
+      4) EXTRA_OPTS+=" --ignore-errors";;
       5) EXTRA_OPTS+="";;
     esac
   done
@@ -244,14 +235,54 @@ download_video() {
   choose_quality || return
   get_advanced_options
 
-  $YTDLP $EXTRA_OPTS $AUDIO_OPTS $EXT_OPT -f "$FORMAT" -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
+  # حفظ الفيديو مع ضمان اسم فريد حتى لو لم يوجد عنوان
+  $YTDLP $EXTRA_OPTS $AUDIO_OPTS $EXT_OPT \
+    -f "$FORMAT" \
+    -o "$SAVE_PATH/%(title)s_%(id)s.%(ext)s" \
+    "$URL"
+
   echo "✅ Done."
   if [[ -n "$FILE_MANAGER" ]]; then
     $FILE_MANAGER "$SAVE_PATH"
   fi
 }
 
-# ✅ تحويل ملف
+# ✅ خيارات تحويل الوسائط
+choose_conversion_format() {
+  if [[ "$L" == "ar" ]]; then
+    echo "🎧 اختر صيغة الإخراج:"
+    echo "1) ogg (حجم صغير)"
+    echo "2) mp3"
+    echo "3) mp4 (HEVC)"
+    echo "4) webm"
+    echo "5) mkv"
+    echo "6) wav"
+    echo "7) flac"
+  else
+    echo "🎧 Choose output format:"
+    echo "1) ogg (small size)"
+    echo "2) mp3"
+    echo "3) mp4 (HEVC)"
+    echo "4) webm"
+    echo "5) mkv"
+    echo "6) wav"
+    echo "7) flac"
+  fi
+  read -p "➤ " conv_format
+  case $conv_format in
+    1) EXT="ogg"; CONV_OPTS="-c:a libopus";;
+    2) EXT="mp3"; CONV_OPTS="-c:a libmp3lame";;
+    3) EXT="mp4"; CONV_OPTS="-c:v libx265 -crf 28 -c:a libopus";;
+    4) EXT="webm"; CONV_OPTS="-c:v libvpx-vp9 -c:a libopus";;
+    5) EXT="mkv"; CONV_OPTS="-c:v libx265 -crf 28 -c:a libopus";;
+    6) EXT="wav"; CONV_OPTS="";;
+    7) EXT="flac"; CONV_OPTS="-c:a flac";;
+    *) echo "❌ خيار غير صالح / Invalid choice."; return 1;;
+  esac
+  return 0
+}
+
+# ✅ تحويل ملف وسائط
 convert_media() {
   choose_file_path || return
   choose_save_path || return
@@ -259,7 +290,7 @@ convert_media() {
   BASENAME=$(basename "$FILE")
   NAME="${BASENAME%.*}"
 
-  $FFMPEG -i "$FILE" "$SAVE_PATH/${NAME}.${EXT}"
+  $FFMPEG -i "$FILE" $CONV_OPTS "$SAVE_PATH/${NAME}.${EXT}"
   echo "✅ Conversion done."
   if [[ -n "$FILE_MANAGER" ]]; then
     $FILE_MANAGER "$SAVE_PATH"
