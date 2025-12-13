@@ -1,3 +1,4 @@
+[file content begin]
 #!/bin/bash
 # GMD - GNU Media Downloader v1.9
 # by gnutux
@@ -139,6 +140,8 @@ ICON_QUALITY="🎞️"
 ICON_FORMAT="🎧"
 ICON_LANG="🌐"
 ICON_BACK="🔙"
+ICON_SMART="🧠"
+ICON_COMPLETE="📦"
 
 # ----------------------------
 # التحقق من التبعيات
@@ -444,6 +447,101 @@ get_url() {
 }
 
 # ----------------------------
+# وظائف جديدة: تنزيل وتحويل مباشر
+# ----------------------------
+download_and_convert() {
+  local URL
+  URL=$(get_url) || return 1
+  
+  # اختيار صيغة التحويل
+  choose_conversion_format || return 1
+  
+  choose_save_path || return 1
+  
+  echo "$ICON_SMART جاري التحليل والتنزيل الذكي..."
+  
+  # الحصول على معلومات الملف أولاً لمعرفة الصيغة الأصلية
+  local INFO_FILE=$(mktemp)
+  "$YTDLP" --dump-json "$URL" > "$INFO_FILE" 2>/dev/null
+  
+  if [[ -s "$INFO_FILE" ]]; then
+    local ORIG_EXT=$(jq -r '.ext' "$INFO_FILE" 2>/dev/null || echo "")
+    local TITLE=$(jq -r '.title' "$INFO_FILE" 2>/dev/null || echo "video")
+    
+    # تنظيف العنوان من الأحرف غير الآمنة
+    TITLE=$(echo "$TITLE" | tr -d '\n' | sed 's/[<>:"/\\|?*]//g')
+    
+    if [[ "$ORIG_EXT" == "$EXT" ]]; then
+      # إذا كانت الصيغة الأصلية مطابقة للصيغة المطلوبة
+      echo "$ICON_INFO الملف الأصلي بصيغة $ORIG_TeXT، لا حاجة للتحويل."
+      echo "$ICON_DOWNLOAD جاري التنزيل مباشرة..."
+      
+      # تنزيل الفيديو أو الصوت حسب الصيغة
+      if [[ "$EXT" == "mp4" || "$EXT" == "webm" ]]; then
+        choose_video_quality || return 1
+        "$YTDLP" -f "$FORMAT" -o "$SAVE_PATH/${TITLE}.%(ext)s" "$URL"
+      else
+        # تنزيل الصوت
+        case $EXT in
+          mp3) AUDIO_OPTS="--extract-audio --audio-format mp3 --audio-quality 0";;
+          m4a) AUDIO_OPTS="--extract-audio --audio-format m4a";;
+          ogg) AUDIO_OPTS="--extract-audio --audio-format vorbis";;
+          wav) AUDIO_OPTS="--extract-audio --audio-format wav";;
+          flac) AUDIO_OPTS="--extract-audio --audio-format flac";;
+          *) AUDIO_OPTS="--extract-audio --audio-format mp3";;
+        esac
+        "$YTDLP" $AUDIO_OPTS -o "$SAVE_PATH/${TITLE}.%(ext)s" "$URL"
+      fi
+    else
+      # إذا كانت الصيغة مختلفة، قم بالتنزيل ثم التحويل
+      echo "$ICON_INFO الملف الأصلي بصيغة $ORIG_EXT، سيتم تحويله إلى $EXT"
+      
+      # تنزيل الملف مؤقتاً
+      local TEMP_DIR=$(mktemp -d)
+      echo "$ICON_DOWNLOAD جاري التنزيل المؤقت..."
+      
+      # تنزيل بأفضل جودة
+      "$YTDLP" -f "best" -o "$TEMP_DIR/%(title)s.%(ext)s" "$URL"
+      
+      # البحث عن الملف الذي تم تنزيله
+      local DOWNLOADED_FILE=$(find "$TEMP_DIR" -type f -name "*.${ORIG_EXT}" | head -1)
+      
+      if [[ -f "$DOWNLOADED_FILE" ]]; then
+        echo "$ICON_CONVERT جاري التحويل إلى $EXT..."
+        
+        local BASENAME=$(basename "$DOWNLOADED_FILE" ".$ORIG_EXT")
+        local OUTPUT_FILE="$SAVE_PATH/${BASENAME}.${EXT}"
+        
+        # التحويل
+        ffmpeg -i "$DOWNLOADED_FILE" $CONV_OPTS "$OUTPUT_FILE" 2>/dev/null
+        
+        if [[ $? -eq 0 ]]; then
+          echo "$ICON_SUCCESS تم التحويل بنجاح إلى: $OUTPUT_FILE"
+        else
+          echo "$ICON_ERROR فشل التحويل."
+        fi
+        
+        # تنظيف الملفات المؤقتة
+        rm -rf "$TEMP_DIR"
+      else
+        echo "$ICON_ERROR لم يتم العثور على الملف الذي تم تنزيله."
+        rm -rf "$TEMP_DIR"
+        return 1
+      fi
+    fi
+    
+    rm -f "$INFO_FILE"
+  else
+    echo "$ICON_ERROR لا يمكن الحصول على معلومات الملف."
+    rm -f "$INFO_FILE"
+    return 1
+  fi
+  
+  [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH"
+  return 0
+}
+
+# ----------------------------
 # وظائف البرنامج الرئيسية
 # ----------------------------
 download_video() {
@@ -495,9 +593,10 @@ extra_download_options() {
       echo "│  2) تنزيل مقاطع من قناة            │"
       echo "│  3) تنزيل الترجمات فقط             │"
       echo "│  4) تنزيل الصور المصغرة فقط        │"
-      echo "│  $ICON_BACK 5) رجوع                     │"
+      echo "│  5) تنزيل شامل (كل المرفقات)      │"
+      echo "│  $ICON_BACK 6) رجوع                     │"
       echo "└─────────────────────────────────────┘"
-      read -p "اختر خيارًا [1-5]: " extra_opt
+      read -p "اختر خيارًا [1-6]: " extra_opt
     else
       echo ""
       echo "┌─────────────────────────────────────┐"
@@ -507,9 +606,10 @@ extra_download_options() {
       echo "│  2) Download from channel           │"
       echo "│  3) Download subtitles only         │"
       echo "│  4) Download thumbnails only        │"
-      echo "│  $ICON_BACK 5) Back                      │"
+      echo "│  5) Complete package download       │"
+      echo "│  $ICON_BACK 6) Back                      │"
       echo "└─────────────────────────────────────┘"
-      read -p "Choose an option [1-5]: " extra_opt
+      read -p "Choose an option [1-6]: " extra_opt
     fi
 
     case $extra_opt in
@@ -541,7 +641,38 @@ extra_download_options() {
         echo "$ICON_DOWNLOAD جاري تنزيل الصور المصغرة..."
         "$YTDLP" --write-thumbnail --skip-download -o "$SAVE_PATH/%(title)s" "$URL"
         ;;
-      5) return 0;;
+      5)
+        # تنزيل شامل
+        local URL
+        URL=$(get_url) || continue
+        choose_save_path || continue
+        
+        echo "$ICON_COMPLETE جاري التنزيل الشامل (أعلى جودة + كل المرفقات)..."
+        
+        # إنشاء مجلد خاص للتنزيل الشامل
+        local COMPLETE_DIR="$SAVE_PATH/complete_download_$(date +%Y%m%d_%H%M%S)"
+        mkdir -p "$COMPLETE_DIR"
+        
+        echo "$ICON_DOWNLOAD 1) تنزيل الفيديو بأعلى جودة..."
+        "$YTDLP" -f "bestvideo+bestaudio/best" -o "$COMPLETE_DIR/video/%(title)s.%(ext)s" "$URL"
+        
+        echo "$ICON_DOWNLOAD 2) تنزيل الصور المصغرة..."
+        "$YTDLP" --write-thumbnail --skip-download -o "$COMPLETE_DIR/thumbnails/%(title)s" "$URL"
+        
+        echo "$ICON_DOWNLOAD 3) تنزيل جميع الترجمات..."
+        "$YTDLP" --write-sub --write-auto-sub --all-subs --skip-download -o "$COMPLETE_DIR/subs/%(title)s" "$URL"
+        
+        echo "$ICON_DOWNLOAD 4) تنزيل الوصف والمعلومات..."
+        "$YTDLP" --write-description --write-info-json --write-annotations --skip-download -o "$COMPLETE_DIR/info/%(title)s" "$URL"
+        
+        echo "$ICON_DOWNLOAD 5) تنزيل الصوت منفصلاً (mp3)..."
+        "$YTDLP" --extract-audio --audio-format mp3 --audio-quality 0 -o "$COMPLETE_DIR/audio/%(title)s.%(ext)s" "$URL"
+        
+        echo "$ICON_SUCCESS تم التنزيل الشامل بنجاح في: $COMPLETE_DIR"
+        
+        [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$COMPLETE_DIR"
+        ;;
+      6) return 0;;
       *) echo "$ICON_ERROR خيار غير صالح.";;
     esac
     [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH"
@@ -697,26 +828,28 @@ show_main_menu() {
     echo "├─────────────────────────────────────┤"
     echo "│  $ICON_DOWNLOAD 1) تنزيل فيديو            │"
     echo "│  $ICON_AUDIO 2) تنزيل صوت                 │"
-    echo "│  $ICON_CONVERT 3) تحويل وسائط             │"
-    echo "│  $ICON_EXTRA 4) خيارات تنزيل أخرى         │"
-    echo "│  $ICON_SETTINGS 5) إعدادات                │"
-    echo "│  $ICON_INSTALL 6) تثبيت اختصار سطح المكتب │"
+    echo "│  $ICON_SMART 3) تنزيل وتحويل مباشر       │"
+    echo "│  $ICON_CONVERT 4) تحويل وسائط             │"
+    echo "│  $ICON_EXTRA 5) خيارات تنزيل أخرى         │"
+    echo "│  $ICON_SETTINGS 6) إعدادات                │"
+    echo "│  $ICON_INSTALL 7) تثبيت اختصار سطح المكتب │"
     echo "│  $ICON_EXIT 0) خروج                       │"
     echo "└─────────────────────────────────────┘"
-    read -p "اختر خيارًا [0-6]: " option
+    read -p "اختر خيارًا [0-7]: " option
   else
     echo "│          GMD - v1.9                 │"
     echo "│    GNU MEDIA DOWNLOADER             │"
     echo "├─────────────────────────────────────┤"
     echo "│  $ICON_DOWNLOAD 1) Download Video         │"
     echo "│  $ICON_AUDIO 2) Download Audio            │"
-    echo "│  $ICON_CONVERT 3) Convert Media           │"
-    echo "│  $ICON_EXTRA 4) Extra Download Options    │"
-    echo "│  $ICON_SETTINGS 5) Settings               │"
-    echo "│  $ICON_INSTALL 6) Install Desktop Shortcut│"
+    echo "│  $ICON_SMART 3) Download & Convert Direct │"
+    echo "│  $ICON_CONVERT 4) Convert Media           │"
+    echo "│  $ICON_EXTRA 5) Extra Download Options    │"
+    echo "│  $ICON_SETTINGS 6) Settings               │"
+    echo "│  $ICON_INSTALL 7) Install Desktop Shortcut│"
     echo "│  $ICON_EXIT 0) Exit                       │"
     echo "└─────────────────────────────────────┘"
-    read -p "Choose an option [0-6]: " option
+    read -p "Choose an option [0-7]: " option
   fi
 }
 
@@ -732,10 +865,11 @@ while true; do
   case $option in
     1) download_video;;
     2) download_audio;;
-    3) convert_media;;
-    4) extra_download_options;;
-    5) settings_menu;;
-    6) install_desktop_shortcut;;
+    3) download_and_convert;;
+    4) convert_media;;
+    5) extra_download_options;;
+    6) settings_menu;;
+    7) install_desktop_shortcut;;
     0)
       if [[ "$L" == "ar" ]]; then
         echo "$ICON_EXIT مع السلامة!"
@@ -759,3 +893,4 @@ while true; do
   clear
   show_logo
 done
+[file content end]
