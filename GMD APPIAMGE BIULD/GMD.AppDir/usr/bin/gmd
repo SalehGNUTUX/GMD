@@ -1,6 +1,6 @@
 [file content begin]
 #!/bin/bash
-# GMD - GNU Media Downloader v1.92
+# GMD - GNU Media Downloader v1.9
 # by gnutux
 
 set -euo pipefail
@@ -19,7 +19,7 @@ echo "
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.92 «
+         » v1.9 «
 "
 }
 
@@ -1035,7 +1035,7 @@ show_main_menu() {
   echo ""
   echo "┌─────────────────────────────────────┐"
   if [[ "$L" == "ar" ]]; then
-    echo "│          GMD - v1.92              │"
+    echo "│          GMD - v1.9              │"
     echo "│    منزل وسائط جنو                  │"
     echo "├─────────────────────────────────────┤"
     echo "│  $ICON_DOWNLOAD 1) تنزيل فيديو            │"
@@ -1049,7 +1049,7 @@ show_main_menu() {
     echo "└─────────────────────────────────────┘"
     read -p "اختر خيارًا [0-7]: " option
   else
-    echo "│          GMD - v1.92                │"
+    echo "│          GMD - v1.9                │"
     echo "│    GNU MEDIA DOWNLOADER             │"
     echo "├─────────────────────────────────────┤"
     echo "│  $ICON_DOWNLOAD 1) Download Video         │"
