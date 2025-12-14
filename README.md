@@ -1,4 +1,6 @@
-# GMD - GNU Media Downloader
+# GMD - GNU Media Downloader v1.91
+
+## 🆕 الإصدار 1.91 - أذكى وأكثر تلقائية!
 
 ```
    ____   __  __   ____  
@@ -10,207 +12,227 @@
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.9 «
+         » v1.91 «
 ```
 
-**GMD** هو برنامج حر ومفتوح المصدر لتحميل وتحويل الوسائط من الإنترنت بسهولة ومرونة وبواجهة عربية وإنجليزية، ويعمل بسطر الأوامر أو واجهة رسومية خفيفة.
+**GMD v1.91** يأتي بميزات ذكية جديدة وتجربة مستخدم محسنة مع تثبيت تلقائي كامل!
 
-<img width="256" height="256" alt="GMD Icon" src="https://github.com/SalehGNUTUX/GMD/blob/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/share/icons/hicolor/256x256/apps/gmd-icon.png?raw=true" />
+<img width="256" height="256" alt="GMD Icon" src="https://github.com/SalehGNUTUX/GMD/blob/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png?raw=true" />
 
-## 🎨 المميزات الرئيسية
+## ✨ مميزات الإصدار الجديد 1.91
 
-### 📥 تحميل متقدم
-- تحميل الفيديوهات والصوتيات من +1000 موقع (YouTube، SoundCloud، Vimeo، وغيرها)
-- اختيار جودة الفيديو والصوت والصيغة قبل التحميل
-- دعم القوائم التشغيل الكاملة والمقاطع من القنوات
-- حفظ الملفات بأسماء واضحة تشمل العنوان وID المقطع
+### 🧠 **تنزيل وتحويل مباشر ذكي**
+- **تحليل تلقائي** للصيغة الأصلية للملف
+- **تجنب التحويل غير الضروري** - إذا كانت الصيغة مطابقة
+- **ذكي وسريع** - يحفظ الوقت والموارد
+- **دعم جميع الصيغ** صوتية ومرئية
 
-### 🔄 تحويل ذكي
-- تحويل ملفات الوسائط بين الصيغ المختلفة (mp3, mp4, ogg, mkv, webm, wav, flac...)
-- دعم ترميزات حديثة لضغط الحجم (HEVC/x265، Opus، VP9...)
-- تحسين حجم الملفات مع الحفاظ على الجودة
+### 📦 **تنزيل شامل (الحزمة الكاملة)**
+- **فيديو بأعلى جودة** + **صور مصغرة** + **جميع الترجمات**
+- **الوصف والمعلومات** + **الصوت المنفصل** (MP3)
+- **تنظيم تلقائي** في مجلد واحد شامل
+- **كل مرفقات المقطع** في مكان واحد
 
-### 🎯 واجهة مستخدم محسنة
-- **واجهة تفاعلية** مع أيقونات تعبيرية واضحة
-- **قوائم منظمة** بتصميم مربعات أنيق
-- دعم **اللغة العربية والإنجليزية** بشكل كامل
-- تدفق عمل تسلسلي منطقي وسهل
+### 🚀 **تثبيت تلقائي للأيقونة**
+- **اختصار سطح المكتب** يثبت تلقائياً عند أول تشغيل
+- **بدون طلب إذن المستخدم** - فقط رسائل إعلامية
+- **أيقونة في قائمة التطبيقات** تلقائياً
+- **تحديث تلقائي** مع الحفاظ على الاختصار
 
-### ⚡ أداء متكامل
-- تثبيت واختصار سطح مكتب تلقائي
-- إدارة التبعيات تلقائياً وتحديث ذاتي
-- اكتشاف ذكي للأدوات المثبتة مسبقاً
-- معالجة أخطاء محسنة
+### 🛠️ **إصلاحات وإضافات مهمة**
+- **إلغاء تثبيت كامل** - يزيل كل الملفات والأيقونات
+- **إصلاح اختصار سطح المكتب** - خيار جديد في الإعدادات
+- **تحسين استقرار التحديثات** - لا تؤثر على الأيقونة
+- **معالجة أخطاء محسنة** - تجربة أكثر سلاسة
 
-## 🚀 التثبيت الفوري
+## 📋 القائمة الرئيسية الجديدة v1.91
 
-### الطريقة 1: التشغيل المباشر (بدون تثبيت)
-```bash
-bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd")
-```
-
-### الطريقة 2: التثبيت الدائم
-```bash
-curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" | bash -s -- --install
-```
-
-أو باستخدام wget:
-```bash
-wget -O - https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd | bash -s -- --install
-```
-
-### بعد التثبيت:
-```bash
-gmd
-```
-
-### للتحديث:
-```bash
-gmd --update
-```
-
-## 🆕 ما الجديد في v1.9؟
-
-### ✨ واجهة مستخدم محسنة تماماً
-- **تصميم جديد** للقوائم باستخدام مربعات منظمة
-- **محاذاة مثالية** للنصوص العربية والإنجليزية
-- **أيقونات معبرة** لكل خيار مع تخطيط متسق
-
-### 🎯 القائمة الرئيسية الجديدة
 ```
 ┌─────────────────────────────────────┐
-│          GMD - v1.9                 │
+│          GMD - v1.91              │
 │    منزل وسائط جنو                  │
 ├─────────────────────────────────────┤
-│  ⬇️  1) تنزيل فيديو             │
+│  ⬇️  1) تنزيل فيديو            │
 │  🎵  2) تنزيل صوت                 │
-│  🔄  3) تحويل وسائط             │
-│  ⚡  4) خيارات تنزيل أخرى        │
-│  ⚙️  5) إعدادات                 │
-│  📁  6) تثبيت اختصار سطح المكتب│
-│  🚪  0) خروج                     │
+│  🧠  3) تنزيل وتحويل مباشر       │
+│  🔄  4) تحويل وسائط             │
+│  ⚡  5) خيارات تنزيل أخرى         │
+│  ⚙️  6) إعدادات                │
+│  🚪  0) خروج                       │
 └─────────────────────────────────────┘
 ```
 
-### 🔄 تدفق عمل محسن
-- **عملية تسلسلية منطقية** لكل مهمة
-- **تقليل عدد الخطوات** للعمليات الأساسية
-- **واجهات رسومية** محسنة مع zenity
-- **خيارات متقدمة** منظمة في قوائم فرعية
+## 🆕 خيارات تنزيل أخرى المحسنة
 
-### 🌍 ميزات جديدة
-- **خيارات تنزيل متقدمة**: قوائم تشغيل، قنوات، ترجمات، صور مصغرة
-- **إعدادات شاملة**: تحديث، لغة، إلغاء تثبيت
-- **دعم موسع** للصيغ والجودة
+```
+┌─────────────────────────────────────┐
+│      ⚡ خيارات تنزيل أخرى           │
+├─────────────────────────────────────┤
+│  1) تنزيل قائمة تشغيل كاملة        │
+│  2) تنزيل مقاطع من قناة            │
+│  3) تنزيل الترجمات فقط             │
+│  4) تنزيل الصور المصغرة فقط        │
+│  5) تنزيل شامل (كل المرفقات)      │
+│  🔙  6) رجوع                       │
+└─────────────────────────────────────┘
+```
 
-## 📖 كيفية الاستخدام
+## 🚀 التثبيت الفوري
 
-### 1. 🎬 تشغيل البرنامج
+### الطريقة المفضلة: تثبيت كامل مع أيقونة
+```bash
+bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh") --install-desktop
+```
+
+### أو باختصار:
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install
+```
+
+### ثم تشغيل:
 ```bash
 gmd
 ```
 
-### 2. ⬇️ تحميل الفيديوهات
-- اختر الخيار `1` من القائمة الرئيسية
-- أدخل رابط الفيديو (تلقائي عبر واجهة رسومية إن أمكن)
-- اختر الجودة المناسبة (عالية، متوسطة، منخفضة)
-- اختر مجلد الحفظ
-- اترك البرنامج يقوم بالباقي!
+## 🛠️ الأوامر الجديدة في v1.91
 
-### 3. 🎵 تحميل الصوتيات
-- اختر الخيار `2` من القائمة الرئيسية  
-- أدخل رابط الصوت
-- اختر صيغة الصوت (mp3, m4a, ogg, etc.)
-- اختر مجلد الحفظ
-- احصل على ملفك الصوتي
+| الأمر | الوصف |
+|-------|-------|
+| `gmd --install-desktop` | تثبيت مع أيقونة سطح المكتب |
+| `gmd --clean-uninstall` | إلغاء تثبيت كامل (يزيل كل شيء) |
+| `gmd --fix-desktop` | إصلاح اختصار سطح المكتب |
+| `gmd --update` | تحديث البرنامج |
 
-### 4. 🔄 تحويل الوسائط
-- اختر الخيار `3` من القائمة الرئيسية
-- حدد الملف المراد تحويله (تلقائي عبر واجهة رسومية)
-- اختر الصيغة المطلوبة (MP3, MP4, WebM, etc.)
-- اختر مجلد الحفظ
-- احصل على ملفك المحول بجودة عالية
+## 📖 كيفية استخدام الميزات الجديدة
 
-### 5. ⚡ خيارات تنزيل أخرى
-- تنزيل قوائم التشغيل الكاملة
-- تنزيل مقاطع من القنوات
-- تنزيل الترجمات فقط
-- تنزيل الصور المصغرة فقط
-
-### 6. 🌐 تغيير اللغة
-- اختر الخيار `5` ثم `1` للتبديل بين العربية والإنجليزية
-- التغيير فوري دون الحاجة لإعادة التشغيل
-
-## 🗑️ إلغاء التثبيت
-
-### الطريقة 1: من خلال البرنامج
-1. شغّل البرنامج واختر `5` ثم `4` للإعدادات وإلغاء التثبيت
-2. أكّد العملية عند سؤالك
-3. اختر ما إذا كنت تريد إزالة yt-dlp أو الاحتفاظ بها
-
-### الطريقة 2: سكربت مباشر
-```bash
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/uninstall)
+### 1. 🧠 **تنزيل وتحويل مباشر**
+```
+1. اختر الخيار "3" من القائمة الرئيسية
+2. أدخل رابط الفيديو أو الصوت
+3. اختر الصيغة المطلوبة (MP4, MP3, WebM, etc.)
+4. البرنامج سيتحقق تلقائياً من الصيغة الأصلية
+5. إذا كانت مطابقة → التنزيل مباشرة ✓
+6. إذا كانت مختلفة → التنزيل ثم التحويل الذكي ✓
 ```
 
-## 📦 نسخة AppImage (الطريقة التقليدية)
-
-### تنزيل وتشغيل AppImage
-1. انتقل إلى صفحة [الإصدارات](https://github.com/SalehGNUTUX/GMD/releases/tag/Gnu_Media_downloader)
-2. حمّل ملف AppImage المناسب
-3. اجعل الملف قابلاً للتنفيذ:
-```bash
-chmod +x GMD*.AppImage
+### 2. 📦 **تنزيل شامل**
 ```
-4. شغّل البرنامج:
-```bash
-./GMD*.AppImage
+1. اختر "5" ثم "5" من القوائم
+2. أدخل رابط الفيديو
+3. اختر مجلد الحفظ
+4. البرنامج سينشئ مجلداً منظماً يحتوي:
+   • الفيديو بأعلى جودة
+   • الصور المصغرة
+   • جميع الترجمات المتاحة
+   • الوصف والمعلومات (JSON)
+   • الصوت المنفصل (MP3)
 ```
 
-## 🛠️ المتطلبات
+### 3. 🚀 **التثبيت التلقائي**
+```
+1. عند أول تشغيل للبرنامج:
+   ✅ يثبت أيقونة البرنامج تلقائياً
+   ✅ يضيف الاختصار في قائمة التطبيقات
+   ✅ يخبرك بأين تجد الأيقونة
+   ✅ لا يحتاج أي تدخل منك
 
-- نظام Linux (توزيعات حديثة)
-- yt-dlp (يتم تثبيته تلقائيًا)
-- ffmpeg (يتم التحقق منه تلقائيًا)
-- zenity (للواجهات الرسومية)
-- curl أو wget (للتثبيت والتحميل)
+2. مكان الأيقونة:
+   • أدوات مساعدة (Utility)
+   • إنترنت (Network)  
+   • وسائط (AudioVideo)
+   • أو ابحث عن "GMD"
+```
 
-## 🤝 المساهمة
+### 4. 🛠️ **الإعدادات المحسنة**
+```
+⚙️  الإعدادات في v1.91:
+   1) تغيير اللغة
+   2) تحديث yt-dlp
+   3) تحديث GMD
+   4) إصلاح اختصار سطح المكتب
+   5) إلغاء التثبيت الكامل
+```
 
-نرحب بمساهماتكم! يمكنك:
-- فتح [Issue](https://github.com/SalehGNUTUX/GMD/issues) للإبلاغ عن مشاكل
-- إرسال [Pull Request](https://github.com/SalehGNUTUX/GMD/pulls) للتحسينات
-- مشاركة التغذية الراجعة والتجارب
-- دعم المشروع بـ ⭐ على GitHub
+## 🔄 الترقية من v1.9 إلى v1.91
 
-## 🌟 مشاريع غنوتوكس أخرى
+### إذا كنت تستخدم v1.9:
+```bash
+# خيار 1: التحديث مع الحفاظ على الإعدادات
+gmd --update
 
-**اكتشف المزيد من مشاريع غنوتوكس المميزة:**  
-📂 [https://salehgnutux.github.io/gnutux/](https://salehgnutux.github.io/gnutux/)
+# خيار 2: إعادة تثبيت نظيف
+gmd --clean-uninstall
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install-desktop
+```
 
-## 📄 الترخيص
+## 🐛 إصلاح المشاكل الشائعة
 
-GMD مرخص تحت رخصة GPL V2.0. راجع ملف [LICENSE](https://github.com/SalehGNUTUX/GMD/blob/main/LICENSE) للمزيد.
+| المشكلة | الحل |
+|---------|------|
+| الأيقونة لا تظهر بعد التحديث | `gmd --fix-desktop` |
+| تريد إزالة كل شيء وإعادة التثبيت | `gmd --clean-uninstall` |
+| yt-dlp لا يتحدّث | استخدم خيار تحديث yt-dlp في الإعدادات |
+| البرنامج لا يعمل من قائمة التطبيقات | `gmd --fix-desktop` ثم إعادة التشغيل |
 
-## 📞 التواصل
+## 🎯 ما يميز v1.91 عن v1.9
 
-- المستودع على GitHub: [https://github.com/SalehGNUTUX/GMD](https://github.com/SalehGNUTUX/GMD)
-- صفحة الإصدارات: [https://github.com/SalehGNUTUX/GMD/releases/tag/Gnu_Media_downloader](https://github.com/SalehGNUTUX/GMD/releases/tag/Gnu_Media_downloader)
-- موقع مشاريع غنوتوكس: [https://salehgnutux.github.io/gnutux/](https://salehgnutux.github.io/gnutux/)
+| الميزة | v1.9 | v1.91 |
+|--------|------|-------|
+| تنزيل وتحويل مباشر | ❌ غير متوفر | ✅ جديد |
+| تنزيل شامل | ❌ غير متوفر | ✅ جديد |
+| تثبيت أيقونة تلقائي | ⚠ يدوي | ✅ تلقائي |
+| إصلاح اختصار سطح المكتب | ❌ غير متوفر | ✅ جديد |
+| إلغاء تثبيت كامل | ⚠ جزئي | ✅ كامل |
+| تجنب التحويل غير الضروري | ❌ لا | ✅ ذكي |
+
+## 📁 هيكل الملفات الجديد
+
+```
+~/.local/bin/gmd          # الملف التنفيذي
+~/.local/share/applications/gmd.desktop  # اختصار سطح المكتب
+~/.local/share/icons/hicolor/*/apps/gmd-icon.png  # الأيقونة
+~/.config/gmd_desktop_installed         # علامة التثبيت
+~/.config/gmd_last_update               # علامة التحديث
+```
+
+## 🌟 لماذا v1.91 أفضل؟
+
+1. **أكثر ذكاءً** - يتجنب العمليات غير الضرورية
+2. **أكثر اكتمالاً** - كل المرفقات في مكان واحد
+3. **أكثر تلقائية** - يهتم بكل التفاصيل لك
+4. **أكثر استقراراً** - إصلاحات للمشاكل السابقة
+5. **أكثر تنظيماً** - واجهات محسنة وتدفق عمل أفضل
 
 ---
 
-## 🎉 ابدأ الآن!
+## 🎉 جربه الآن!
 
 ```bash
-# جرب الإصدار الجديد الآن!
-bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd")
+# تثبيت وتجربة v1.91 الجديدة
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install-desktop
+
+# أو إذا كنت تريد التجربة أولاً
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh)
 ```
 
-**GMD v1.9 - تجربة مستخدم استثنائية مع تدفق عمل محسن!** 🚀
+**GMD v1.91 - الذكاء والتلقائية في تحميل وتحويل الوسائط!** 🚀
 
 ---
-# GMD - GNU Media Downloader
+
+## 📞 معلومات التواصل
+
+- **المستودع**: [github.com/SalehGNUTUX/GMD](https://github.com/SalehGNUTUX/GMD)
+- **الإصدارات**: [Releases Page](https://github.com/SalehGNUTUX/GMD/releases)
+- **موقع غنوتوكس**: [salehgnutux.github.io/gnutux/](https://salehgnutux.github.io/gnutux/)
+- **ملف README**: [README.md](https://github.com/SalehGNUTUX/GMD/blob/main/README.md)
+
+**الإصدار 1.91 - تحسينات ذكية وتجربة مستخدم محسنة!** ✨
+
+---
+
+# GMD - GNU Media Downloader v1.91
+
+## 🆕 Version 1.91 - Smarter and More Automatic!
 
 ```
    ____   __  __   ____  
@@ -222,201 +244,218 @@ bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20AP
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.9 «
+         » v1.91 «
 ```
 
-**GMD** is a free and open-source program for downloading and converting media from the internet with ease and flexibility, featuring Arabic and English interfaces, and working via command line or lightweight graphical interface.
+**GMD v1.91** comes with new smart features and enhanced user experience with full automatic installation!
 
-<img width="256" height="256" alt="GMD Icon" src="https://github.com/SalehGNUTUX/GMD/blob/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/share/icons/hicolor/256x256/apps/gmd-icon.png?raw=true" />
+<img width="256" height="256" alt="GMD Icon" src="https://github.com/SalehGNUTUX/GMD/blob/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png?raw=true" />
 
-## 🎨 Key Features
+## ✨ New Features in v1.91
 
-### 📥 Advanced Downloading
-- Download videos and audio from +1000 sites (YouTube, SoundCloud, Vimeo, and more)
-- Choose video quality, audio quality, and format before downloading
-- Support for complete playlists and channel downloads
-- Save files with clear names including title and video ID
+### 🧠 **Smart Direct Download & Convert**
+- **Automatic analysis** of original file format
+- **Avoid unnecessary conversion** - if format matches
+- **Smart and fast** - saves time and resources
+- **Support all formats** audio and video
 
-### 🔄 Smart Conversion
-- Convert media files between different formats (mp3, mp4, ogg, mkv, webm, wav, flac...)
-- Support for modern encoding for size compression (HEVC/x265, Opus, VP9...)
-- Optimize file sizes while maintaining quality
+### 📦 **Complete Package Download**
+- **Highest quality video** + **thumbnails** + **all subtitles**
+- **Description & info** + **separate audio** (MP3)
+- **Automatic organization** in one complete folder
+- **All video attachments** in one place
 
-### 🎯 Enhanced User Interface
-- **Interactive interface** with clear emoji icons
-- **Organized box-style menus** with beautiful design
-- Full support for **Arabic and English** languages
-- Logical sequential workflow
+### 🚀 **Automatic Icon Installation**
+- **Desktop shortcut** installs automatically on first run
+- **No user permission required** - just notification messages
+- **Icon in application menu** automatically
+- **Automatic update** while preserving shortcut
 
-### ⚡ Comprehensive Performance
-- Automatic installation and desktop shortcut
-- Automatic dependency management and self-updating
-- Smart detection of pre-installed tools
-- Improved error handling
+### 🛠️ **Important Fixes & Additions**
+- **Complete uninstall** - removes all files and icons
+- **Fix desktop shortcut** - new option in settings
+- **Improved update stability** - doesn't affect icon
+- **Enhanced error handling** - smoother experience
 
-## 🚀 Instant Installation
+## 📋 New Main Menu v1.91
 
-### Method 1: Direct Run (Without Installation)
-```bash
-bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd")
-```
-
-### Method 2: Permanent Installation
-```bash
-curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" | bash -s -- --install
-```
-
-Or using wget:
-```bash
-wget -O - https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd | bash -s -- --install
-```
-
-### After Installation:
-```bash
-gmd
-```
-
-### For Updates:
-```bash
-gmd --update
-```
-
-## 🆕 What's New in v1.9?
-
-### ✨ Completely Enhanced User Interface
-- **New design** with organized box-style menus
-- **Perfect alignment** for Arabic and English texts
-- **Expressive icons** for each option with consistent layout
-
-### 🎯 New Main Menu
 ```
 ┌─────────────────────────────────────┐
-│          GMD - v1.9                 │
+│          GMD - v1.91                │
 │    GNU MEDIA DOWNLOADER             │
 ├─────────────────────────────────────┤
 │  ⬇️  1) Download Video         │
 │  🎵  2) Download Audio           │
-│  🔄  3) Convert Media          │
-│  ⚡  4) Extra Download Options   │
-│  ⚙️  5) Settings              │
-│  📁  6) Install Desktop Shortcut│
+│  🧠  3) Download & Convert Direct│
+│  🔄  4) Convert Media          │
+│  ⚡  5) Extra Download Options   │
+│  ⚙️  6) Settings              │
 │  🚪  0) Exit                     │
 └─────────────────────────────────────┘
 ```
 
-### 🔄 Improved Workflow
-- **Logical sequential process** for each task
-- **Reduced number of steps** for basic operations
-- **Enhanced graphical interfaces** with zenity
-- **Advanced options** organized in sub-menus
+## 🆕 Enhanced Extra Download Options
 
-### 🌍 New Features
-- **Advanced download options**: playlists, channels, subtitles, thumbnails
-- **Comprehensive settings**: updates, language, uninstallation
-- **Extended support** for formats and quality
+```
+┌─────────────────────────────────────┐
+│      ⚡ Extra Download Options      │
+├─────────────────────────────────────┤
+│  1) Download complete playlist      │
+│  2) Download from channel           │
+│  3) Download subtitles only         │
+│  4) Download thumbnails only        │
+│  5) Complete package download       │
+│  🔙  6) Back                        │
+└─────────────────────────────────────┘
+```
 
-## 📖 How to Use
+## 🚀 Instant Installation
 
-### 1. 🎬 Run the Program
+### Preferred Method: Full installation with icon
+```bash
+bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh") --install-desktop
+```
+
+### Or shorter:
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install
+```
+
+### Then run:
 ```bash
 gmd
 ```
 
-### 2. ⬇️ Download Videos
-- Select option `1` from main menu
-- Enter video URL (automatically via GUI if available)
-- Choose suitable quality (high, medium, low)
-- Choose save folder
-- Let the program do the rest!
+## 🛠️ New Commands in v1.91
 
-### 3. 🎵 Download Audio
-- Select option `2` from main menu
-- Enter audio URL
-- Choose audio format (mp3, m4a, ogg, etc.)
-- Choose save folder
-- Get your audio file
+| Command | Description |
+|---------|-------------|
+| `gmd --install-desktop` | Install with desktop icon |
+| `gmd --clean-uninstall` | Complete uninstall (removes everything) |
+| `gmd --fix-desktop` | Fix desktop shortcut |
+| `gmd --update` | Update program |
 
-### 4. 🔄 Convert Media
-- Select option `3` from main menu
-- Choose file to convert (automatically via GUI)
-- Select desired format (MP3, MP4, WebM, etc.)
-- Choose save folder
-- Get your converted file with high quality
+## 📖 How to Use New Features
 
-### 5. ⚡ Extra Download Options
-- Download complete playlists
-- Download videos from channels
-- Download subtitles only
-- Download thumbnails only
-
-### 6. 🌐 Change Language
-- Select option `5` then `1` to switch between Arabic and English
-- Change is instant without needing to restart
-
-## 🗑️ Uninstallation
-
-### Method 1: Through the Program
-1. Run the program and select `5` then `4` for settings and uninstall
-2. Confirm the operation when prompted
-3. Choose whether to remove yt-dlp or keep it
-
-### Method 2: Direct Script
-```bash
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/uninstall)
+### 1. 🧠 **Smart Download & Convert**
+```
+1. Select option "3" from main menu
+2. Enter video or audio URL
+3. Choose desired format (MP4, MP3, WebM, etc.)
+4. Program automatically checks original format
+5. If matches → Direct download ✓
+6. If different → Download then smart conversion ✓
 ```
 
-## 📦 AppImage Version (Traditional Method)
-
-### Download and Run AppImage
-1. Go to [Releases page](https://github.com/SalehGNUTUX/GMD/releases/tag/Gnu_Media_downloader)
-2. Download suitable AppImage file
-3. Make the file executable:
-```bash
-chmod +x GMD*.AppImage
+### 2. 📦 **Complete Package Download**
 ```
-4. Run the program:
-```bash
-./GMD*.AppImage
+1. Select "5" then "5" from menus
+2. Enter video URL
+3. Choose save folder
+4. Program creates organized folder containing:
+   • Video in highest quality
+   • Thumbnails
+   • All available subtitles
+   • Description & info (JSON)
+   • Separate audio (MP3)
 ```
 
-## 🛠️ Requirements
+### 3. 🚀 **Automatic Installation**
+```
+1. On first program run:
+   ✅ Installs program icon automatically
+   ✅ Adds shortcut to application menu
+   ✅ Tells you where to find the icon
+   ✅ Needs no input from you
 
-- Linux system (modern distributions)
-- yt-dlp (installed automatically)
-- ffmpeg (checked automatically)
-- zenity (for graphical interfaces)
-- curl or wget (for installation and download)
+2. Icon location:
+   • Utility
+   • Network
+   • AudioVideo
+   • Or search for "GMD"
+```
 
-## 🤝 Contributing
+### 4. 🛠️ **Enhanced Settings**
+```
+⚙️  Settings in v1.91:
+   1) Change language
+   2) Update yt-dlp
+   3) Update GMD
+   4) Fix desktop shortcut
+   5) Complete uninstall
+```
 
-We welcome your contributions! You can:
-- Open an [Issue](https://github.com/SalehGNUTUX/GMD/issues) to report problems
-- Submit a [Pull Request](https://github.com/SalehGNUTUX/GMD/pulls) for improvements
-- Share feedback and experiences
-- Support the project with ⭐ on GitHub
+## 🔄 Upgrade from v1.9 to v1.91
 
-## 🌟 Other Gnutux Projects
+### If you're using v1.9:
+```bash
+# Option 1: Update while keeping settings
+gmd --update
 
-**Discover more amazing Gnutux projects:**  
-📂 [https://salehgnutux.github.io/gnutux/](https://salehgnutux.github.io/gnutux/)
+# Option 2: Clean reinstall
+gmd --clean-uninstall
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install-desktop
+```
 
-## 📄 License
+## 🐛 Fix Common Problems
 
-GMD is licensed under GPL V2.0 license. See [LICENSE](https://github.com/SalehGNUTUX/GMD/blob/main/LICENSE) file for more.
+| Problem | Solution |
+|---------|----------|
+| Icon doesn't appear after update | `gmd --fix-desktop` |
+| Want to remove everything and reinstall | `gmd --clean-uninstall` |
+| yt-dlp won't update | Use yt-dlp update option in settings |
+| Program doesn't work from application menu | `gmd --fix-desktop` then restart |
 
-## 📞 Contact
+## 🎯 What Makes v1.91 Better Than v1.9
 
-- GitHub Repository: [https://github.com/SalehGNUTUX/GMD](https://github.com/SalehGNUTUX/GMD)
-- Releases Page: [https://github.com/SalehGNUTUX/GMD/releases/tag/Gnu_Media_downloader](https://github.com/SalehGNUTUX/GMD/releases/tag/Gnu_Media_downloader)
-- Gnutux Projects Site: [https://salehgnutux.github.io/gnutux/](https://salehgnutux.github.io/gnutux/)
+| Feature | v1.9 | v1.91 |
+|---------|------|-------|
+| Smart download & convert | ❌ Not available | ✅ New |
+| Complete package download | ❌ Not available | ✅ New |
+| Automatic icon installation | ⚠ Manual | ✅ Automatic |
+| Fix desktop shortcut | ❌ Not available | ✅ New |
+| Complete uninstall | ⚠ Partial | ✅ Complete |
+| Avoid unnecessary conversion | ❌ No | ✅ Smart |
+
+## 📁 New File Structure
+
+```
+~/.local/bin/gmd          # Executable file
+~/.local/share/applications/gmd.desktop  # Desktop shortcut
+~/.local/share/icons/hicolor/*/apps/gmd-icon.png  # Icon
+~/.config/gmd_desktop_installed         # Installation marker
+~/.config/gmd_last_update               # Update marker
+```
+
+## 🌟 Why v1.91 is Better?
+
+1. **Smarter** - avoids unnecessary operations
+2. **More complete** - all attachments in one place
+3. **More automatic** - takes care of details for you
+4. **More stable** - fixes previous issues
+5. **More organized** - improved interfaces and workflow
 
 ---
 
-## 🎉 Get Started Now!
+## 🎉 Try It Now!
 
 ```bash
-# Try the new version now!
-bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd")
+# Install and try new v1.91
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install-desktop
+
+# Or if you want to try first
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh)
 ```
 
-**GMD v1.9 - Exceptional user experience with improved workflow!** 🚀
+**GMD v1.91 - Intelligence and automation in media downloading and conversion!** 🚀
+
+---
+
+## 📞 Contact Information
+
+- **Repository**: [github.com/SalehGNUTUX/GMD](https://github.com/SalehGNUTUX/GMD)
+- **Releases**: [Releases Page](https://github.com/SalehGNUTUX/GMD/releases)
+- **Gnutux Site**: [salehgnutux.github.io/gnutux/](https://salehgnutux.github.io/gnutux/)
+- **README File**: [README.md](https://github.com/SalehGNUTUX/GMD/blob/main/README.md)
+
+**Version 1.91 - Smart improvements and enhanced user experience!** ✨
