@@ -66,18 +66,34 @@ toggle_lang() {
 if [[ "${1:-}" == "--install" ]]; then
     echo "⬇️ جاري تثبيت GMD..."
     mkdir -p ~/.local/bin
-    curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
-    chmod +x ~/.local/bin/gmd
-    echo "✅ تم تثبيت GMD بنجاح في ~/.local/bin/gmd"
-    echo "🎯 يمكنك الآن استخدام الأمر: gmd"
+    # نسخ الملف الحالي بدلاً من تنزيله من الإنترنت
+    if [[ -f "$0" ]]; then
+        cp "$0" ~/.local/bin/gmd
+        chmod +x ~/.local/bin/gmd
+        echo "✅ تم تثبيت GMD بنجاح في ~/.local/bin/gmd"
+        echo "🎯 يمكنك الآن استخدام الأمر: gmd"
+    else
+        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
+        chmod +x ~/.local/bin/gmd
+        echo "✅ تم تثبيت GMD بنجاح في ~/.local/bin/gmd"
+        echo "🎯 يمكنك الآن استخدام الأمر: gmd"
+    fi
     exit 0
 fi
 
 if [[ "${1:-}" == "--install-desktop" ]]; then
     echo "⬇️ جاري تثبيت GMD مع اختصار سطح المكتب..."
     mkdir -p ~/.local/bin
-    curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
-    chmod +x ~/.local/bin/gmd
+    # نسخ الملف الحالي
+    if [[ -f "$0" ]]; then
+        cp "$0" ~/.local/bin/gmd
+        chmod +x ~/.local/bin/gmd
+    else
+        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
+        chmod +x ~/.local/bin/gmd
+    fi
+    
+    # تثبيت اختصار سطح المكتب
     install_desktop_shortcut_auto
     echo "✅ تم تثبيت GMD بنجاح!"
     echo "🎯 يمكنك الآن استخدام الأمر: gmd"
@@ -86,10 +102,32 @@ fi
 
 if [[ "${1:-}" == "--update" ]]; then
     echo "⬇️ جاري تحديث GMD..."
-    curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd.tmp
-    chmod +x ~/.local/bin/gmd.tmp
-    mv ~/.local/bin/gmd.tmp ~/.local/bin/gmd
-    echo "✅ تم تحديث GMD بنجاح!"
+    # تحديث البرنامج فقط، مع الحفاظ على اختصار سطح المكتب
+    if [[ -f "$0" ]]; then
+        cp "$0" ~/.local/bin/gmd.tmp
+        chmod +x ~/.local/bin/gmd.tmp
+        mv ~/.local/bin/gmd.tmp ~/.local/bin/gmd
+        echo "✅ تم تحديث GMD بنجاح!"
+        echo "📁 تم الحفاظ على اختصار سطح المكتب"
+    else
+        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd.tmp
+        chmod +x ~/.local/bin/gmd.tmp
+        mv ~/.local/bin/gmd.tmp ~/.local/bin/gmd
+        echo "✅ تم تحديث GMD بنجاح!"
+        echo "📁 تم الحفاظ على اختصار سطح المكتب"
+    fi
+    exit 0
+fi
+
+if [[ "${1:-}" == "--clean-uninstall" ]]; then
+    echo "🗑️  جاري إلغاء تثبيت GMD تماماً..."
+    uninstall_gmd_complete
+    exit 0
+fi
+
+if [[ "${1:-}" == "--fix-desktop" ]]; then
+    echo "🔧 جاري إصلاح اختصار سطح المكتب..."
+    install_desktop_shortcut_auto
     exit 0
 fi
 
@@ -133,55 +171,154 @@ ICON_COMPLETE="📦"
 # ----------------------------
 install_desktop_shortcut_auto() {
     DESKTOP_DIR="$HOME/.local/share/applications"
-    ICON_DIR="$HOME/.local/share/icons"
+    ICON_DIR="$HOME/.local/share/icons/hicolor/48x48/apps"
     mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
     
     # تحميل الأيقونة
     echo "$ICON_INFO جاري تثبيت أيقونة البرنامج..."
     if command -v curl &>/dev/null; then
-        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" -o "$ICON_DIR/gmd-icon.png" 2>/dev/null || {
+        if curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" -o "$ICON_DIR/gmd-icon.png" 2>/dev/null; then
+            ICON_PATH="$ICON_DIR/gmd-icon.png"
+            echo "$ICON_SUCCESS تم تنزيل الأيقونة بنجاح"
+        else
             echo "$ICON_INFO استخدام أيقونة افتراضية..."
-            ICON_PATH="system-search"
-        }
-        ICON_PATH="$ICON_DIR/gmd-icon.png"
+            ICON_PATH="utilities-terminal"
+        fi
     else
-        ICON_PATH="system-search"
+        ICON_PATH="utilities-terminal"
     fi
     
-    # إنشاء ملف .desktop
+    # إنشاء ملف .desktop صحيح
     cat > "$DESKTOP_DIR/gmd.desktop" <<EOF
 [Desktop Entry]
+Version=1.0
 Name=GMD - GNU Media Downloader
-Comment=Download and convert media
+GenericName=Media Downloader
+Comment=Download and convert media from the internet
 Exec=$HOME/.local/bin/gmd
 Icon=$ICON_PATH
 Terminal=true
 Type=Application
-Categories=Utility;Network;AudioVideo;Audio;Video;
+Categories=Utility;Network;AudioVideo;
+Keywords=download;video;audio;youtube;converter;
+StartupNotify=false
 EOF
     
     chmod +x "$DESKTOP_DIR/gmd.desktop"
     
+    # تحديث قاعدة بيانات سطح المكتب
     if command -v update-desktop-database &>/dev/null; then
-        update-desktop-database ~/.local/share/applications 2>/dev/null
+        update-desktop-database "$DESKTOP_DIR" 2>/dev/null
+        echo "$ICON_SUCCESS تم تحديث قاعدة بيانات سطح المكتب"
     fi
     
     # وضع علامة أن الأيقونة مثبتة
     mkdir -p "$(dirname "$DESKTOP_MARKER")"
-    echo "installed" > "$DESKTOP_MARKER"
+    echo "$(date)" > "$DESKTOP_MARKER"
     
     echo "$ICON_SUCCESS تم تثبيت أيقونة البرنامج تلقائياً!"
     echo "$ICON_INFO يمكنك العثور على البرنامج في:"
-    echo "   📁 أدوات مساعدة (Utility)"
-    echo "   📁 إنترنت (Network)"
-    echo "   📁 وسائط (AudioVideo)"
+    echo "   📁 قائمة التطبيقات → أدوات مساعدة"
+    echo "   📁 أو ابحث عن 'GMD' في قائمة التطبيقات"
+    echo ""
 }
 
 # التحقق من وجود الاختصار وتثبيته إذا لم يكن موجوداً
 check_and_install_desktop_shortcut() {
     if [[ ! -f "$DESKTOP_MARKER" ]] || [[ ! -f "$HOME/.local/share/applications/gmd.desktop" ]]; then
+        echo ""
+        echo "$ICON_INFO جاري تثبيت أيقونة البرنامج في قائمة التطبيقات..."
         install_desktop_shortcut_auto
         echo ""
+    fi
+}
+
+# ----------------------------
+# إلغاء التثبيت الكامل
+# ----------------------------
+uninstall_gmd_complete() {
+    echo "🗑️  بدء عملية إلغاء التثبيت الكامل..."
+    
+    if [[ "$L" == "ar" ]]; then
+        read -p "هل أنت متأكد من إلغاء تثبيت GMD بالكامل؟ [y/N]: " confirm
+    else
+        read -p "Are you sure you want to completely uninstall GMD? [y/N]: " confirm
+    fi
+
+    if [[ ! "${confirm:-}" =~ ^[Yy]$ ]]; then
+        if [[ "$L" == "ar" ]]; then
+            echo "$ICON_INFO تم إلغاء العملية."
+        else
+            echo "$ICON_INFO Operation cancelled."
+        fi
+        return
+    fi
+
+    # إزالة yt-dlp
+    if [[ -f "$YTDLP" ]]; then
+        rm -f "$YTDLP"
+        echo "$ICON_SUCCESS تمت إزالة yt-dlp"
+    fi
+
+    # إزالة الملف التنفيذي
+    if [[ -f "$SELF_PATH" ]]; then
+        rm -f "$SELF_PATH"
+        echo "$ICON_SUCCESS تمت إزالة الملف التنفيذي"
+    fi
+
+    # إزالة اختصار سطح المكتب
+    if [[ -f "$HOME/.local/share/applications/gmd.desktop" ]]; then
+        rm -f "$HOME/.local/share/applications/gmd.desktop"
+        echo "$ICON_SUCCESS تمت إزالة اختصار سطح المكتب"
+    fi
+
+    # إزالة الأيقونات من جميع الأحجام
+    local icon_sizes=("16x16" "24x24" "32x32" "48x48" "64x64" "128x128" "256x256" "512x512")
+    for size in "${icon_sizes[@]}"; do
+        local icon_path="$HOME/.local/share/icons/hicolor/$size/apps/gmd-icon.png"
+        if [[ -f "$icon_path" ]]; then
+            rm -f "$icon_path"
+        fi
+    done
+    
+    # إزالة الأيقونة من المجلد العام
+    if [[ -f "$HOME/.local/share/icons/gmd-icon.png" ]]; then
+        rm -f "$HOME/.local/share/icons/gmd-icon.png"
+    fi
+    
+    echo "$ICON_SUCCESS تمت إزالة جميع الأيقونات"
+
+    # إزالة الملفات الإضافية
+    if [[ -f "$DESKTOP_MARKER" ]]; then
+        rm -f "$DESKTOP_MARKER"
+    fi
+    
+    if [[ -f "$UPDATE_MARKER" ]]; then
+        rm -f "$UPDATE_MARKER"
+    fi
+    
+    if [[ -d "$HOME/.config/gmd" ]]; then
+        rm -rf "$HOME/.config/gmd"
+        echo "$ICON_SUCCESS تمت إزالة مجلد الإعدادات"
+    fi
+    
+    if [[ -d "$HOME/.GMD" ]]; then
+        rm -rf "$HOME/.GMD"
+        echo "$ICON_SUCCESS تمت إزالة مجلد البيانات"
+    fi
+
+    # تحديث قاعدة بيانات سطح المكتب
+    if command -v update-desktop-database &>/dev/null; then
+        update-desktop-database ~/.local/share/applications 2>/dev/null
+        echo "$ICON_SUCCESS تم تحديث قاعدة بيانات سطح المكتب"
+    fi
+
+    if [[ "$L" == "ar" ]]; then
+        echo "$ICON_SUCCESS تم إلغاء تثبيت GMD بالكامل بنجاح!"
+        echo "♻️  يمكنك الآن إعادة التثبيت النظيف"
+    else
+        echo "$ICON_SUCCESS GMD completely uninstalled!"
+        echo "♻️  You can now perform a clean install"
     fi
 }
 
@@ -294,6 +431,7 @@ self_update() {
         mv "$TMP_FILE" "$SELF_PATH"
         echo "$now" > "$UPDATE_MARKER"
         echo "$ICON_SUCCESS تم تحديث GMD بنجاح!"
+        echo "$ICON_INFO تم الحفاظ على اختصار سطح المكتب"
         exec "$SELF_PATH" "$@"
       else
         rm -f "$TMP_FILE"
@@ -794,10 +932,11 @@ settings_menu() {
       echo "│  1) تغيير اللغة                     │"
       echo "│  2) تحديث yt-dlp                    │"
       echo "│  3) تحديث GMD                       │"
-      echo "│  4) إلغاء التثبيت                   │"
-      echo "│  $ICON_BACK 5) رجوع                 │"
+      echo "│  4) إصلاح اختصار سطح المكتب        │"
+      echo "│  5) إلغاء التثبيت الكامل            │"
+      echo "│  $ICON_BACK 6) رجوع                 │"
       echo "└─────────────────────────────────────┘"
-      read -p "اختر خيارًا [1-5]: " settings_opt
+      read -p "اختر خيارًا [1-6]: " settings_opt
     else
       echo ""
       echo "┌─────────────────────────────────────┐"
@@ -806,10 +945,11 @@ settings_menu() {
       echo "│  1) Change language                 │"
       echo "│  2) Update yt-dlp                   │"
       echo "│  3) Update GMD                      │"
-      echo "│  4) Uninstall                       │"
-      echo "│  $ICON_BACK 5) Back                 │"
+      echo "│  4) Fix desktop shortcut            │"
+      echo "│  5) Complete uninstall              │"
+      echo "│  $ICON_BACK 6) Back                 │"
       echo "└─────────────────────────────────────┘"
-      read -p "Choose an option [1-5]: " settings_opt
+      read -p "Choose an option [1-6]: " settings_opt
     fi
 
     case $settings_opt in
@@ -817,77 +957,25 @@ settings_menu() {
       2) update_yt_dlp;;
       3) 
         echo "$ICON_DOWNLOAD جاري تحديث GMD..."
-        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
-        chmod +x ~/.local/bin/gmd
+        if [[ -f "$0" ]]; then
+            cp "$0" ~/.local/bin/gmd
+            chmod +x ~/.local/bin/gmd
+        else
+            curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
+            chmod +x ~/.local/bin/gmd
+        fi
         echo "$ICON_SUCCESS تم تحديث GMD بنجاح!"
+        echo "$ICON_INFO تم الحفاظ على اختصار سطح المكتب"
         ;;
-      4) uninstall_gmd;;
-      5) return 0;;
+      4) 
+        echo "🔧 جاري إصلاح اختصار سطح المكتب..."
+        install_desktop_shortcut_auto
+        ;;
+      5) uninstall_gmd_complete;;
+      6) return 0;;
       *) echo "$ICON_ERROR خيار غير صالح.";;
     esac
   done
-}
-
-uninstall_gmd() {
-  echo "$ICON_UNINSTALL بدء عملية إلغاء التثبيت..."
-
-  if [[ "$L" == "ar" ]]; then
-    read -p "هل أنت متأكد من إلغاء تثبيت GMD؟ [y/N]: " confirm
-  else
-    read -p "Are you sure you want to uninstall GMD? [y/N]: " confirm
-  fi
-
-  if [[ ! "${confirm:-}" =~ ^[Yy]$ ]]; then
-    echo "$ICON_INFO تم إلغاء العملية."
-    return
-  fi
-
-  if [[ -f "$YTDLP" ]]; then
-    if [[ "$L" == "ar" ]]; then
-      read -p "هل تريد أيضًا إزالة yt-dlp؟ [y/N]: " remove_ytdlp
-    else
-      read -p "Do you want to remove yt-dlp too? [y/N]: " remove_ytdlp
-    fi
-
-    if [[ "${remove_ytdlp:-}" =~ ^[Yy]$ ]]; then
-      rm -f "$YTDLP"
-      echo "$ICON_SUCCESS تمت إزالة yt-dlp"
-    else
-      echo "$ICON_INFO تم الاحتفاظ بـ yt-dlp"
-    fi
-  fi
-
-  if [[ -f "$SELF_PATH" ]]; then
-    rm -f "$SELF_PATH"
-    echo "$ICON_SUCCESS تمت إزالة الملف التنفيذي"
-  fi
-
-  if [[ -f "$HOME/.local/share/applications/gmd.desktop" ]]; then
-    rm -f "$HOME/.local/share/applications/gmd.desktop"
-    echo "$ICON_SUCCESS تمت إزالة اختصار سطح المكتب"
-  fi
-
-  if [[ -f "$HOME/.local/share/icons/gmd-icon.png" ]]; then
-    rm -f "$HOME/.local/share/icons/gmd-icon.png"
-    echo "$ICON_SUCCESS تمت إزالة الأيقونة"
-  fi
-
-  if [[ -d "$HOME/.GMD" ]]; then
-    rm -rf "$HOME/.GMD"
-    echo "$ICON_SUCCESS تمت إزالة مجلد الإعدادات"
-  fi
-
-  if [[ -f "$DESKTOP_MARKER" ]]; then
-    rm -f "$DESKTOP_MARKER"
-    echo "$ICON_SUCCESS تمت إزالة علامة التثبيت"
-  fi
-
-  if command -v update-desktop-database &>/dev/null; then
-    update-desktop-database ~/.local/share/applications 2>/dev/null
-  fi
-
-  echo "$ICON_SUCCESS تم إلغاء تثبيت GMD بنجاح!"
-  exit 0
 }
 
 # ----------------------------
