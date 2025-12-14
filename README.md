@@ -156,12 +156,15 @@ gmd
 ## 🔄 الترقية من v1.9 إلى v1.91
 
 ### إذا كنت تستخدم v1.9:
-```bash
-# خيار 1: التحديث مع الحفاظ على الإعدادات
-gmd --update
 
+# خيار 1: التحديث مع الحفاظ على الإعدادات
+```bash
+gmd --update
+```
 # خيار 2: إعادة تثبيت نظيف
 gmd --clean-uninstall
+
+```bash
 bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install-desktop
 ```
 
@@ -207,11 +210,12 @@ bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --in
 
 ## 🎉 جربه الآن!
 
-```bash
 # تثبيت وتجربة v1.91 الجديدة
+```bash
 bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install-desktop
-
+```
 # أو إذا كنت تريد التجربة أولاً
+```bash
 bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)
 ```
 
@@ -388,12 +392,17 @@ gmd
 ## 🔄 Upgrade from v1.9 to v1.91
 
 ### If you're using v1.9:
-```bash
+
 # Option 1: Update while keeping settings
+```bash
 gmd --update
+```
 
 # Option 2: Clean reinstall
+```bash
 gmd --clean-uninstall
+```
+```bash
 bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install-desktop
 ```
 
@@ -439,11 +448,13 @@ bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --in
 
 ## 🎉 Try It Now!
 
-```bash
 # Install and try new v1.91
+```bash
 bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install-desktop
+```
 
 # Or if you want to try first
+```bash
 bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)
 ```
 
