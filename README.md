@@ -81,12 +81,12 @@
 
 ### الطريقة المفضلة: تثبيت كامل مع أيقونة
 ```bash
-bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh") --install-desktop
+bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd") --install-desktop
 ```
 
 ### أو باختصار:
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install
 ```
 
 ### ثم تشغيل:
@@ -162,7 +162,7 @@ gmd --update
 
 # خيار 2: إعادة تثبيت نظيف
 gmd --clean-uninstall
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install-desktop
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install-desktop
 ```
 
 ## 🐛 إصلاح المشاكل الشائعة
@@ -209,10 +209,10 @@ bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) -
 
 ```bash
 # تثبيت وتجربة v1.91 الجديدة
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install-desktop
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install-desktop
 
 # أو إذا كنت تريد التجربة أولاً
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)
 ```
 
 **GMD v1.91 - الذكاء والتلقائية في تحميل وتحويل الوسائط!** 🚀
@@ -313,12 +313,12 @@ bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh)
 
 ### Preferred Method: Full installation with icon
 ```bash
-bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh") --install-desktop
+bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd") --install-desktop
 ```
 
 ### Or shorter:
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install
 ```
 
 ### Then run:
@@ -394,7 +394,7 @@ gmd --update
 
 # Option 2: Clean reinstall
 gmd --clean-uninstall
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install-desktop
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install-desktop
 ```
 
 ## 🐛 Fix Common Problems
@@ -441,10 +441,10 @@ bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) -
 
 ```bash
 # Install and try new v1.91
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh) --install-desktop
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd) --install-desktop
 
 # Or if you want to try first
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd.sh)
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)
 ```
 
 **GMD v1.91 - Intelligence and automation in media downloading and conversion!** 🚀
