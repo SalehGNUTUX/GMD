@@ -19,6 +19,12 @@
 
 <img width="256" height="256" alt="GMD Icon" src="https://github.com/SalehGNUTUX/GMD/blob/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png?raw=true" />
 
+
+# جرب GMD دون تثبيت مباشرة من المصدر.
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)
+```
+
 ## ✨ مميزات الإصدار الجديد 1.91
 
 ### 🧠 **تنزيل وتحويل مباشر ذكي**
