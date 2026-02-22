@@ -574,7 +574,8 @@ choose_video_quality() {
       echo "│  2) متوسطة (720p)                   │"
       echo "│  3) منخفضة (480p)                   │"
       echo "│  4) أفضل جودة متاحة                 │"
-      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ إلغاء والعودة للقائمة │"
       echo "└─────────────────────────────────────┘"
     else
       echo ""
@@ -585,7 +586,8 @@ choose_video_quality() {
       echo "│  2) Medium (720p)                   │"
       echo "│  3) Low (480p)                      │"
       echo "│  4) Best available                  │"
-      echo "│  $ICON_BACK 0) Back                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ Cancel & Back to Menu  │"
       echo "└─────────────────────────────────────┘"
     fi
     read -p "➤ " quality
@@ -613,7 +615,8 @@ choose_audio_format() {
       echo "│  4) opus (كفاءة عالية)              │"
       echo "│  5) flac (بدون خسارة)               │"
       echo "│  6) wav (جودة أصلية)                │"
-      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ إلغاء والعودة للقائمة │"
       echo "└─────────────────────────────────────┘"
     else
       echo ""
@@ -626,7 +629,8 @@ choose_audio_format() {
       echo "│  4) opus (High efficiency)          │"
       echo "│  5) flac (Lossless)                 │"
       echo "│  6) wav (Original quality)          │"
-      echo "│  $ICON_BACK 0) Back                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ Cancel & Back to Menu  │"
       echo "└─────────────────────────────────────┘"
     fi
     read -p "➤ " audio_format
@@ -657,7 +661,8 @@ choose_conversion_format() {
       echo "│  5) webm (فيديو)                    │"
       echo "│  6) wav                             │"
       echo "│  7) flac                            │"
-      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ إلغاء والعودة للقائمة │"
       echo "└─────────────────────────────────────┘"
     else
       echo ""
@@ -671,7 +676,8 @@ choose_conversion_format() {
       echo "│  5) webm (video)                    │"
       echo "│  6) wav                             │"
       echo "│  7) flac                            │"
-      echo "│  $ICON_BACK 0) Back                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ Cancel & Back to Menu  │"
       echo "└─────────────────────────────────────┘"
     fi
     read -p "➤ " conv_format
@@ -725,7 +731,8 @@ clip_media() {
       echo "├─────────────────────────────────────┤"
       echo "│  1) قص مقطع من رابط مباشرة         │"
       echo "│  2) قص ملف موجود على الجهاز        │"
-      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ إلغاء والعودة للقائمة │"
       echo "└─────────────────────────────────────┘"
       read -p "اختر خيارًا: " clip_opt
     else
@@ -735,7 +742,8 @@ clip_media() {
       echo "├─────────────────────────────────────┤"
       echo "│  1) Trim from URL directly          │"
       echo "│  2) Trim an existing local file     │"
-      echo "│  $ICON_BACK 0) Back                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ Cancel & Back to Menu  │"
       echo "└─────────────────────────────────────┘"
       read -p "Choose an option: " clip_opt
     fi
@@ -1010,7 +1018,8 @@ extra_download_options() {
       echo "│  3) تنزيل الترجمات فقط             │"
       echo "│  4) تنزيل الصور المصغرة فقط        │"
       echo "│  5) تنزيل شامل (كل المرفقات)       │"
-      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ إلغاء والعودة للقائمة │"
       echo "└─────────────────────────────────────┘"
       read -p "اختر خيارًا [0-5]: " extra_opt
     else
@@ -1023,7 +1032,8 @@ extra_download_options() {
       echo "│  3) Download subtitles only         │"
       echo "│  4) Download thumbnails only        │"
       echo "│  5) Complete package download       │"
-      echo "│  $ICON_BACK 0) Back                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ Cancel & Back to Menu  │"
       echo "└─────────────────────────────────────┘"
       read -p "Choose an option [0-5]: " extra_opt
     fi
@@ -1092,7 +1102,8 @@ settings_menu() {
       echo "│  3) تحديث GMD                       │"
       echo "│  4) إصلاح اختصار سطح المكتب        │"
       echo "│  5) إلغاء التثبيت الكامل            │"
-      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ إلغاء والعودة للقائمة │"
       echo "└─────────────────────────────────────┘"
       read -p "اختر خيارًا [0-5]: " settings_opt
     else
@@ -1105,7 +1116,8 @@ settings_menu() {
       echo "│  3) Update GMD                      │"
       echo "│  4) Fix desktop shortcut            │"
       echo "│  5) Complete uninstall              │"
-      echo "│  $ICON_BACK 0) Back                 │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  $ICON_BACK 0) ❌ Cancel & Back to Menu  │"
       echo "└─────────────────────────────────────┘"
       read -p "Choose an option [0-5]: " settings_opt
     fi
@@ -1162,7 +1174,8 @@ show_main_menu() {
     echo "│  $ICON_CLIP 6) قص الفيديو/الصوت           │"
     echo "│  $ICON_INFO2 7) معلومات الوسائط            │"
     echo "│  $ICON_SETTINGS 8) إعدادات                │"
-    echo "│  $ICON_EXIT 0) خروج                       │"
+    echo "├─────────────────────────────────────┤"
+    echo "│  $ICON_EXIT 0) ❌ خروج من البرنامج         │"
     echo "└─────────────────────────────────────┘"
     read -p "اختر خيارًا [0-8]: " option
   else
@@ -1177,7 +1190,8 @@ show_main_menu() {
     echo "│  $ICON_CLIP 6) Trim Video/Audio           │"
     echo "│  $ICON_INFO2 7) Media Info                │"
     echo "│  $ICON_SETTINGS 8) Settings               │"
-    echo "│  $ICON_EXIT 0) Exit                       │"
+    echo "├─────────────────────────────────────┤"
+    echo "│  $ICON_EXIT 0) ❌ Exit Program             │"
     echo "└─────────────────────────────────────┘"
     read -p "Choose an option [0-8]: " option
   fi
