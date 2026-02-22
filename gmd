@@ -1,5 +1,5 @@
 #!/bin/bash
-# GMD - GNU Media Downloader v1.91
+# GMD - GNU Media Downloader v1.92
 # by gnutux
 
 set -euo pipefail
@@ -18,7 +18,7 @@ echo "
    GNU MEDIA DOWNLOADER
 -------------------------
        » BY GNUTUX «
-         » v1.91 «
+         » v1.92 «
 "
 }
 
@@ -60,70 +60,157 @@ toggle_lang() {
 }
 
 # ----------------------------
-# وضع التثبيت المباشر وإلغاء التثبيت والتحديث
+# إصلاح PATH ليشمل ~/.local/bin
 # ----------------------------
-if [[ "${1:-}" == "--install" ]]; then
-    echo "⬇️ جاري تثبيت GMD..."
+ensure_path() {
+    local BIN="$HOME/.local/bin"
+    if [[ ":$PATH:" != *":$BIN:"* ]]; then
+        export PATH="$BIN:$PATH"
+    fi
+    # إضافة السطر إلى ملف الـ shell إذا لم يكن موجوداً
+    local SHELL_RC=""
+    if [[ -f "$HOME/.bashrc" ]]; then
+        SHELL_RC="$HOME/.bashrc"
+    elif [[ -f "$HOME/.zshrc" ]]; then
+        SHELL_RC="$HOME/.zshrc"
+    elif [[ -f "$HOME/.profile" ]]; then
+        SHELL_RC="$HOME/.profile"
+    fi
+    if [[ -n "$SHELL_RC" ]]; then
+        if ! grep -q 'local/bin' "$SHELL_RC" 2>/dev/null; then
+            echo '' >> "$SHELL_RC"
+            echo '# GMD: إضافة ~/.local/bin إلى PATH' >> "$SHELL_RC"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+        fi
+    fi
+}
+
+# ----------------------------
+# وضع التثبيت المباشر
+# ----------------------------
+if [[ "${1:-}" == "--install" || "${1:-}" == "--install-desktop" ]]; then
+    MODE="${1:-}"
+    echo "⬇️  جاري تثبيت GMD..."
     mkdir -p ~/.local/bin
-    if [[ -f "$0" ]]; then
+
+    if [[ -f "$0" && -s "$0" ]]; then
         cp "$0" ~/.local/bin/gmd
         chmod +x ~/.local/bin/gmd
-        echo "✅ تم تثبيت GMD بنجاح في ~/.local/bin/gmd"
-        echo "🎯 يمكنك الآن استخدام الأمر: gmd"
     else
-        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
-        chmod +x ~/.local/bin/gmd
-        echo "✅ تم تثبيت GMD بنجاح في ~/.local/bin/gmd"
-        echo "🎯 يمكنك الآن استخدام الأمر: gmd"
-    fi
-    exit 0
-fi
-
-if [[ "${1:-}" == "--install-desktop" ]]; then
-    echo "⬇️ جاري تثبيت GMD مع اختصار سطح المكتب..."
-    mkdir -p ~/.local/bin
-    if [[ -f "$0" ]]; then
-        cp "$0" ~/.local/bin/gmd
-        chmod +x ~/.local/bin/gmd
-    else
-        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
+        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" \
+             -o ~/.local/bin/gmd
         chmod +x ~/.local/bin/gmd
     fi
-    
-    # تثبيت اختصار سطح المكتب
-    install_desktop_shortcut_auto
-    echo "✅ تم تثبيت GMD بنجاح!"
-    echo "🎯 يمكنك الآن استخدام الأمر: gmd"
-    exit 0
+
+    # إصلاح PATH
+    local_bin="$HOME/.local/bin"
+    if [[ ":$PATH:" != *":$local_bin:"* ]]; then
+        export PATH="$local_bin:$PATH"
+    fi
+    for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+        if [[ -f "$RC" ]] && ! grep -q 'local/bin' "$RC" 2>/dev/null; then
+            echo '' >> "$RC"
+            echo '# GMD: إضافة ~/.local/bin إلى PATH' >> "$RC"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
+            break
+        fi
+    done
+
+    echo "✅ تم تثبيت GMD بنجاح في ~/.local/bin/gmd"
+
+    # تثبيت اختصار سطح المكتب إن طُلب
+    if [[ "$MODE" == "--install-desktop" ]]; then
+        ~/.local/bin/gmd --fix-desktop
+    fi
+
+    echo ""
+    echo "🚀 جاري تشغيل GMD..."
+    echo ""
+    sleep 1
+    exec ~/.local/bin/gmd
 fi
 
+# ----------------------------
+# وضع التحديث
+# ----------------------------
 if [[ "${1:-}" == "--update" ]]; then
-    echo "⬇️ جاري تحديث GMD..."
-    if [[ -f "$0" ]]; then
+    echo "⬇️  جاري تحديث GMD..."
+    if [[ -f "$0" && -s "$0" ]]; then
         cp "$0" ~/.local/bin/gmd.tmp
         chmod +x ~/.local/bin/gmd.tmp
         mv ~/.local/bin/gmd.tmp ~/.local/bin/gmd
-        echo "✅ تم تحديث GMD بنجاح!"
-        echo "📁 تم الحفاظ على اختصار سطح المكتب"
     else
-        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd.tmp
+        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" \
+             -o ~/.local/bin/gmd.tmp
         chmod +x ~/.local/bin/gmd.tmp
         mv ~/.local/bin/gmd.tmp ~/.local/bin/gmd
-        echo "✅ تم تحديث GMD بنجاح!"
-        echo "📁 تم الحفاظ على اختصار سطح المكتب"
     fi
-    exit 0
+    echo "✅ تم تحديث GMD بنجاح!"
+    echo ""
+    echo "🚀 جاري تشغيل GMD..."
+    sleep 1
+    exec ~/.local/bin/gmd
 fi
 
-if [[ "${1:-}" == "--clean-uninstall" ]]; then
-    echo "🗑️  جاري إلغاء تثبيت GMD تماماً..."
-    uninstall_gmd_complete
-    exit 0
-fi
-
+# ----------------------------
+# وضع إصلاح اختصار سطح المكتب
+# ----------------------------
 if [[ "${1:-}" == "--fix-desktop" ]]; then
     echo "🔧 جاري إصلاح اختصار سطح المكتب..."
-    install_desktop_shortcut_auto
+    DESKTOP_DIR="$HOME/.local/share/applications"
+    ICON_DIR="$HOME/.local/share/icons/hicolor/48x48/apps"
+    mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
+    if curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" \
+            -o "$ICON_DIR/gmd-icon.png" 2>/dev/null; then
+        ICON_PATH="$ICON_DIR/gmd-icon.png"
+    else
+        ICON_PATH="utilities-terminal"
+    fi
+    cat > "$DESKTOP_DIR/gmd.desktop" <<EOF
+[Desktop Entry]
+Version=1.0
+Name=GMD - GNU Media Downloader
+GenericName=Media Downloader
+Comment=Download and convert media from the internet
+Exec=$HOME/.local/bin/gmd
+Icon=$ICON_PATH
+Terminal=true
+Type=Application
+Categories=Utility;Network;AudioVideo;
+Keywords=download;video;audio;youtube;converter;
+StartupNotify=false
+EOF
+    chmod +x "$DESKTOP_DIR/gmd.desktop"
+    command -v update-desktop-database &>/dev/null && \
+        update-desktop-database "$DESKTOP_DIR" 2>/dev/null
+    mkdir -p "$HOME/.config"
+    echo "$(date)" > "$HOME/.config/gmd_desktop_installed"
+    echo "✅ تم إصلاح اختصار سطح المكتب بنجاح!"
+    exit 0
+fi
+
+# ----------------------------
+# وضع إلغاء التثبيت (من سطر الأوامر)
+# ----------------------------
+if [[ "${1:-}" == "--clean-uninstall" ]]; then
+    echo "🗑️  جاري إلغاء تثبيت GMD تماماً..."
+    read -p "هل أنت متأكد من إلغاء تثبيت GMD بالكامل؟ [y/N]: " confirm
+    if [[ ! "${confirm:-}" =~ ^[Yy]$ ]]; then
+        echo "ℹ️  تم إلغاء العملية."
+        exit 0
+    fi
+    rm -f "$HOME/.local/bin/yt-dlp" 2>/dev/null
+    rm -f "$HOME/.local/share/applications/gmd.desktop" 2>/dev/null
+    rm -f "$HOME/.config/gmd_desktop_installed" "$HOME/.config/gmd_last_update" 2>/dev/null
+    rm -rf "$HOME/.config/gmd" "$HOME/.GMD" 2>/dev/null
+    for size in "16x16" "24x24" "32x32" "48x48" "64x64" "128x128" "256x256" "512x512"; do
+        rm -f "$HOME/.local/share/icons/hicolor/$size/apps/gmd-icon.png" 2>/dev/null
+    done
+    command -v update-desktop-database &>/dev/null && \
+        update-desktop-database "$HOME/.local/share/applications" 2>/dev/null
+    echo "✅ تم إلغاء تثبيت GMD بالكامل بنجاح!"
+    (sleep 1 && rm -f "$HOME/.local/bin/gmd") &
+    sleep 2
     exit 0
 fi
 
@@ -134,7 +221,7 @@ BIN_DIR="$HOME/.local/bin"
 mkdir -p "$BIN_DIR"
 SELF_PATH="$BIN_DIR/gmd"
 YTDLP="$BIN_DIR/yt-dlp"
-FILE_MANAGER=$(command -v xdg-open || command -v nemo || command -v nautilus || echo "")
+FILE_MANAGER=$(command -v xdg-open 2>/dev/null || command -v nemo 2>/dev/null || command -v nautilus 2>/dev/null || echo "")
 SAVE_PATH=""
 UPDATE_MARKER="$HOME/.config/gmd_last_update"
 mkdir -p "$(dirname "$UPDATE_MARKER")"
@@ -162,19 +249,22 @@ ICON_BACK="🔙"
 ICON_SMART="🧠"
 ICON_COMPLETE="📦"
 ICON_UNINSTALL="🗑️"
+ICON_CLIP="✂️"
+ICON_INFO2="📋"
 
 # ----------------------------
 # تثبيت اختصار سطح المكتب تلقائياً
 # ----------------------------
 install_desktop_shortcut_auto() {
-    DESKTOP_DIR="$HOME/.local/share/applications"
-    ICON_DIR="$HOME/.local/share/icons/hicolor/48x48/apps"
+    local DESKTOP_DIR="$HOME/.local/share/applications"
+    local ICON_DIR="$HOME/.local/share/icons/hicolor/48x48/apps"
+    local ICON_PATH
     mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
-    
-    # تحميل الأيقونة
+
     echo "$ICON_INFO جاري تثبيت أيقونة البرنامج..."
     if command -v curl &>/dev/null; then
-        if curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" -o "$ICON_DIR/gmd-icon.png" 2>/dev/null; then
+        if curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" \
+                -o "$ICON_DIR/gmd-icon.png" 2>/dev/null; then
             ICON_PATH="$ICON_DIR/gmd-icon.png"
             echo "$ICON_SUCCESS تم تنزيل الأيقونة بنجاح"
         else
@@ -184,8 +274,7 @@ install_desktop_shortcut_auto() {
     else
         ICON_PATH="utilities-terminal"
     fi
-    
-    # إنشاء ملف .desktop صحيح
+
     cat > "$DESKTOP_DIR/gmd.desktop" <<EOF
 [Desktop Entry]
 Version=1.0
@@ -200,19 +289,17 @@ Categories=Utility;Network;AudioVideo;
 Keywords=download;video;audio;youtube;converter;
 StartupNotify=false
 EOF
-    
+
     chmod +x "$DESKTOP_DIR/gmd.desktop"
-    
-    # تحديث قاعدة بيانات سطح المكتب
+
     if command -v update-desktop-database &>/dev/null; then
         update-desktop-database "$DESKTOP_DIR" 2>/dev/null
         echo "$ICON_SUCCESS تم تحديث قاعدة بيانات سطح المكتب"
     fi
-    
-    # وضع علامة أن الأيقونة مثبتة
+
     mkdir -p "$(dirname "$DESKTOP_MARKER")"
     echo "$(date)" > "$DESKTOP_MARKER"
-    
+
     echo "$ICON_SUCCESS تم تثبيت أيقونة البرنامج تلقائياً!"
     echo "$ICON_INFO يمكنك العثور على البرنامج في:"
     echo "   📁 قائمة التطبيقات → أدوات مساعدة"
@@ -220,7 +307,6 @@ EOF
     echo ""
 }
 
-# التحقق من وجود الاختصار وتثبيته إذا لم يكن موجوداً
 check_and_install_desktop_shortcut() {
     if [[ ! -f "$DESKTOP_MARKER" ]] || [[ ! -f "$HOME/.local/share/applications/gmd.desktop" ]]; then
         echo ""
@@ -231,11 +317,11 @@ check_and_install_desktop_shortcut() {
 }
 
 # ----------------------------
-# إلغاء التثبيت الكامل
+# إلغاء التثبيت الكامل (مع إنهاء البرنامج تلقائياً)
 # ----------------------------
 uninstall_gmd_complete() {
     echo "🗑️  بدء عملية إلغاء التثبيت الكامل..."
-    
+
     if [[ "$L" == "ar" ]]; then
         read -p "هل أنت متأكد من إلغاء تثبيت GMD بالكامل؟ [y/N]: " confirm
     else
@@ -248,7 +334,7 @@ uninstall_gmd_complete() {
         else
             echo "$ICON_INFO Operation cancelled."
         fi
-        return
+        return 0
     fi
 
     # إزالة yt-dlp
@@ -257,52 +343,24 @@ uninstall_gmd_complete() {
         echo "$ICON_SUCCESS تمت إزالة yt-dlp"
     fi
 
-    # إزالة الملف التنفيذي
-    if [[ -f "$SELF_PATH" ]]; then
-        rm -f "$SELF_PATH"
-        echo "$ICON_SUCCESS تمت إزالة الملف التنفيذي"
-    fi
-
     # إزالة اختصار سطح المكتب
     if [[ -f "$HOME/.local/share/applications/gmd.desktop" ]]; then
         rm -f "$HOME/.local/share/applications/gmd.desktop"
         echo "$ICON_SUCCESS تمت إزالة اختصار سطح المكتب"
     fi
 
-    # إزالة الأيقونات من جميع الأحجام
+    # إزالة الأيقونات
     local icon_sizes=("16x16" "24x24" "32x32" "48x48" "64x64" "128x128" "256x256" "512x512")
     for size in "${icon_sizes[@]}"; do
-        local icon_path="$HOME/.local/share/icons/hicolor/$size/apps/gmd-icon.png"
-        if [[ -f "$icon_path" ]]; then
-            rm -f "$icon_path"
-        fi
+        rm -f "$HOME/.local/share/icons/hicolor/$size/apps/gmd-icon.png" 2>/dev/null
     done
-    
-    # إزالة الأيقونة من المجلد العام
-    if [[ -f "$HOME/.local/share/icons/gmd-icon.png" ]]; then
-        rm -f "$HOME/.local/share/icons/gmd-icon.png"
-    fi
-    
+    rm -f "$HOME/.local/share/icons/gmd-icon.png" 2>/dev/null
     echo "$ICON_SUCCESS تمت إزالة جميع الأيقونات"
 
     # إزالة الملفات الإضافية
-    if [[ -f "$DESKTOP_MARKER" ]]; then
-        rm -f "$DESKTOP_MARKER"
-    fi
-    
-    if [[ -f "$UPDATE_MARKER" ]]; then
-        rm -f "$UPDATE_MARKER"
-    fi
-    
-    if [[ -d "$HOME/.config/gmd" ]]; then
-        rm -rf "$HOME/.config/gmd"
-        echo "$ICON_SUCCESS تمت إزالة مجلد الإعدادات"
-    fi
-    
-    if [[ -d "$HOME/.GMD" ]]; then
-        rm -rf "$HOME/.GMD"
-        echo "$ICON_SUCCESS تمت إزالة مجلد البيانات"
-    fi
+    rm -f "$DESKTOP_MARKER" "$UPDATE_MARKER" 2>/dev/null
+    [[ -d "$HOME/.config/gmd" ]] && rm -rf "$HOME/.config/gmd" && echo "$ICON_SUCCESS تمت إزالة مجلد الإعدادات"
+    [[ -d "$HOME/.GMD" ]] && rm -rf "$HOME/.GMD" && echo "$ICON_SUCCESS تمت إزالة مجلد البيانات"
 
     # تحديث قاعدة بيانات سطح المكتب
     if command -v update-desktop-database &>/dev/null; then
@@ -313,10 +371,20 @@ uninstall_gmd_complete() {
     if [[ "$L" == "ar" ]]; then
         echo "$ICON_SUCCESS تم إلغاء تثبيت GMD بالكامل بنجاح!"
         echo "♻️  يمكنك الآن إعادة التثبيت النظيف"
+        echo ""
+        echo "👋 جاري إغلاق البرنامج تلقائياً..."
     else
         echo "$ICON_SUCCESS GMD completely uninstalled!"
         echo "♻️  You can now perform a clean install"
+        echo ""
+        echo "👋 Closing automatically..."
     fi
+
+    # حذف الملف التنفيذي في الخلفية بعد الخروج
+    local SELF="$SELF_PATH"
+    (sleep 2 && rm -f "$SELF") &
+    sleep 1
+    exit 0
 }
 
 # ----------------------------
@@ -356,7 +424,8 @@ fi
 # تثبيت / تحديث yt-dlp
 # ----------------------------
 check_system_ytdlp() {
-    local system_ytdlp=$(command -v yt-dlp)
+    local system_ytdlp
+    system_ytdlp=$(command -v yt-dlp 2>/dev/null || echo "")
     if [[ -n "$system_ytdlp" && "$system_ytdlp" != "$YTDLP" ]]; then
         echo "$ICON_INFO تم العثور على yt-dlp مثبت من مستودعات النظام: $system_ytdlp"
         echo "$ICON_INFO النسخة من المستودعات قد تكون قديمة مقارنة بالنسخة المباشرة من GitHub"
@@ -390,7 +459,8 @@ install_yt_dlp() {
   else
     echo "$ICON_DOWNLOAD تثبيت yt-dlp من GitHub..."
     if command -v aria2c &>/dev/null; then
-      aria2c "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" --dir "$BIN_DIR" -o yt-dlp
+      aria2c "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
+             --dir "$BIN_DIR" -o yt-dlp
     elif command -v curl &>/dev/null; then
       curl -L "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -o "$YTDLP"
     elif command -v wget &>/dev/null; then
@@ -449,17 +519,19 @@ self_update() {
 choose_save_path() {
   if command -v zenity &>/dev/null; then
     if [[ "$L" == "ar" ]]; then
-      SAVE_PATH=$(zenity --file-selection --directory --title="اختر مجلد الحفظ" || echo "")
+      SAVE_PATH=$(zenity --file-selection --directory --title="اختر مجلد الحفظ" 2>/dev/null || echo "")
     else
-      SAVE_PATH=$(zenity --file-selection --directory --title="Choose download folder" || echo "")
+      SAVE_PATH=$(zenity --file-selection --directory --title="Choose download folder" 2>/dev/null || echo "")
     fi
   fi
   if [[ -z "$SAVE_PATH" ]]; then
     if [[ "$L" == "ar" ]]; then
-      read -p "$ICON_FOLDER أدخل مسار الحفظ: " SAVE_PATH
+      read -p "$ICON_FOLDER أدخل مسار الحفظ (Enter = ~/Downloads): " SAVE_PATH
     else
-      read -p "$ICON_FOLDER Enter save path: " SAVE_PATH
+      read -p "$ICON_FOLDER Enter save path (Enter = ~/Downloads): " SAVE_PATH
     fi
+    [[ -z "$SAVE_PATH" ]] && SAVE_PATH="$HOME/Downloads"
+    [[ ! -d "$SAVE_PATH" ]] && mkdir -p "$SAVE_PATH"
   fi
   [[ ! -d "$SAVE_PATH" ]] && { echo "$ICON_ERROR مسار غير صالح."; return 1; }
   return 0
@@ -469,154 +541,172 @@ choose_file_path() {
   local FILE=""
   if command -v zenity &>/dev/null; then
     if [[ "$L" == "ar" ]]; then
-      FILE=$(zenity --file-selection --title="اختر ملف التحويل" || echo "")
+      FILE=$(zenity --file-selection --title="اختر ملف التحويل" 2>/dev/null || echo "")
     else
-      FILE=$(zenity --file-selection --title="Choose file to convert" || echo "")
+      FILE=$(zenity --file-selection --title="Choose file to convert" 2>/dev/null || echo "")
     fi
   fi
   if [[ -z "$FILE" ]]; then
     if [[ "$L" == "ar" ]]; then
-      read -p "$ICON_FILE أدخل مسار الملف: " FILE
+      read -p "$ICON_FILE أدخل مسار الملف (0 = رجوع): " FILE
     else
-      read -p "$ICON_FILE Enter file path: " FILE
+      read -p "$ICON_FILE Enter file path (0 = back): " FILE
     fi
+    [[ "$FILE" == "0" ]] && return 1
   fi
+  [[ -z "$FILE" ]] && { echo "$ICON_ERROR لم يتم إدخال مسار."; return 1; }
   [[ ! -f "$FILE" ]] && { echo "$ICON_ERROR ملف غير صالح."; return 1; }
   echo "$FILE"
   return 0
 }
 
 # ----------------------------
-# خيارات الجودة والصيغ المحسنة
+# خيارات الجودة والصيغ مع دعم الرجوع
 # ----------------------------
 choose_video_quality() {
-  if [[ "$L" == "ar" ]]; then
-    echo ""
-    echo "┌─────────────────────────────────────┐"
-    echo "│        $ICON_QUALITY جودة الفيديو          │"
-    echo "├─────────────────────────────────────┤"
-    echo "│  1) عالية (1080p)                   │"
-    echo "│  2) متوسطة (720p)                   │"
-    echo "│  3) منخفضة (480p)                   │"
-    echo "│  4) أفضل جودة متاحة                 │"
-    echo "└─────────────────────────────────────┘"
-  else
-    echo ""
-    echo "┌─────────────────────────────────────┐"
-    echo "│        $ICON_QUALITY Video Quality         │"
-    echo "├─────────────────────────────────────┤"
-    echo "│  1) High (1080p)                    │"
-    echo "│  2) Medium (720p)                   │"
-    echo "│  3) Low (480p)                      │"
-    echo "│  4) Best available                  │"
-    echo "└─────────────────────────────────────┘"
-  fi
-  read -p "➤ " quality
-  case $quality in
-    1) FORMAT="bv*[height<=1080]+ba/best[height<=1080]"; EXT_OPT="";;
-    2) FORMAT="bv*[height<=720]+ba/best[height<=720]"; EXT_OPT="";;
-    3) FORMAT="bv*[height<=480]+ba/best[height<=480]"; EXT_OPT="";;
-    4) FORMAT="bestvideo+bestaudio/best"; EXT_OPT="";;
-    *) echo "$ICON_ERROR خيار غير صالح."; return 1;;
-  esac
-  return 0
+  while true; do
+    if [[ "$L" == "ar" ]]; then
+      echo ""
+      echo "┌─────────────────────────────────────┐"
+      echo "│        $ICON_QUALITY جودة الفيديو          │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  1) عالية (1080p)                   │"
+      echo "│  2) متوسطة (720p)                   │"
+      echo "│  3) منخفضة (480p)                   │"
+      echo "│  4) أفضل جودة متاحة                 │"
+      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "└─────────────────────────────────────┘"
+    else
+      echo ""
+      echo "┌─────────────────────────────────────┐"
+      echo "│        $ICON_QUALITY Video Quality         │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  1) High (1080p)                    │"
+      echo "│  2) Medium (720p)                   │"
+      echo "│  3) Low (480p)                      │"
+      echo "│  4) Best available                  │"
+      echo "│  $ICON_BACK 0) Back                 │"
+      echo "└─────────────────────────────────────┘"
+    fi
+    read -p "➤ " quality
+    case $quality in
+      1) FORMAT="bv*[height<=1080]+ba/best[height<=1080]"; EXT_OPT=""; return 0;;
+      2) FORMAT="bv*[height<=720]+ba/best[height<=720]"; EXT_OPT=""; return 0;;
+      3) FORMAT="bv*[height<=480]+ba/best[height<=480]"; EXT_OPT=""; return 0;;
+      4) FORMAT="bestvideo+bestaudio/best"; EXT_OPT=""; return 0;;
+      0) return 1;;
+      *) echo "$ICON_ERROR خيار غير صالح.";;
+    esac
+  done
 }
 
 choose_audio_format() {
-  if [[ "$L" == "ar" ]]; then
-    echo ""
-    echo "┌─────────────────────────────────────┐"
-    echo "│       $ICON_AUDIO صيغة الصوت        │"
-    echo "├─────────────────────────────────────┤"
-    echo "│  1) mp3 (جودة متوسطة)               │"
-    echo "│  2) m4a (جيدة للأجهزة)               │"
-    echo "│  3) ogg (حجم صغير)                  │"
-    echo "│  4) opus (كفاءة عالية)              │"
-    echo "│  5) flac (بدون خسارة)               │"
-    echo "│  6) wav (جودة أصلية)                │"
-    echo "└─────────────────────────────────────┘"
-  else
-    echo ""
-    echo "┌─────────────────────────────────────┐"
-    echo "│       $ICON_AUDIO Audio Format      │"
-    echo "├─────────────────────────────────────┤"
-    echo "│  1) mp3 (Medium quality)            │"
-    echo "│  2) m4a (Good for devices)          │"
-    echo "│  3) ogg (Small size)                │"
-    echo "│  4) opus (High efficiency)          │"
-    echo "│  5) flac (Lossless)                 │"
-    echo "│  6) wav (Original quality)          │"
-    echo "└─────────────────────────────────────┘"
-  fi
-  read -p "➤ " audio_format
-  case $audio_format in
-    1) AUDIO_OPTS="--extract-audio --audio-format mp3 --audio-quality 0";;
-    2) AUDIO_OPTS="--extract-audio --audio-format m4a";;
-    3) AUDIO_OPTS="--extract-audio --audio-format vorbis";;
-    4) AUDIO_OPTS="--extract-audio --audio-format opus";;
-    5) AUDIO_OPTS="--extract-audio --audio-format flac";;
-    6) AUDIO_OPTS="--extract-audio --audio-format wav";;
-    *) AUDIO_OPTS="--extract-audio --audio-format mp3";;
-  esac
+  while true; do
+    if [[ "$L" == "ar" ]]; then
+      echo ""
+      echo "┌─────────────────────────────────────┐"
+      echo "│       $ICON_AUDIO صيغة الصوت        │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  1) mp3 (جودة متوسطة)               │"
+      echo "│  2) m4a (جيدة للأجهزة)               │"
+      echo "│  3) ogg (حجم صغير)                  │"
+      echo "│  4) opus (كفاءة عالية)              │"
+      echo "│  5) flac (بدون خسارة)               │"
+      echo "│  6) wav (جودة أصلية)                │"
+      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "└─────────────────────────────────────┘"
+    else
+      echo ""
+      echo "┌─────────────────────────────────────┐"
+      echo "│       $ICON_AUDIO Audio Format      │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  1) mp3 (Medium quality)            │"
+      echo "│  2) m4a (Good for devices)          │"
+      echo "│  3) ogg (Small size)                │"
+      echo "│  4) opus (High efficiency)          │"
+      echo "│  5) flac (Lossless)                 │"
+      echo "│  6) wav (Original quality)          │"
+      echo "│  $ICON_BACK 0) Back                 │"
+      echo "└─────────────────────────────────────┘"
+    fi
+    read -p "➤ " audio_format
+    case $audio_format in
+      1) AUDIO_OPTS="--extract-audio --audio-format mp3 --audio-quality 0"; return 0;;
+      2) AUDIO_OPTS="--extract-audio --audio-format m4a"; return 0;;
+      3) AUDIO_OPTS="--extract-audio --audio-format vorbis"; return 0;;
+      4) AUDIO_OPTS="--extract-audio --audio-format opus"; return 0;;
+      5) AUDIO_OPTS="--extract-audio --audio-format flac"; return 0;;
+      6) AUDIO_OPTS="--extract-audio --audio-format wav"; return 0;;
+      0) return 1;;
+      *) echo "$ICON_ERROR خيار غير صالح.";;
+    esac
+  done
 }
 
 choose_conversion_format() {
-  if [[ "$L" == "ar" ]]; then
-    echo ""
-    echo "┌─────────────────────────────────────┐"
-    echo "│       $ICON_FORMAT صيغة الإخراج         │"
-    echo "├─────────────────────────────────────┤"
-    echo "│  1) mp3                             │"
-    echo "│  2) m4a                             │"
-    echo "│  3) ogg                             │"
-    echo "│  4) mp4 (فيديو)                     │"
-    echo "│  5) webm (فيديو)                    │"
-    echo "│  6) wav                             │"
-    echo "│  7) flac                            │"
-    echo "└─────────────────────────────────────┘"
-  else
-    echo ""
-    echo "┌─────────────────────────────────────┐"
-    echo "│       $ICON_FORMAT Output Format        │"
-    echo "├─────────────────────────────────────┤"
-    echo "│  1) mp3                             │"
-    echo "│  2) m4a                             │"
-    echo "│  3) ogg                             │"
-    echo "│  4) mp4 (video)                     │"
-    echo "│  5) webm (video)                    │"
-    echo "│  6) wav                             │"
-    echo "│  7) flac                            │"
-    echo "└─────────────────────────────────────┘"
-  fi
-  read -p "➤ " conv_format
-  case $conv_format in
-    1) EXT="mp3"; CONV_OPTS="-c:a libmp3lame -b:a 192k";;
-    2) EXT="m4a"; CONV_OPTS="-c:a aac -b:a 192k";;
-    3) EXT="ogg"; CONV_OPTS="-c:a libvorbis -q:a 4";;
-    4) EXT="mp4"; CONV_OPTS="-c:v libx264 -crf 23 -c:a aac -b:a 192k";;
-    5) EXT="webm"; CONV_OPTS="-c:v libvpx-vp9 -crf 30 -b:v 0 -c:a libopus";;
-    6) EXT="wav"; CONV_OPTS="";;
-    7) EXT="flac"; CONV_OPTS="-c:a flac";;
-    *) echo "$ICON_ERROR خيار غير صالح."; return 1;;
-  esac
-  return 0
+  while true; do
+    if [[ "$L" == "ar" ]]; then
+      echo ""
+      echo "┌─────────────────────────────────────┐"
+      echo "│       $ICON_FORMAT صيغة الإخراج         │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  1) mp3                             │"
+      echo "│  2) m4a                             │"
+      echo "│  3) ogg                             │"
+      echo "│  4) mp4 (فيديو)                     │"
+      echo "│  5) webm (فيديو)                    │"
+      echo "│  6) wav                             │"
+      echo "│  7) flac                            │"
+      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "└─────────────────────────────────────┘"
+    else
+      echo ""
+      echo "┌─────────────────────────────────────┐"
+      echo "│       $ICON_FORMAT Output Format        │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  1) mp3                             │"
+      echo "│  2) m4a                             │"
+      echo "│  3) ogg                             │"
+      echo "│  4) mp4 (video)                     │"
+      echo "│  5) webm (video)                    │"
+      echo "│  6) wav                             │"
+      echo "│  7) flac                            │"
+      echo "│  $ICON_BACK 0) Back                 │"
+      echo "└─────────────────────────────────────┘"
+    fi
+    read -p "➤ " conv_format
+    case $conv_format in
+      1) EXT="mp3"; CONV_OPTS="-c:a libmp3lame -b:a 192k"; return 0;;
+      2) EXT="m4a"; CONV_OPTS="-c:a aac -b:a 192k"; return 0;;
+      3) EXT="ogg"; CONV_OPTS="-c:a libvorbis -q:a 4"; return 0;;
+      4) EXT="mp4"; CONV_OPTS="-c:v libx264 -crf 23 -c:a aac -b:a 192k"; return 0;;
+      5) EXT="webm"; CONV_OPTS="-c:v libvpx-vp9 -crf 30 -b:v 0 -c:a libopus"; return 0;;
+      6) EXT="wav"; CONV_OPTS=""; return 0;;
+      7) EXT="flac"; CONV_OPTS="-c:a flac"; return 0;;
+      0) return 1;;
+      *) echo "$ICON_ERROR خيار غير صالح.";;
+    esac
+  done
 }
 
 get_url() {
   local URL=""
   if command -v zenity &>/dev/null; then
     if [[ "$L" == "ar" ]]; then
-      URL=$(zenity --entry --title="إدخال الرابط" --text="أدخل رابط الفيديو أو الصوت:" || echo "")
+      URL=$(zenity --entry --title="إدخال الرابط" \
+            --text="أدخل الرابط (إلغاء للرجوع):" 2>/dev/null || echo "")
     else
-      URL=$(zenity --entry --title="Enter URL" --text="Enter video or audio URL:" || echo "")
+      URL=$(zenity --entry --title="Enter URL" \
+            --text="Enter URL (cancel to go back):" 2>/dev/null || echo "")
     fi
   fi
   if [[ -z "$URL" ]]; then
     if [[ "$L" == "ar" ]]; then
-      read -p "$ICON_URL أدخل رابط الفيديو أو الصوت: " URL
+      read -p "$ICON_URL أدخل الرابط (0 = رجوع): " URL
     else
-      read -p "$ICON_URL Enter video or audio URL: " URL
+      read -p "$ICON_URL Enter URL (0 = back): " URL
     fi
+    [[ "$URL" == "0" ]] && return 1
   fi
   [[ -z "$URL" ]] && { echo "$ICON_ERROR لم يتم إدخال رابط."; return 1; }
   echo "$URL"
@@ -624,124 +714,221 @@ get_url() {
 }
 
 # ----------------------------
-# وظيفة جديدة: تنزيل وتحويل مباشر
+# ميزة جديدة: قص الفيديو/الصوت
+# ----------------------------
+clip_media() {
+  while true; do
+    if [[ "$L" == "ar" ]]; then
+      echo ""
+      echo "┌─────────────────────────────────────┐"
+      echo "│    $ICON_CLIP قص الفيديو/الصوت         │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  1) قص مقطع من رابط مباشرة         │"
+      echo "│  2) قص ملف موجود على الجهاز        │"
+      echo "│  $ICON_BACK 0) رجوع                 │"
+      echo "└─────────────────────────────────────┘"
+      read -p "اختر خيارًا: " clip_opt
+    else
+      echo ""
+      echo "┌─────────────────────────────────────┐"
+      echo "│    $ICON_CLIP Trim Video/Audio         │"
+      echo "├─────────────────────────────────────┤"
+      echo "│  1) Trim from URL directly          │"
+      echo "│  2) Trim an existing local file     │"
+      echo "│  $ICON_BACK 0) Back                 │"
+      echo "└─────────────────────────────────────┘"
+      read -p "Choose an option: " clip_opt
+    fi
+
+    case $clip_opt in
+      0) return 0;;
+      1)
+        local URL
+        URL=$(get_url) || continue
+        if [[ "$L" == "ar" ]]; then
+          read -p "وقت البداية (مثال: 00:01:30 أو 90): " START_TIME
+          read -p "وقت النهاية (مثال: 00:03:00 أو 180): " END_TIME
+        else
+          read -p "Start time (e.g. 00:01:30 or 90): " START_TIME
+          read -p "End time (e.g. 00:03:00 or 180): " END_TIME
+        fi
+        choose_save_path || continue
+        echo "$ICON_DOWNLOAD جاري التنزيل والقص..."
+        "$YTDLP" --download-sections "*${START_TIME}-${END_TIME}" \
+          --force-keyframes-at-cuts \
+          -o "$SAVE_PATH/%(title)s_clip.%(ext)s" "$URL"
+        echo "$ICON_SUCCESS تم القص بنجاح!"
+        [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH" 2>/dev/null
+        ;;
+      2)
+        local FILE
+        FILE=$(choose_file_path) || continue
+        if [[ "$L" == "ar" ]]; then
+          read -p "وقت البداية (مثال: 00:01:30): " START_TIME
+          read -p "وقت النهاية (مثال: 00:03:00): " END_TIME
+        else
+          read -p "Start time (e.g. 00:01:30): " START_TIME
+          read -p "End time (e.g. 00:03:00): " END_TIME
+        fi
+        choose_save_path || continue
+        local BNAME EXT_F OUT
+        BNAME=$(basename "$FILE")
+        EXT_F="${BNAME##*.}"
+        OUT="$SAVE_PATH/${BNAME%.*}_clip.$EXT_F"
+        echo "$ICON_CLIP جاري القص..."
+        ffmpeg -ss "$START_TIME" -to "$END_TIME" -i "$FILE" -c copy "$OUT" 2>/dev/null
+        if [[ -f "$OUT" ]]; then
+          echo "$ICON_SUCCESS تم القص بنجاح: $OUT"
+          echo "📊 الحجم: $(du -h "$OUT" 2>/dev/null | cut -f1)"
+        else
+          echo "$ICON_ERROR فشل القص."
+        fi
+        [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH" 2>/dev/null
+        ;;
+      *) echo "$ICON_ERROR خيار غير صالح.";;
+    esac
+
+    if [[ "$L" == "ar" ]]; then
+      read -p "اضغط Enter للمتابعة..." dummy
+    else
+      read -p "Press Enter to continue..." dummy
+    fi
+  done
+}
+
+# ----------------------------
+# ميزة جديدة: معلومات الوسائط
+# ----------------------------
+show_media_info() {
+  local URL
+  URL=$(get_url) || return 1
+  echo "$ICON_INFO2 جاري جلب معلومات الوسائط..."
+  local INFO
+  INFO=$("$YTDLP" --dump-json "$URL" 2>/dev/null) || true
+  if [[ -n "$INFO" ]]; then
+    echo "$INFO" | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    fields = [
+        ('العنوان',     d.get('title', '—')),
+        ('المحمّل',     d.get('uploader', '—')),
+        ('المدة',       d.get('duration_string') or str(d.get('duration','—'))),
+        ('الجودة',      d.get('resolution', '—')),
+        ('الصيغة',      d.get('ext', '—')),
+        ('المشاهدات',   str(d.get('view_count','—'))),
+        ('الرابط',      d.get('webpage_url','—')),
+    ]
+    print('')
+    for k,v in fields:
+        print(f'  {k}: {v}')
+    print('')
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null || {
+      echo "$INFO" | grep -E '"title"|"uploader"|"duration"|"ext"|"view_count"' | \
+        sed 's/[",]//g' | head -10
+    }
+  else
+    echo "$ICON_ERROR تعذر جلب معلومات الوسائط."
+  fi
+}
+
+# ----------------------------
+# وظيفة: تنزيل وتحويل مباشر
 # ----------------------------
 download_and_convert() {
   local URL
   URL=$(get_url) || return 1
-  
-  # اختيار صيغة التحويل
   choose_conversion_format || return 1
-  
   choose_save_path || return 1
-  
+
   echo "$ICON_SMART جاري التحليل والتنزيل الذكي..."
-  
-  # الحصول على معلومات الملف أولاً لمعرفة الصيغة الأصلية
-  local INFO_FILE=$(mktemp)
-  "$YTDLP" --dump-json "$URL" > "$INFO_FILE" 2>/dev/null
-  
+  local INFO_FILE
+  INFO_FILE=$(mktemp)
+  "$YTDLP" --dump-json "$URL" > "$INFO_FILE" 2>/dev/null || true
+
   if [[ -s "$INFO_FILE" ]]; then
-    local ORIG_EXT=$(jq -r '.ext' "$INFO_FILE" 2>/dev/null || echo "")
-    local TITLE=$(jq -r '.title' "$INFO_FILE" 2>/dev/null || echo "video")
-    
-    # تنظيف العنوان من الأحرف غير الآمنة
+    local ORIG_EXT TITLE
+    ORIG_EXT=$(python3 -c "import json; d=json.load(open('$INFO_FILE')); print(d.get('ext',''))" 2>/dev/null || echo "")
+    TITLE=$(python3 -c "import json; d=json.load(open('$INFO_FILE')); print(d.get('title','video'))" 2>/dev/null || echo "video")
     TITLE=$(echo "$TITLE" | tr -d '\n' | sed 's/[<>:"/\\|?*]//g')
-    
+
     if [[ "$ORIG_EXT" == "$EXT" ]]; then
-      # إذا كانت الصيغة الأصلية مطابقة للصيغة المطلوبة
       echo "$ICON_INFO الملف الأصلي بصيغة $ORIG_EXT، لا حاجة للتحويل."
       echo "$ICON_DOWNLOAD جاري التنزيل مباشرة..."
-      
-      # تنزيل الفيديو أو الصوت حسب الصيغة
       if [[ "$EXT" == "mp4" || "$EXT" == "webm" ]]; then
-        choose_video_quality || return 1
+        choose_video_quality || { rm -f "$INFO_FILE"; return 1; }
         "$YTDLP" -f "$FORMAT" -o "$SAVE_PATH/${TITLE}.%(ext)s" "$URL"
       else
-        # تنزيل الصوت
+        local AO
         case $EXT in
-          mp3) AUDIO_OPTS="--extract-audio --audio-format mp3 --audio-quality 0";;
-          m4a) AUDIO_OPTS="--extract-audio --audio-format m4a";;
-          ogg) AUDIO_OPTS="--extract-audio --audio-format vorbis";;
-          wav) AUDIO_OPTS="--extract-audio --audio-format wav";;
-          flac) AUDIO_OPTS="--extract-audio --audio-format flac";;
-          *) AUDIO_OPTS="--extract-audio --audio-format mp3";;
+          mp3) AO="--extract-audio --audio-format mp3 --audio-quality 0";;
+          m4a) AO="--extract-audio --audio-format m4a";;
+          ogg) AO="--extract-audio --audio-format vorbis";;
+          wav) AO="--extract-audio --audio-format wav";;
+          flac) AO="--extract-audio --audio-format flac";;
+          *) AO="--extract-audio --audio-format mp3";;
         esac
-        "$YTDLP" $AUDIO_OPTS -o "$SAVE_PATH/${TITLE}.%(ext)s" "$URL"
+        "$YTDLP" $AO -o "$SAVE_PATH/${TITLE}.%(ext)s" "$URL"
       fi
     else
-      # إذا كانت الصيغة مختلفة، قم بالتنزيل ثم التحويل
       echo "$ICON_INFO الملف الأصلي بصيغة $ORIG_EXT، سيتم تحويله إلى $EXT"
-      
-      # تنزيل الملف مؤقتاً
-      local TEMP_DIR=$(mktemp -d)
+      local TEMP_DIR
+      TEMP_DIR=$(mktemp -d)
       echo "$ICON_DOWNLOAD جاري التنزيل المؤقت..."
-      
-      # تنزيل بأفضل جودة
       "$YTDLP" -f "best" -o "$TEMP_DIR/%(title)s.%(ext)s" "$URL"
-      
-      # البحث عن الملف الذي تم تنزيله
-      local DOWNLOADED_FILE=$(find "$TEMP_DIR" -type f -name "*.$ORIG_EXT" 2>/dev/null | head -1)
-      
-      if [[ -z "$DOWNLOADED_FILE" ]]; then
-        # إذا لم نجد بالامتداد الأصلي، نبحث عن أي ملف
+      local DOWNLOADED_FILE
+      DOWNLOADED_FILE=$(find "$TEMP_DIR" -type f -name "*.$ORIG_EXT" 2>/dev/null | head -1)
+      [[ -z "$DOWNLOADED_FILE" ]] && \
         DOWNLOADED_FILE=$(find "$TEMP_DIR" -type f 2>/dev/null | head -1)
-      fi
-      
+
       if [[ -f "$DOWNLOADED_FILE" ]]; then
         echo "$ICON_CONVERT جاري التحويل إلى $EXT..."
-        
-        local BASENAME=$(basename "$DOWNLOADED_FILE" ".$ORIG_EXT")
-        local OUTPUT_FILE="$SAVE_PATH/${BASENAME}.${EXT}"
-        
-        # التحويل
+        local BNAME OUTPUT_FILE
+        BNAME=$(basename "$DOWNLOADED_FILE" ".$ORIG_EXT")
+        OUTPUT_FILE="$SAVE_PATH/${BNAME}.${EXT}"
         ffmpeg -i "$DOWNLOADED_FILE" $CONV_OPTS "$OUTPUT_FILE" 2>/dev/null
-        
         if [[ $? -eq 0 ]] && [[ -f "$OUTPUT_FILE" ]]; then
           echo "$ICON_SUCCESS تم التحويل بنجاح إلى: $OUTPUT_FILE"
         else
           echo "$ICON_ERROR فشل التحويل، حفظ الملف الأصلي."
           cp "$DOWNLOADED_FILE" "$SAVE_PATH/"
         fi
-        
-        # تنظيف الملفات المؤقتة
         rm -rf "$TEMP_DIR"
       else
         echo "$ICON_ERROR لم يتم العثور على الملف الذي تم تنزيله."
         rm -rf "$TEMP_DIR"
+        rm -f "$INFO_FILE"
         return 1
       fi
     fi
-    
     rm -f "$INFO_FILE"
   else
     echo "$ICON_ERROR لا يمكن الحصول على معلومات الملف. جاري التنزيل المباشر..."
-    
-    # إذا فشل الحصول على المعلومات، ننزل مباشرة
     if [[ "$EXT" == "mp4" || "$EXT" == "webm" ]]; then
-      choose_video_quality || return 1
+      choose_video_quality || { rm -f "$INFO_FILE"; return 1; }
       "$YTDLP" -f "$FORMAT" -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
     else
+      local AO2
       case $EXT in
-        mp3) AUDIO_OPTS="--extract-audio --audio-format mp3 --audio-quality 0";;
-        m4a) AUDIO_OPTS="--extract-audio --audio-format m4a";;
-        ogg) AUDIO_OPTS="--extract-audio --audio-format vorbis";;
-        wav) AUDIO_OPTS="--extract-audio --audio-format wav";;
-        flac) AUDIO_OPTS="--extract-audio --audio-format flac";;
-        *) AUDIO_OPTS="--extract-audio --audio-format mp3";;
+        mp3) AO2="--extract-audio --audio-format mp3 --audio-quality 0";;
+        m4a) AO2="--extract-audio --audio-format m4a";;
+        ogg) AO2="--extract-audio --audio-format vorbis";;
+        wav) AO2="--extract-audio --audio-format wav";;
+        flac) AO2="--extract-audio --audio-format flac";;
+        *) AO2="--extract-audio --audio-format mp3";;
       esac
-      "$YTDLP" $AUDIO_OPTS -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
+      "$YTDLP" $AO2 -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
     fi
+    rm -f "$INFO_FILE"
   fi
-  
-  # البحث عن الملف الذي تم إنشاؤه
-  local OUTPUT_FILE=$(find "$SAVE_PATH" -type f -newer /proc/self 2>/dev/null | head -1)
-  
-  if [[ -f "$OUTPUT_FILE" ]]; then
-    echo "$ICON_SUCCESS تم إنشاء الملف: $OUTPUT_FILE"
-    echo "📊 الحجم: $(du -h "$OUTPUT_FILE" 2>/dev/null | cut -f1 || echo "غير معروف")"
-  fi
-  
+
+  local OUTPUT_FILE
+  OUTPUT_FILE=$(find "$SAVE_PATH" -type f -newer /proc/self 2>/dev/null | head -1)
+  [[ -f "$OUTPUT_FILE" ]] && \
+    echo "$ICON_SUCCESS تم إنشاء الملف: $OUTPUT_FILE" && \
+    echo "📊 الحجم: $(du -h "$OUTPUT_FILE" 2>/dev/null | cut -f1)"
   [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH" 2>/dev/null
   return 0
 }
@@ -754,40 +941,36 @@ download_video() {
   URL=$(get_url) || return 1
   choose_video_quality || return 1
   choose_save_path || return 1
-  
+
   echo "$ICON_DOWNLOAD جاري تحميل الفيديو..."
   "$YTDLP" -f "$FORMAT" $EXT_OPT -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
-  
-  # البحث عن الملف المنزل
-  local OUTPUT_FILE=$(find "$SAVE_PATH" -type f -newer /proc/self 2>/dev/null | head -1)
-  
+
+  local OUTPUT_FILE
+  OUTPUT_FILE=$(find "$SAVE_PATH" -type f -newer /proc/self 2>/dev/null | head -1)
   if [[ -f "$OUTPUT_FILE" ]]; then
     echo "$ICON_SUCCESS تم التحميل بنجاح: $OUTPUT_FILE"
   else
     echo "$ICON_SUCCESS تم إنهاء عملية التنزيل."
   fi
-  
   [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH" 2>/dev/null
 }
 
 download_audio() {
   local URL
   URL=$(get_url) || return 1
-  choose_audio_format
+  choose_audio_format || return 1
   choose_save_path || return 1
-  
+
   echo "$ICON_AUDIO جاري تحميل الصوت..."
   "$YTDLP" $AUDIO_OPTS -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
-  
-  # البحث عن الملف المنزل
-  local OUTPUT_FILE=$(find "$SAVE_PATH" -type f -newer /proc/self 2>/dev/null | head -1)
-  
+
+  local OUTPUT_FILE
+  OUTPUT_FILE=$(find "$SAVE_PATH" -type f -newer /proc/self 2>/dev/null | head -1)
   if [[ -f "$OUTPUT_FILE" ]]; then
     echo "$ICON_SUCCESS تم التحميل بنجاح: $OUTPUT_FILE"
   else
     echo "$ICON_SUCCESS تم إنهاء عملية التنزيل."
   fi
-  
   [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH" 2>/dev/null
 }
 
@@ -796,14 +979,15 @@ convert_media() {
   FILE=$(choose_file_path) || return 1
   choose_conversion_format || return 1
   choose_save_path || return 1
-  
+
+  local BASENAME NAME OUTPUT_FILE
   BASENAME=$(basename "$FILE")
   NAME="${BASENAME%.*}"
   OUTPUT_FILE="$SAVE_PATH/${NAME}.${EXT}"
-  
+
   echo "$ICON_CONVERT جاري التحويل..."
   ffmpeg -i "$FILE" $CONV_OPTS "$OUTPUT_FILE" 2>/dev/null
-  
+
   if [[ $? -eq 0 ]] && [[ -f "$OUTPUT_FILE" ]]; then
     echo "$ICON_SUCCESS تم التحويل بنجاح: $OUTPUT_FILE"
     echo "📊 الحجم: $(du -h "$OUTPUT_FILE" 2>/dev/null | cut -f1)"
@@ -811,7 +995,6 @@ convert_media() {
     echo "$ICON_ERROR فشل التحويل."
     return 1
   fi
-  
   [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH" 2>/dev/null
 }
 
@@ -826,10 +1009,10 @@ extra_download_options() {
       echo "│  2) تنزيل مقاطع من قناة            │"
       echo "│  3) تنزيل الترجمات فقط             │"
       echo "│  4) تنزيل الصور المصغرة فقط        │"
-      echo "│  5) تنزيل شامل (كل المرفقات)      │"
-      echo "│  $ICON_BACK 6) رجوع                     │"
+      echo "│  5) تنزيل شامل (كل المرفقات)       │"
+      echo "│  $ICON_BACK 0) رجوع                 │"
       echo "└─────────────────────────────────────┘"
-      read -p "اختر خيارًا [1-6]: " extra_opt
+      read -p "اختر خيارًا [0-5]: " extra_opt
     else
       echo ""
       echo "┌─────────────────────────────────────┐"
@@ -840,82 +1023,60 @@ extra_download_options() {
       echo "│  3) Download subtitles only         │"
       echo "│  4) Download thumbnails only        │"
       echo "│  5) Complete package download       │"
-      echo "│  $ICON_BACK 6) Back                      │"
+      echo "│  $ICON_BACK 0) Back                 │"
       echo "└─────────────────────────────────────┘"
-      read -p "Choose an option [1-6]: " extra_opt
+      read -p "Choose an option [0-5]: " extra_opt
     fi
 
     case $extra_opt in
+      0) return 0;;
       1)
-        local URL
-        URL=$(get_url) || continue
+        local URL; URL=$(get_url) || continue
         choose_save_path || continue
         echo "$ICON_DOWNLOAD جاري تنزيل قائمة التشغيل..."
         "$YTDLP" -o "$SAVE_PATH/%(playlist_title)s/%(title)s.%(ext)s" "$URL"
         ;;
       2)
-        local URL
-        URL=$(get_url) || continue
+        local URL; URL=$(get_url) || continue
         choose_save_path || continue
         echo "$ICON_DOWNLOAD جاري تنزيل مقاطع القناة..."
         "$YTDLP" -o "$SAVE_PATH/%(uploader)s/%(title)s.%(ext)s" "$URL"
         ;;
       3)
-        local URL
-        URL=$(get_url) || continue
+        local URL; URL=$(get_url) || continue
         choose_save_path || continue
         echo "$ICON_DOWNLOAD جاري تنزيل الترجمات..."
         "$YTDLP" --write-auto-sub --skip-download -o "$SAVE_PATH/%(title)s" "$URL"
         ;;
       4)
-        local URL
-        URL=$(get_url) || continue
+        local URL; URL=$(get_url) || continue
         choose_save_path || continue
         echo "$ICON_DOWNLOAD جاري تنزيل الصور المصغرة..."
         "$YTDLP" --write-thumbnail --skip-download -o "$SAVE_PATH/%(title)s" "$URL"
         ;;
       5)
-        # تنزيل شامل
-        local URL
-        URL=$(get_url) || continue
+        local URL; URL=$(get_url) || continue
         choose_save_path || continue
-        
-        echo "$ICON_COMPLETE جاري التنزيل الشامل (أعلى جودة + كل المرفقات)..."
-        
-        # إنشاء مجلد خاص للتنزيل الشامل
-        local COMPLETE_DIR="$SAVE_PATH/complete_download_$(date +%Y%m%d_%H%M%S)"
+        echo "$ICON_COMPLETE جاري التنزيل الشامل..."
+        local COMPLETE_DIR="$SAVE_PATH/complete_$(date +%Y%m%d_%H%M%S)"
         mkdir -p "$COMPLETE_DIR"
-        
-        echo "$ICON_DOWNLOAD جاري تنزيل كل المرفقات..."
-        
-        # تنزيل كل شيء معاً
         "$YTDLP" -f "bestvideo+bestaudio/best" \
           --write-thumbnail \
           --write-sub --write-auto-sub --all-subs \
           --write-description \
           --write-info-json \
-          --write-annotations \
-          -o "$COMPLETE_DIR/%(title)s.%(ext)s" \
-          "$URL"
-        
-        echo "$ICON_SUCCESS تم التنزيل الشامل بنجاح في: $COMPLETE_DIR"
-        echo "📁 يحتوي المجلد على:"
-        echo "   • الفيديو بأعلى جودة"
-        echo "   • الصور المصغرة"
-        echo "   • جميع الترجمات"
-        echo "   • الوصف والمعلومات"
+          -o "$COMPLETE_DIR/%(title)s.%(ext)s" "$URL"
+        echo "$ICON_SUCCESS تم التنزيل الشامل في: $COMPLETE_DIR"
         ;;
-      6) return 0;;
       *) echo "$ICON_ERROR خيار غير صالح.";;
     esac
-    
-    # البحث عن الملفات المنزلة
-    local OUTPUT_FILE=$(find "$SAVE_PATH" -type f -newer /proc/self 2>/dev/null | head -1)
-    if [[ -f "$OUTPUT_FILE" ]]; then
-      echo "$ICON_SUCCESS تم إنشاء الملف: $OUTPUT_FILE"
+
+    [[ -n "${SAVE_PATH:-}" && -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH" 2>/dev/null
+    if [[ "$L" == "ar" ]]; then
+      read -p "اضغط Enter للمتابعة..." dummy
+    else
+      read -p "Press Enter to continue..." dummy
     fi
-    
-    [[ -n "$FILE_MANAGER" ]] && $FILE_MANAGER "$SAVE_PATH" 2>/dev/null
   done
 }
 
@@ -931,9 +1092,9 @@ settings_menu() {
       echo "│  3) تحديث GMD                       │"
       echo "│  4) إصلاح اختصار سطح المكتب        │"
       echo "│  5) إلغاء التثبيت الكامل            │"
-      echo "│  $ICON_BACK 6) رجوع                 │"
+      echo "│  $ICON_BACK 0) رجوع                 │"
       echo "└─────────────────────────────────────┘"
-      read -p "اختر خيارًا [1-6]: " settings_opt
+      read -p "اختر خيارًا [0-5]: " settings_opt
     else
       echo ""
       echo "┌─────────────────────────────────────┐"
@@ -944,34 +1105,42 @@ settings_menu() {
       echo "│  3) Update GMD                      │"
       echo "│  4) Fix desktop shortcut            │"
       echo "│  5) Complete uninstall              │"
-      echo "│  $ICON_BACK 6) Back                 │"
+      echo "│  $ICON_BACK 0) Back                 │"
       echo "└─────────────────────────────────────┘"
-      read -p "Choose an option [1-6]: " settings_opt
+      read -p "Choose an option [0-5]: " settings_opt
     fi
 
     case $settings_opt in
+      0) return 0;;
       1) toggle_lang;;
       2) update_yt_dlp;;
-      3) 
+      3)
         echo "$ICON_DOWNLOAD جاري تحديث GMD..."
-        if [[ -f "$0" ]]; then
+        if [[ -f "$0" && -s "$0" ]]; then
             cp "$0" ~/.local/bin/gmd
             chmod +x ~/.local/bin/gmd
         else
-            curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" -o ~/.local/bin/gmd
+            curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" \
+                 -o ~/.local/bin/gmd
             chmod +x ~/.local/bin/gmd
         fi
         echo "$ICON_SUCCESS تم تحديث GMD بنجاح!"
-        echo "$ICON_INFO تم الحفاظ على اختصار سطح المكتب"
         ;;
-      4) 
+      4)
         echo "🔧 جاري إصلاح اختصار سطح المكتب..."
         install_desktop_shortcut_auto
         ;;
       5) uninstall_gmd_complete;;
-      6) return 0;;
       *) echo "$ICON_ERROR خيار غير صالح.";;
     esac
+
+    if [[ "$settings_opt" != "0" ]]; then
+      if [[ "$L" == "ar" ]]; then
+        read -p "اضغط Enter للمتابعة..." dummy
+      else
+        read -p "Press Enter to continue..." dummy
+      fi
+    fi
   done
 }
 
@@ -982,7 +1151,7 @@ show_main_menu() {
   echo ""
   echo "┌─────────────────────────────────────┐"
   if [[ "$L" == "ar" ]]; then
-    echo "│          GMD - v1.91               │"
+    echo "│          GMD - v1.92               │"
     echo "│    منزل وسائط جنو                  │"
     echo "├─────────────────────────────────────┤"
     echo "│  $ICON_DOWNLOAD 1) تنزيل فيديو            │"
@@ -990,12 +1159,14 @@ show_main_menu() {
     echo "│  $ICON_SMART 3) تنزيل وتحويل مباشر       │"
     echo "│  $ICON_CONVERT 4) تحويل وسائط             │"
     echo "│  $ICON_EXTRA 5) خيارات تنزيل أخرى         │"
-    echo "│  $ICON_SETTINGS 6) إعدادات                │"
+    echo "│  $ICON_CLIP 6) قص الفيديو/الصوت           │"
+    echo "│  $ICON_INFO2 7) معلومات الوسائط            │"
+    echo "│  $ICON_SETTINGS 8) إعدادات                │"
     echo "│  $ICON_EXIT 0) خروج                       │"
     echo "└─────────────────────────────────────┘"
-    read -p "اختر خيارًا [0-6]: " option
+    read -p "اختر خيارًا [0-8]: " option
   else
-    echo "│          GMD - v1.91                 │"
+    echo "│          GMD - v1.92                 │"
     echo "│    GNU MEDIA DOWNLOADER             │"
     echo "├─────────────────────────────────────┤"
     echo "│  $ICON_DOWNLOAD 1) Download Video         │"
@@ -1003,16 +1174,19 @@ show_main_menu() {
     echo "│  $ICON_SMART 3) Download & Convert Direct │"
     echo "│  $ICON_CONVERT 4) Convert Media           │"
     echo "│  $ICON_EXTRA 5) Extra Download Options    │"
-    echo "│  $ICON_SETTINGS 6) Settings               │"
+    echo "│  $ICON_CLIP 6) Trim Video/Audio           │"
+    echo "│  $ICON_INFO2 7) Media Info                │"
+    echo "│  $ICON_SETTINGS 8) Settings               │"
     echo "│  $ICON_EXIT 0) Exit                       │"
     echo "└─────────────────────────────────────┘"
-    read -p "Choose an option [0-6]: " option
+    read -p "Choose an option [0-8]: " option
   fi
 }
 
 # ----------------------------
 # التشغيل الرئيسي
 # ----------------------------
+ensure_path
 install_yt_dlp
 update_yt_dlp
 self_update "$@"
@@ -1028,7 +1202,9 @@ while true; do
     3) download_and_convert;;
     4) convert_media;;
     5) extra_download_options;;
-    6) settings_menu;;
+    6) clip_media;;
+    7) show_media_info;;
+    8) settings_menu;;
     0)
       if [[ "$L" == "ar" ]]; then
         echo "$ICON_EXIT مع السلامة!"
@@ -1036,7 +1212,7 @@ while true; do
         echo "$ICON_EXIT Goodbye!"
       fi
       exit 0;;
-    *) 
+    *)
       if [[ "$L" == "ar" ]]; then
         echo "$ICON_ERROR خيار غير صالح. الرجاء المحاولة مرة أخرى."
       else
