@@ -1,0 +1,895 @@
+#!/bin/bash
+# GMD-GUI - GNU Media Downloader (Graphical Edition) v1.92
+# by gnutux
+# نسخة رسومية كاملة تعتمد على zenity
+
+set -uo pipefail
+
+# ----------------------------
+# المسارات والإعدادات الأساسية
+# ----------------------------
+BIN_DIR="$HOME/.local/bin"
+mkdir -p "$BIN_DIR"
+SELF_PATH="$BIN_DIR/gmd-gui"
+YTDLP="$BIN_DIR/yt-dlp"
+UPDATE_MARKER="$HOME/.config/gmd_last_update"
+DESKTOP_MARKER="$HOME/.config/gmd_desktop_installed"
+REPO_RAW_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui"
+LOG_FILE="$HOME/.config/gmd_gui.log"
+mkdir -p "$(dirname "$UPDATE_MARKER")"
+
+# ----------------------------
+# اللغة الافتراضية
+# ----------------------------
+LANGUAGE="${GMD_LANG:-ar}"
+
+# ----------------------------
+# التحقق من zenity أولاً
+# ----------------------------
+if ! command -v zenity &>/dev/null; then
+    echo "❌ zenity غير مثبت. يرجى تثبيته أولاً:"
+    echo "   sudo apt install zenity   # Ubuntu/Debian"
+    echo "   sudo dnf install zenity   # Fedora"
+    echo "   sudo pacman -S zenity     # Arch"
+    exit 1
+fi
+
+# ----------------------------
+# دوال النصوص الثنائية اللغة
+# ----------------------------
+t() {
+    local ar="$1"
+    local en="$2"
+    if [[ "$LANGUAGE" == "ar" ]]; then
+        echo "$ar"
+    else
+        echo "$en"
+    fi
+}
+
+# ----------------------------
+# الشعار والعنوان
+# ----------------------------
+APP_TITLE="$(t 'GMD — منزل وسائط جنو' 'GMD — GNU Media Downloader')"
+APP_VER="v1.92"
+WIN_ICON=""
+# محاولة استخدام الأيقونة إن وجدت
+ICON_PATH="$HOME/.local/share/icons/hicolor/48x48/apps/gmd-icon.png"
+[[ -f "$ICON_PATH" ]] && WIN_ICON="--window-icon=$ICON_PATH"
+
+# دالة zenity مشتركة تضيف العنوان والأيقونة تلقائياً
+zrun() {
+    zenity $WIN_ICON --title="$APP_TITLE $APP_VER" "$@" 2>/dev/null
+}
+
+# ----------------------------
+# رسائل الخطأ والنجاح
+# ----------------------------
+msg_info() {
+    zrun --info --text="$1" --ok-label="$(t 'حسناً' 'OK')" &
+}
+
+msg_error() {
+    zrun --error --text="$1" --ok-label="$(t 'حسناً' 'OK')"
+}
+
+msg_ok() {
+    zrun --info --text="✅  $1" --ok-label="$(t 'حسناً' 'OK')"
+}
+
+msg_confirm() {
+    zrun --question \
+         --text="$1" \
+         --ok-label="$(t 'نعم' 'Yes')" \
+         --cancel-label="$(t 'إلغاء' 'Cancel')"
+}
+
+# ----------------------------
+# شريط تقدم يعرض مخرجات yt-dlp الحقيقية سطراً بسطر
+# ----------------------------
+run_with_progress() {
+    local TITLE="$1"
+    local TEXT="$2"
+    local CMD="$3"
+    local LOG="$LOG_FILE"
+    local PIPE
+    PIPE=$(mktemp -u /tmp/gmd_pipe_XXXXXX)
+    mkfifo "$PIPE"
+
+    # تنفيذ الأمر مع إرسال مخرجاته للـ pipe
+    (
+        eval "$CMD" 2>&1 | tee "$LOG" | while IFS= read -r LINE; do
+            # تنظيف السطر من رموز ANSI وإرساله لـ zenity
+            CLEAN=$(echo "$LINE" | sed 's/\x1B\[[0-9;]*[mK]//g' | tr -d '\r')
+            # إذا كان سطر تقدم yt-dlp (يحتوي على %)
+            if echo "$CLEAN" | grep -q '%'; then
+                PCT=$(echo "$CLEAN" | grep -oP '\d+\.\d+(?=%)' | tail -1 | cut -d. -f1)
+                [[ -n "$PCT" && "$PCT" -le 100 ]] && echo "$PCT"
+            fi
+            # إرسال النص كتعليق يظهر في نافذة التقدم
+            echo "# $CLEAN"
+        done
+        echo "100"
+    ) > "$PIPE" &
+    local BG_PID=$!
+
+    # عرض شريط التقدم مع القراءة من الـ pipe
+    zenity $WIN_ICON \
+        --progress \
+        --title="$TITLE" \
+        --text="$TEXT" \
+        --width=520 \
+        --auto-close \
+        --no-cancel \
+        --ok-label="$(t 'حسناً' 'OK')" \
+        < "$PIPE" 2>/dev/null
+
+    wait "$BG_PID" 2>/dev/null
+    rm -f "$PIPE"
+
+    # كود الخروج الحقيقي من السجل (0 إذا اكتمل بنجاح)
+    grep -qiE "error|ERROR|فشل|failed" "$LOG" 2>/dev/null && return 1
+    return 0
+}
+
+# ----------------------------
+# عرض نتيجة التنزيل
+# ----------------------------
+show_result() {
+    local SUCCESS="$1"
+    local LOG="$LOG_FILE"
+    local OUTPUT_TEXT
+
+    if [[ "$SUCCESS" == "0" ]]; then
+        OUTPUT_TEXT="✅ $(t 'اكتملت العملية بنجاح!' 'Operation completed successfully!')\n\n$(t 'السجل:' 'Log:') $(tail -5 "$LOG" 2>/dev/null | tr '\n' ' ')"
+        zrun --info \
+             --text="$OUTPUT_TEXT" \
+             --ok-label="$(t 'ممتاز!' 'Great!')" \
+             --width=500
+    else
+        OUTPUT_TEXT="❌ $(t 'فشلت العملية.' 'Operation failed.')\n\n$(t 'تفاصيل الخطأ:' 'Error details:') $(tail -10 "$LOG" 2>/dev/null | tr '\n' '\n')"
+        zrun --error \
+             --text="$OUTPUT_TEXT" \
+             --ok-label="$(t 'حسناً' 'OK')" \
+             --width=500
+    fi
+}
+
+# ----------------------------
+# اختيار مجلد الحفظ
+# ----------------------------
+choose_save_path() {
+    local SAVE_PATH
+    SAVE_PATH=$(zrun --file-selection \
+                     --directory \
+                     --filename="$HOME/Downloads/" \
+                     --text="$(t 'اختر مجلد الحفظ' 'Choose save folder')" 2>/dev/null)
+    if [[ -z "$SAVE_PATH" ]]; then
+        SAVE_PATH="$HOME/Downloads"
+    fi
+    echo "$SAVE_PATH"
+}
+
+# ----------------------------
+# إدخال الرابط
+# ----------------------------
+get_url() {
+    local URL
+    URL=$(zrun --entry \
+               --text="$(t '🌐 أدخل رابط الفيديو أو الصوت:' '🌐 Enter video or audio URL:')" \
+               --entry-text="" \
+               2>/dev/null)
+    if [[ -z "$URL" ]]; then
+        return 1
+    fi
+    echo "$URL"
+}
+
+# ----------------------------
+# اختيار ملف محلي
+# ----------------------------
+choose_local_file() {
+    local FILE
+    FILE=$(zrun --file-selection \
+                --filename="$HOME/" \
+                --text="$(t 'اختر الملف' 'Choose file')" \
+                --file-filter="$(t 'ملفات الوسائط' 'Media files') | *.mp4 *.mp3 *.mkv *.avi *.mov *.webm *.m4a *.flac *.wav *.ogg *.opus" \
+                2>/dev/null)
+    [[ -z "$FILE" ]] && return 1
+    echo "$FILE"
+}
+
+# ----------------------------
+# قائمة جودة الفيديو
+# ----------------------------
+choose_video_quality() {
+    local CHOICE
+    CHOICE=$(zrun --list \
+                  --radiolist \
+                  --text="$(t '🎞️ اختر جودة الفيديو:' '🎞️ Choose video quality:')" \
+                  --column="" \
+                  --column="$(t 'الجودة' 'Quality')" \
+                  --column="$(t 'الوصف' 'Description')" \
+                  --width=450 --height=300 \
+                  TRUE  "1080p" "$(t 'عالية' 'High')" \
+                  FALSE "720p"  "$(t 'متوسطة' 'Medium')" \
+                  FALSE "480p"  "$(t 'منخفضة' 'Low')" \
+                  FALSE "$(t 'أفضل متاحة' 'Best available')" "$(t 'أعلى جودة ممكنة' 'Highest possible')" \
+                  2>/dev/null)
+    [[ -z "$CHOICE" ]] && return 1
+
+    case "$CHOICE" in
+        "1080p")  echo "bv*[height<=1080]+ba/best[height<=1080]" ;;
+        "720p")   echo "bv*[height<=720]+ba/best[height<=720]" ;;
+        "480p")   echo "bv*[height<=480]+ba/best[height<=480]" ;;
+        *)         echo "bestvideo+bestaudio/best" ;;
+    esac
+}
+
+# ----------------------------
+# قائمة صيغة الصوت
+# ----------------------------
+choose_audio_format() {
+    local CHOICE
+    CHOICE=$(zrun --list \
+                  --radiolist \
+                  --text="$(t '🎵 اختر صيغة الصوت:' '🎵 Choose audio format:')" \
+                  --column="" \
+                  --column="$(t 'الصيغة' 'Format')" \
+                  --column="$(t 'الوصف' 'Description')" \
+                  --width=450 --height=330 \
+                  TRUE  "mp3"  "$(t 'جودة متوسطة - الأكثر توافقاً' 'Medium quality - most compatible')" \
+                  FALSE "m4a"  "$(t 'جيدة للأجهزة المحمولة' 'Good for mobile devices')" \
+                  FALSE "ogg"  "$(t 'حجم صغير - مفتوح المصدر' 'Small size - open source')" \
+                  FALSE "opus" "$(t 'كفاءة عالية - جودة ممتازة' 'High efficiency - excellent quality')" \
+                  FALSE "flac" "$(t 'بدون خسارة - جودة أصلية' 'Lossless - original quality')" \
+                  FALSE "wav"  "$(t 'جودة أصلية - حجم كبير' 'Original quality - large size')" \
+                  2>/dev/null)
+    [[ -z "$CHOICE" ]] && return 1
+
+    case "$CHOICE" in
+        mp3)  echo "--extract-audio --audio-format mp3 --audio-quality 0" ;;
+        m4a)  echo "--extract-audio --audio-format m4a" ;;
+        ogg)  echo "--extract-audio --audio-format vorbis" ;;
+        opus) echo "--extract-audio --audio-format opus" ;;
+        flac) echo "--extract-audio --audio-format flac" ;;
+        wav)  echo "--extract-audio --audio-format wav" ;;
+    esac
+}
+
+# ----------------------------
+# قائمة صيغة التحويل
+# ----------------------------
+choose_conversion_format() {
+    local CHOICE
+    CHOICE=$(zrun --list \
+                  --radiolist \
+                  --text="$(t '🔄 اختر صيغة الإخراج:' '🔄 Choose output format:')" \
+                  --column="" \
+                  --column="$(t 'الصيغة' 'Format')" \
+                  --column="$(t 'النوع' 'Type')" \
+                  --width=430 --height=380 \
+                  TRUE  "mp3"  "$(t 'صوت' 'Audio')" \
+                  FALSE "m4a"  "$(t 'صوت' 'Audio')" \
+                  FALSE "ogg"  "$(t 'صوت' 'Audio')" \
+                  FALSE "wav"  "$(t 'صوت' 'Audio')" \
+                  FALSE "flac" "$(t 'صوت - بدون خسارة' 'Audio - lossless')" \
+                  FALSE "mp4"  "$(t 'فيديو' 'Video')" \
+                  FALSE "webm" "$(t 'فيديو - مفتوح المصدر' 'Video - open source')" \
+                  2>/dev/null)
+    [[ -z "$CHOICE" ]] && return 1
+
+    case "$CHOICE" in
+        mp3)  EXT="mp3";  CONV_OPTS="-c:a libmp3lame -b:a 192k" ;;
+        m4a)  EXT="m4a";  CONV_OPTS="-c:a aac -b:a 192k" ;;
+        ogg)  EXT="ogg";  CONV_OPTS="-c:a libvorbis -q:a 4" ;;
+        wav)  EXT="wav";  CONV_OPTS="" ;;
+        flac) EXT="flac"; CONV_OPTS="-c:a flac" ;;
+        mp4)  EXT="mp4";  CONV_OPTS="-c:v libx264 -crf 23 -c:a aac -b:a 192k" ;;
+        webm) EXT="webm"; CONV_OPTS="-c:v libvpx-vp9 -crf 30 -b:v 0 -c:a libopus" ;;
+    esac
+    return 0
+}
+
+# ----------------------------
+# فتح مجلد الحفظ بعد التنزيل
+# ----------------------------
+open_folder() {
+    local DIR="$1"
+    if command -v xdg-open &>/dev/null; then
+        xdg-open "$DIR" 2>/dev/null &
+    fi
+}
+
+# ==============================================================
+# ==================== وظائف البرنامج الرئيسية ================
+# ==============================================================
+
+# ----------------------------
+# 1. تنزيل فيديو
+# ----------------------------
+do_download_video() {
+    local URL FORMAT SAVE_PATH
+
+    URL=$(get_url) || return 0
+
+    FORMAT=$(choose_video_quality) || return 0
+
+    SAVE_PATH=$(choose_save_path)
+
+    run_with_progress \
+        "$(t 'تنزيل فيديو' 'Download Video')" \
+        "$(t '⬇️ جاري تنزيل الفيديو...' '⬇️ Downloading video...')" \
+        "\"$YTDLP\" -f \"$FORMAT\" -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
+
+    local STATUS=$?
+    show_result "$STATUS"
+    [[ "$STATUS" == "0" ]] && open_folder "$SAVE_PATH"
+}
+
+# ----------------------------
+# 2. تنزيل صوت
+# ----------------------------
+do_download_audio() {
+    local URL AUDIO_OPTS SAVE_PATH
+
+    URL=$(get_url) || return 0
+
+    AUDIO_OPTS=$(choose_audio_format) || return 0
+
+    SAVE_PATH=$(choose_save_path)
+
+    run_with_progress \
+        "$(t 'تنزيل صوت' 'Download Audio')" \
+        "$(t '🎵 جاري تنزيل الصوت...' '🎵 Downloading audio...')" \
+        "\"$YTDLP\" $AUDIO_OPTS -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
+
+    local STATUS=$?
+    show_result "$STATUS"
+    [[ "$STATUS" == "0" ]] && open_folder "$SAVE_PATH"
+}
+
+# ----------------------------
+# 3. تنزيل وتحويل مباشر
+# ----------------------------
+do_download_convert() {
+    local URL SAVE_PATH EXT CONV_OPTS
+
+    URL=$(get_url) || return 0
+
+    choose_conversion_format || return 0
+
+    SAVE_PATH=$(choose_save_path)
+
+    # تحديد الأمر حسب النوع
+    local CMD
+    if [[ "$EXT" == "mp4" || "$EXT" == "webm" ]]; then
+        local FORMAT
+        FORMAT=$(choose_video_quality) || return 0
+        CMD="\"$YTDLP\" -f \"$FORMAT\" --merge-output-format $EXT -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
+    else
+        CMD="\"$YTDLP\" --extract-audio --audio-format $EXT --audio-quality 0 -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
+    fi
+
+    run_with_progress \
+        "$(t 'تنزيل وتحويل' 'Download & Convert')" \
+        "$(t '🧠 جاري التنزيل والتحويل الذكي...' '🧠 Smart downloading and converting...')" \
+        "$CMD"
+
+    local STATUS=$?
+    show_result "$STATUS"
+    [[ "$STATUS" == "0" ]] && open_folder "$SAVE_PATH"
+}
+
+# ----------------------------
+# 4. تحويل ملف موجود
+# ----------------------------
+do_convert_media() {
+    local FILE SAVE_PATH EXT CONV_OPTS
+
+    FILE=$(choose_local_file) || return 0
+
+    choose_conversion_format || return 0
+
+    SAVE_PATH=$(choose_save_path)
+
+    local BASENAME NAME OUTPUT_FILE
+    BASENAME=$(basename "$FILE")
+    NAME="${BASENAME%.*}"
+    OUTPUT_FILE="$SAVE_PATH/${NAME}.${EXT}"
+
+    run_with_progress \
+        "$(t 'تحويل وسائط' 'Convert Media')" \
+        "$(t '🔄 جاري التحويل...' '🔄 Converting...')" \
+        "ffmpeg -i \"$FILE\" $CONV_OPTS \"$OUTPUT_FILE\" -y"
+
+    local STATUS=$?
+    if [[ "$STATUS" == "0" && -f "$OUTPUT_FILE" ]]; then
+        local SIZE
+        SIZE=$(du -h "$OUTPUT_FILE" 2>/dev/null | cut -f1)
+        zrun --info \
+             --text="✅ $(t 'تم التحويل بنجاح!' 'Converted successfully!')\n\n📄 $(t 'الملف:' 'File:') $OUTPUT_FILE\n📊 $(t 'الحجم:' 'Size:') $SIZE" \
+             --ok-label="$(t 'فتح المجلد' 'Open Folder')" \
+             --extra-button="$(t 'إغلاق' 'Close')" \
+             --width=500 2>/dev/null && open_folder "$SAVE_PATH"
+    else
+        show_result "1"
+    fi
+}
+
+# do_extra_options defined later with stable IDs
+
+# ----------------------------
+# 6. قص الفيديو/الصوت
+# ----------------------------
+do_clip_media() {
+    local CLIP_TYPE
+    CLIP_TYPE=$(zrun --list \
+                     --text="$(t '✂️ اختر نوع القص:' '✂️ Choose trim type:')" \
+                     --column="$(t 'النوع' 'Type')" \
+                     --column="$(t 'الوصف' 'Description')" \
+                     --width=460 --height=220 \
+                     "$(t '🌐 من رابط' 'From URL')"        "$(t 'قص مقطع مباشرة من الإنترنت' 'Trim clip directly from URL')" \
+                     "$(t '📁 ملف محلي' 'Local file')"    "$(t 'قص ملف موجود على جهازك' 'Trim an existing file')" \
+                     2>/dev/null)
+    [[ -z "$CLIP_TYPE" ]] && return 0
+
+    # نموذج إدخال أوقات القص
+    local TIMES
+    TIMES=$(zrun --forms \
+                 --text="$(t '✂️ أدخل أوقات القص\nمثال: 00:01:30' '✂️ Enter trim times\nExample: 00:01:30')" \
+                 --add-entry="$(t 'وقت البداية' 'Start time')" \
+                 --add-entry="$(t 'وقت النهاية' 'End time')" \
+                 --ok-label="$(t 'قص' 'Trim')" \
+                 --cancel-label="$(t 'إلغاء' 'Cancel')" \
+                 --width=380 \
+                 2>/dev/null)
+    [[ -z "$TIMES" ]] && return 0
+
+    local START_TIME END_TIME
+    START_TIME=$(echo "$TIMES" | cut -d'|' -f1)
+    END_TIME=$(echo "$TIMES" | cut -d'|' -f2)
+
+    if [[ -z "$START_TIME" || -z "$END_TIME" ]]; then
+        msg_error "$(t 'يرجى إدخال وقت البداية والنهاية.' 'Please enter both start and end times.')"
+        return 0
+    fi
+
+    local SAVE_PATH
+    SAVE_PATH=$(choose_save_path)
+
+    local CMD TITLE TEXT
+
+    if [[ "$CLIP_TYPE" == *"$(t 'من رابط' 'From URL')"* ]]; then
+        local URL
+        URL=$(get_url) || return 0
+        TITLE="$(t 'قص من رابط' 'Trim from URL')"
+        TEXT="$(t '✂️ جاري القص والتنزيل...' '✂️ Trimming and downloading...')"
+        CMD="\"$YTDLP\" --download-sections \"*${START_TIME}-${END_TIME}\" --force-keyframes-at-cuts -o \"$SAVE_PATH/%(title)s_clip.%(ext)s\" \"$URL\""
+    else
+        local FILE
+        FILE=$(choose_local_file) || return 0
+        local BNAME EXT_F OUT
+        BNAME=$(basename "$FILE")
+        EXT_F="${BNAME##*.}"
+        OUT="$SAVE_PATH/${BNAME%.*}_clip.$EXT_F"
+        TITLE="$(t 'قص ملف' 'Trim File')"
+        TEXT="$(t '✂️ جاري القص...' '✂️ Trimming...')"
+        CMD="ffmpeg -ss \"$START_TIME\" -to \"$END_TIME\" -i \"$FILE\" -c copy \"$OUT\" -y"
+    fi
+
+    run_with_progress "$TITLE" "$TEXT" "$CMD"
+    local STATUS=$?
+    show_result "$STATUS"
+    [[ "$STATUS" == "0" ]] && open_folder "$SAVE_PATH"
+}
+
+# ----------------------------
+# 7. معلومات الوسائط
+# ----------------------------
+do_media_info() {
+    local URL
+    URL=$(get_url) || return 0
+
+    # شريط تقدم أثناء الجلب
+    local INFO
+    (
+        echo "10"; sleep 0.5
+        echo "# $(t 'جاري الاتصال بالخادم...' 'Connecting to server...')"
+        INFO=$("$YTDLP" --dump-json "$URL" 2>/dev/null)
+        echo "100"
+    ) | zrun --progress \
+             --text="$(t '📋 جاري جلب معلومات الوسائط...' '📋 Fetching media info...')" \
+             --pulsate --auto-close --no-cancel 2>/dev/null
+
+    INFO=$("$YTDLP" --dump-json "$URL" 2>/dev/null)
+
+    if [[ -z "$INFO" ]]; then
+        msg_error "$(t 'تعذر جلب معلومات الوسائط.\nتحقق من الرابط والاتصال بالإنترنت.' 'Could not fetch media info.\nCheck the URL and internet connection.')"
+        return 0
+    fi
+
+    # استخراج المعلومات
+    local TITLE UPLOADER DURATION RESOLUTION EXT VIEWS WEBPAGE
+    TITLE=$(echo "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('title','—'))" 2>/dev/null || echo "—")
+    UPLOADER=$(echo "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('uploader','—'))" 2>/dev/null || echo "—")
+    DURATION=$(echo "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('duration_string') or str(d.get('duration','—')))" 2>/dev/null || echo "—")
+    RESOLUTION=$(echo "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('resolution','—'))" 2>/dev/null || echo "—")
+    EXT=$(echo "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('ext','—'))" 2>/dev/null || echo "—")
+    VIEWS=$(echo "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); v=d.get('view_count'); print(f'{v:,}' if v else '—')" 2>/dev/null || echo "—")
+    WEBPAGE=$(echo "$INFO" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('webpage_url','—'))" 2>/dev/null || echo "—")
+
+    local INFO_TEXT
+    INFO_TEXT="📋 $(t 'معلومات الوسائط' 'Media Information')\n"
+    INFO_TEXT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    INFO_TEXT+="🎬 $(t 'العنوان:' 'Title:')       $TITLE\n"
+    INFO_TEXT+="👤 $(t 'المحمّل:' 'Uploader:')    $UPLOADER\n"
+    INFO_TEXT+="⏱️  $(t 'المدة:' 'Duration:')     $DURATION\n"
+    INFO_TEXT+="📐 $(t 'الجودة:' 'Resolution:')   $RESOLUTION\n"
+    INFO_TEXT+="🎞️  $(t 'الصيغة:' 'Format:')      $EXT\n"
+    INFO_TEXT+="👁️  $(t 'المشاهدات:' 'Views:')    $VIEWS\n"
+    INFO_TEXT+="━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    INFO_TEXT+="🌐 $WEBPAGE"
+
+    zrun --info \
+         --text="$INFO_TEXT" \
+         --ok-label="$(t 'حسناً' 'OK')" \
+         --width=560 --height=350 2>/dev/null
+}
+
+# do_settings defined later with stable IDs
+
+# ----------------------------
+# تثبيت اختصار سطح المكتب
+# ----------------------------
+install_desktop_shortcut() {
+    local DESKTOP_DIR="$HOME/.local/share/applications"
+    local ICON_DIR="$HOME/.local/share/icons/hicolor/48x48/apps"
+    mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
+
+    # تحميل الأيقونة
+    if curl -fsSL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" \
+            -o "$ICON_DIR/gmd-icon.png" 2>/dev/null && [[ -s "$ICON_DIR/gmd-icon.png" ]]; then
+        ICON_PATH="$ICON_DIR/gmd-icon.png"
+    else
+        ICON_PATH="utilities-terminal"
+    fi
+
+    cat > "$DESKTOP_DIR/gmd-gui.desktop" <<EOF
+[Desktop Entry]
+Version=1.0
+Name=GMD-GUI - GNU Media Downloader
+GenericName=Media Downloader
+Comment=Download and convert media from the internet
+Exec=$SELF_PATH
+Icon=$ICON_PATH
+Terminal=false
+Type=Application
+Categories=Utility;Network;AudioVideo;
+Keywords=download;video;audio;youtube;converter;
+StartupNotify=false
+EOF
+    chmod +x "$DESKTOP_DIR/gmd-gui.desktop"
+    command -v update-desktop-database &>/dev/null && \
+        update-desktop-database "$DESKTOP_DIR" 2>/dev/null
+    echo "$(date)" > "$DESKTOP_MARKER"
+}
+
+# ----------------------------
+# تحديث GMD-GUI
+# ----------------------------
+update_gmd_gui() {
+    local BACKUP="${SELF_PATH}.bak"
+    cp "$SELF_PATH" "$BACKUP" 2>/dev/null || true
+
+    local TMP
+    TMP=$(mktemp /tmp/gmd_gui_update.XXXXXX)
+
+    run_with_progress \
+        "$(t 'تحديث GMD-GUI' 'Update GMD-GUI')" \
+        "$(t '⬆️ جاري تحميل أحدث نسخة...' '⬆️ Downloading latest version...')" \
+        "curl -fsSL \"$REPO_RAW_URL\" -o \"$TMP\""
+
+    if [[ -s "$TMP" ]]; then
+        chmod +x "$TMP"
+        mv "$TMP" "$SELF_PATH"
+        rm -f "$BACKUP"
+        echo "$(date +%s)" > "$UPDATE_MARKER"
+        zrun --info \
+             --text="✅ $(t 'تم تحديث GMD-GUI بنجاح!\nسيُعاد تشغيل البرنامج الآن.' 'GMD-GUI updated successfully!\nThe program will now restart.')" \
+             --ok-label="$(t 'إعادة تشغيل' 'Restart')" \
+             --width=400 2>/dev/null
+        exec "$SELF_PATH"
+    else
+        rm -f "$TMP"
+        [[ -f "$BACKUP" ]] && mv "$BACKUP" "$SELF_PATH"
+        msg_error "$(t 'فشل التحديث.\nتم استعادة النسخة السابقة.' 'Update failed.\nPrevious version restored.')"
+    fi
+}
+
+# ----------------------------
+# إلغاء التثبيت الكامل
+# ----------------------------
+uninstall_gmd_gui() {
+    msg_confirm "$(t '⚠️ هل أنت متأكد من إلغاء تثبيت GMD-GUI بالكامل؟\n\nسيتم حذف:\n• الملف التنفيذي\n• yt-dlp\n• أيقونة سطح المكتب\n• جميع الملفات الإضافية' \
+'⚠️ Are you sure you want to completely uninstall GMD-GUI?\n\nThis will remove:\n• Executable file\n• yt-dlp\n• Desktop icon\n• All additional files')" || return 0
+
+    rm -f "$YTDLP" 2>/dev/null
+    rm -f "$HOME/.local/share/applications/gmd-gui.desktop" 2>/dev/null
+    rm -f "$HOME/.local/share/icons/hicolor/48x48/apps/gmd-icon.png" 2>/dev/null
+    rm -f "$DESKTOP_MARKER" "$UPDATE_MARKER" 2>/dev/null
+
+    command -v update-desktop-database &>/dev/null && \
+        update-desktop-database "$HOME/.local/share/applications" 2>/dev/null
+
+    zrun --info \
+         --text="✅ $(t 'تم إلغاء تثبيت GMD-GUI بالكامل بنجاح!\n\nيمكنك إعادة التثبيت في أي وقت.' \
+'GMD-GUI completely uninstalled!\n\nYou can reinstall anytime.')" \
+         --ok-label="$(t 'وداعاً!' 'Goodbye!')" \
+         --width=380 2>/dev/null
+
+    local SELF="$SELF_PATH"
+    (sleep 2 && rm -f "$SELF") &
+    exit 0
+}
+
+# ----------------------------
+# تثبيت yt-dlp إن لم يكن موجوداً
+# ----------------------------
+install_yt_dlp() {
+    if [[ -x "$YTDLP" ]]; then return 0; fi
+
+    msg_confirm "$(t 'yt-dlp غير مثبت وهو ضروري للتنزيل.\nهل تريد تثبيته الآن؟' \
+'yt-dlp is not installed and is required for downloading.\nWould you like to install it now?')" || exit 1
+
+    run_with_progress \
+        "$(t 'تثبيت yt-dlp' 'Install yt-dlp')" \
+        "$(t '⬇️ جاري تثبيت yt-dlp...' '⬇️ Installing yt-dlp...')" \
+        "curl -fsSL 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp' -o \"$YTDLP\" && chmod a+rx \"$YTDLP\""
+
+    if [[ ! -x "$YTDLP" ]]; then
+        msg_error "$(t 'فشل تثبيت yt-dlp.\nتحقق من اتصالك بالإنترنت.' 'Failed to install yt-dlp.\nCheck your internet connection.')"
+        exit 1
+    fi
+    msg_ok "$(t 'تم تثبيت yt-dlp بنجاح!' 'yt-dlp installed successfully!')"
+}
+
+# ----------------------------
+# التحقق من ffmpeg
+# ----------------------------
+check_ffmpeg() {
+    if ! command -v ffmpeg &>/dev/null; then
+        zrun --warning \
+             --text="$(t '⚠️ ffmpeg غير مثبت.\nميزات التحويل وقص الوسائط لن تعمل.\n\nللتثبيت:\nsudo apt install ffmpeg' \
+'⚠️ ffmpeg is not installed.\nConvert and trim features will not work.\n\nTo install:\nsudo apt install ffmpeg')" \
+             --ok-label="$(t 'فهمت' 'Understood')" \
+             --width=380 2>/dev/null
+    fi
+}
+
+# ----------------------------
+# وضع التثبيت
+# ----------------------------
+if [[ "${1:-}" == "--install" ]]; then
+    echo "⬇️  جاري تثبيت GMD-GUI..."
+    mkdir -p "$BIN_DIR"
+
+    local_tmp=$(mktemp /tmp/gmd_gui_install.XXXXXX)
+    if curl -fsSL "$REPO_RAW_URL" -o "$local_tmp" 2>/dev/null && [[ -s "$local_tmp" ]]; then
+        mv "$local_tmp" "$SELF_PATH"
+    elif [[ -f "$0" && -s "$0" ]]; then
+        cp "$0" "$SELF_PATH"
+        rm -f "$local_tmp"
+    else
+        rm -f "$local_tmp"
+        echo "❌ فشل التثبيت."
+        exit 1
+    fi
+    chmod +x "$SELF_PATH"
+
+    # إصلاح PATH
+    for RC in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
+        if [[ -f "$RC" ]] && ! grep -q 'local/bin' "$RC" 2>/dev/null; then
+            echo '' >> "$RC"
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
+            break
+        fi
+    done
+    export PATH="$BIN_DIR:$PATH"
+
+    echo "✅ تم التثبيت في $SELF_PATH"
+    echo "🚀 جاري التشغيل..."
+    sleep 1
+    exec "$SELF_PATH"
+fi
+
+# ----------------------------
+# القائمة الرئيسية - تعيد معرّفاً ثابتاً بدلاً من النص
+# ----------------------------
+main_menu() {
+    # العمود الأول: معرّف ثابت (مخفي عن المستخدم) — العمود الثاني: النص المعروض — الثالث: الوصف
+    local CHOICE
+    CHOICE=$(zenity $WIN_ICON \
+                  --list \
+                  --title="$APP_TITLE $APP_VER" \
+                  --text="$(t '🎬 مرحباً بك في GMD-GUI\nاختر العملية التي تريد تنفيذها:' \
+                              '🎬 Welcome to GMD-GUI\nChoose an operation:')" \
+                  --column="ID" \
+                  --column="$(t 'العملية' 'Operation')" \
+                  --column="$(t 'الوصف' 'Description')" \
+                  --hide-column=1 \
+                  --width=580 --height=440 \
+                  --ok-label="$(t 'تنفيذ' 'Run')" \
+                  --cancel-label="$(t 'خروج' 'Exit')" \
+                  "VID"     "$(t '⬇️  تنزيل فيديو'          '⬇️  Download Video')"          "$(t 'تنزيل فيديو باختيار الجودة'               'Download video with quality choice')" \
+                  "AUD"     "$(t '🎵  تنزيل صوت'            '🎵  Download Audio')"            "$(t 'استخراج وتنزيل الصوت فقط'                 'Extract and download audio only')" \
+                  "SMART"   "$(t '🧠  تنزيل وتحويل مباشر'  '🧠  Download & Convert')"        "$(t 'تنزيل وتحويل إلى أي صيغة مباشرة'          'Download and convert to any format')" \
+                  "CONV"    "$(t '🔄  تحويل ملف موجود'      '🔄  Convert Local File')"        "$(t 'تحويل ملف وسائط موجود على جهازك'           'Convert existing file on your device')" \
+                  "EXTRA"   "$(t '⚡  خيارات إضافية'        '⚡  Extra Options')"             "$(t 'قوائم تشغيل، قنوات، ترجمات، تنزيل شامل'   'Playlists, channels, subtitles, package')" \
+                  "CLIP"    "$(t '✂️   قص فيديو/صوت'        '✂️   Trim Video/Audio')"         "$(t 'قص مقطع من رابط أو ملف موجود'             'Trim clip from URL or existing file')" \
+                  "INFO"    "$(t '📋  معلومات الوسائط'      '📋  Media Info')"               "$(t 'عرض تفاصيل الفيديو قبل التنزيل'            'View video details before downloading')" \
+                  "SETTINGS" "$(t '⚙️   الإعدادات'           '⚙️   Settings')"               "$(t 'اللغة، التحديثات، الأيقونة، إلغاء التثبيت'  'Language, updates, icon, uninstall')" \
+                  2>/dev/null)
+    echo "$CHOICE"
+}
+
+# ----------------------------
+# قائمة الإعدادات - بنفس مبدأ المعرّفات الثابتة
+# ----------------------------
+do_settings() {
+    local CHOICE
+    CHOICE=$(zenity $WIN_ICON \
+                  --list \
+                  --title="$APP_TITLE $APP_VER" \
+                  --text="$(t '⚙️ الإعدادات' '⚙️ Settings')" \
+                  --column="ID" \
+                  --column="$(t 'الخيار' 'Option')" \
+                  --column="$(t 'الوصف' 'Description')" \
+                  --hide-column=1 \
+                  --width=540 --height=360 \
+                  --ok-label="$(t 'تنفيذ' 'Run')" \
+                  --cancel-label="$(t '🔙 رجوع' '🔙 Back')" \
+                  "LANG"      "$(t '🌐 تغيير اللغة'              'Change Language')"         "$(t 'التبديل بين العربية والإنجليزية'          'Switch between Arabic and English')" \
+                  "YTDLP"     "$(t '🔄 تحديث yt-dlp'            'Update yt-dlp')"           "$(t 'تحديث أداة التنزيل للنسخة الأحدث'         'Update download engine to latest')" \
+                  "UPDATE"    "$(t '⬆️ تحديث GMD-GUI'           'Update GMD-GUI')"          "$(t 'تحديث البرنامج من المستودع'               'Update program from repository')" \
+                  "DESKTOP"   "$(t '🖥️ إصلاح أيقونة سطح المكتب' 'Fix Desktop Icon')"       "$(t 'إعادة تثبيت الأيقونة في قائمة التطبيقات'  'Reinstall icon in app menu')" \
+                  "UNINSTALL" "$(t '🗑️ إلغاء التثبيت الكامل'    'Complete Uninstall')"      "$(t 'إزالة البرنامج وجميع ملفاته نهائياً'       'Remove program and all its files')" \
+                  2>/dev/null)
+
+    [[ -z "$CHOICE" ]] && return 0
+
+    case "$CHOICE" in
+        LANG)
+            if [[ "$LANGUAGE" == "ar" ]]; then
+                LANGUAGE="en"
+                # تحديث عنوان التطبيق بعد تغيير اللغة
+                APP_TITLE="$(t 'GMD — منزل وسائط جنو' 'GMD — GNU Media Downloader')"
+                msg_ok "Language switched to English. ✅"
+            else
+                LANGUAGE="ar"
+                APP_TITLE="$(t 'GMD — منزل وسائط جنو' 'GMD — GNU Media Downloader')"
+                msg_ok "تم التبديل إلى العربية. ✅"
+            fi
+            ;;
+        YTDLP)
+            run_with_progress \
+                "$(t 'تحديث yt-dlp' 'Update yt-dlp')" \
+                "$(t '🔄 جاري تحديث yt-dlp...' '🔄 Updating yt-dlp...')" \
+                "\"$YTDLP\" -U"
+            show_result "$?"
+            ;;
+        UPDATE)   update_gmd_gui ;;
+        DESKTOP)
+            install_desktop_shortcut
+            msg_ok "$(t 'تم إصلاح اختصار سطح المكتب بنجاح!' 'Desktop shortcut fixed successfully!')"
+            ;;
+        UNINSTALL) uninstall_gmd_gui ;;
+    esac
+}
+
+# ----------------------------
+# قائمة الخيارات الإضافية - بمعرّفات ثابتة
+# ----------------------------
+do_extra_options() {
+    local CHOICE
+    CHOICE=$(zenity $WIN_ICON \
+                  --list \
+                  --title="$APP_TITLE $APP_VER" \
+                  --text="$(t '⚡ خيارات التنزيل الإضافية' '⚡ Extra Download Options')" \
+                  --column="ID" \
+                  --column="$(t 'الخيار' 'Option')" \
+                  --column="$(t 'الوصف' 'Description')" \
+                  --hide-column=1 \
+                  --width=540 --height=330 \
+                  --ok-label="$(t 'تنفيذ' 'Run')" \
+                  --cancel-label="$(t '🔙 رجوع' '🔙 Back')" \
+                  "PLAYLIST"  "$(t '📋 قائمة تشغيل'   'Playlist')"       "$(t 'تنزيل قائمة تشغيل كاملة'             'Download complete playlist')" \
+                  "CHANNEL"   "$(t '📺 قناة'           'Channel')"        "$(t 'تنزيل مقاطع من قناة'                'Download videos from channel')" \
+                  "SUBS"      "$(t '💬 ترجمات'         'Subtitles')"      "$(t 'تنزيل الترجمات فقط'                 'Download subtitles only')" \
+                  "THUMBS"    "$(t '🖼️ صور مصغرة'     'Thumbnails')"     "$(t 'تنزيل الصور المصغرة فقط'            'Download thumbnails only')" \
+                  "COMPLETE"  "$(t '📦 تنزيل شامل'    'Complete package')" "$(t 'فيديو + صوت + ترجمة + صورة مصغرة'  'Video + audio + subtitles + thumbnail')" \
+                  2>/dev/null)
+
+    [[ -z "$CHOICE" ]] && return 0
+
+    local URL SAVE_PATH CMD TITLE TEXT
+
+    URL=$(get_url) || return 0
+    SAVE_PATH=$(choose_save_path)
+
+    case "$CHOICE" in
+        PLAYLIST)
+            TITLE="$(t 'تنزيل قائمة التشغيل' 'Download Playlist')"
+            TEXT="$(t '📋 جاري تنزيل قائمة التشغيل...' '📋 Downloading playlist...')"
+            CMD="\"$YTDLP\" -o \"$SAVE_PATH/%(playlist_title)s/%(title)s.%(ext)s\" \"$URL\""
+            ;;
+        CHANNEL)
+            TITLE="$(t 'تنزيل القناة' 'Download Channel')"
+            TEXT="$(t '📺 جاري تنزيل مقاطع القناة...' '📺 Downloading channel videos...')"
+            CMD="\"$YTDLP\" -o \"$SAVE_PATH/%(uploader)s/%(title)s.%(ext)s\" \"$URL\""
+            ;;
+        SUBS)
+            TITLE="$(t 'تنزيل الترجمات' 'Download Subtitles')"
+            TEXT="$(t '💬 جاري تنزيل الترجمات...' '💬 Downloading subtitles...')"
+            CMD="\"$YTDLP\" --write-auto-sub --skip-download -o \"$SAVE_PATH/%(title)s\" \"$URL\""
+            ;;
+        THUMBS)
+            TITLE="$(t 'تنزيل الصور المصغرة' 'Download Thumbnails')"
+            TEXT="$(t '🖼️ جاري تنزيل الصور المصغرة...' '🖼️ Downloading thumbnails...')"
+            CMD="\"$YTDLP\" --write-thumbnail --skip-download -o \"$SAVE_PATH/%(title)s\" \"$URL\""
+            ;;
+        COMPLETE)
+            local COMPLETE_DIR="$SAVE_PATH/complete_$(date +%Y%m%d_%H%M%S)"
+            mkdir -p "$COMPLETE_DIR"
+            TITLE="$(t 'تنزيل شامل' 'Complete Package')"
+            TEXT="$(t '📦 جاري التنزيل الشامل...' '📦 Downloading complete package...')"
+            CMD="\"$YTDLP\" -f 'bestvideo+bestaudio/best' --write-thumbnail --write-sub --write-auto-sub --all-subs --write-description --write-info-json -o \"$COMPLETE_DIR/%(title)s.%(ext)s\" \"$URL\""
+            SAVE_PATH="$COMPLETE_DIR"
+            ;;
+    esac
+
+    run_with_progress "$TITLE" "$TEXT" "$CMD"
+    local STATUS=$?
+    show_result "$STATUS"
+    [[ "$STATUS" == "0" ]] && open_folder "$SAVE_PATH"
+}
+
+# ==============================================================
+# ========================== التشغيل ==========================
+# ==============================================================
+
+# التحقق من التبعيات
+install_yt_dlp
+check_ffmpeg
+
+# تثبيت الأيقونة إن لم تكن موجودة
+if [[ ! -f "$DESKTOP_MARKER" ]] || \
+   [[ ! -f "$HOME/.local/share/applications/gmd-gui.desktop" ]]; then
+    install_desktop_shortcut
+fi
+
+# الحلقة الرئيسية — تعمل على معرّفات ثابتة (case بدلاً من مقارنة نصوص)
+while true; do
+    CHOICE=$(main_menu)
+
+    # إذا أغلق المستخدم النافذة أو ضغط خروج
+    if [[ -z "$CHOICE" ]]; then
+        msg_confirm "$(t '🚪 هل تريد الخروج من GMD-GUI؟' '🚪 Do you want to exit GMD-GUI?')" \
+            && exit 0
+        continue
+    fi
+
+    case "$CHOICE" in
+        VID)      do_download_video ;;
+        AUD)      do_download_audio ;;
+        SMART)    do_download_convert ;;
+        CONV)     do_convert_media ;;
+        EXTRA)    do_extra_options ;;
+        CLIP)     do_clip_media ;;
+        INFO)     do_media_info ;;
+        SETTINGS) do_settings ;;
+        *)
+            msg_error "$(t 'خيار غير معروف.' 'Unknown option.')"
+            ;;
+    esac
+done
