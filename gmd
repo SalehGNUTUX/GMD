@@ -2,7 +2,8 @@
 # GMD - GNU Media Downloader v1.92
 # by gnutux
 
-set -euo pipefail
+# معالجة آمنة للأخطاء - لا نوقف البرنامج عند أي خطأ غير متوقع
+set -uo pipefail
 
 # ----------------------------
 # الشعار
@@ -93,14 +94,20 @@ if [[ "${1:-}" == "--install" || "${1:-}" == "--install-desktop" ]]; then
     echo "⬇️  جاري تثبيت GMD..."
     mkdir -p ~/.local/bin
 
-    if [[ -f "$0" && -s "$0" ]]; then
+    # تحميل مباشر من المستودع دائماً لضمان أحدث نسخة
+    local_tmp=$(mktemp /tmp/gmd_install.XXXXXX)
+    if curl -fsSL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd" \
+            -o "$local_tmp" 2>/dev/null && [[ -s "$local_tmp" ]]; then
+        mv "$local_tmp" ~/.local/bin/gmd
+    elif [[ -f "$0" && -s "$0" ]]; then
         cp "$0" ~/.local/bin/gmd
-        chmod +x ~/.local/bin/gmd
+        rm -f "$local_tmp"
     else
-        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" \
-             -o ~/.local/bin/gmd
-        chmod +x ~/.local/bin/gmd
+        rm -f "$local_tmp"
+        echo "❌ فشل التثبيت: لا يمكن تحميل الملف."
+        exit 1
     fi
+    chmod +x ~/.local/bin/gmd
 
     # إصلاح PATH
     local_bin="$HOME/.local/bin"
@@ -135,15 +142,20 @@ fi
 # ----------------------------
 if [[ "${1:-}" == "--update" ]]; then
     echo "⬇️  جاري تحديث GMD..."
-    if [[ -f "$0" && -s "$0" ]]; then
+    local_tmp=$(mktemp /tmp/gmd_update.XXXXXX)
+    if curl -fsSL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd" \
+            -o "$local_tmp" 2>/dev/null && [[ -s "$local_tmp" ]]; then
+        mv "$local_tmp" ~/.local/bin/gmd
+        chmod +x ~/.local/bin/gmd
+    elif [[ -f "$0" && -s "$0" ]]; then
         cp "$0" ~/.local/bin/gmd.tmp
         chmod +x ~/.local/bin/gmd.tmp
         mv ~/.local/bin/gmd.tmp ~/.local/bin/gmd
+        rm -f "$local_tmp"
     else
-        curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" \
-             -o ~/.local/bin/gmd.tmp
-        chmod +x ~/.local/bin/gmd.tmp
-        mv ~/.local/bin/gmd.tmp ~/.local/bin/gmd
+        rm -f "$local_tmp"
+        echo "❌ فشل التحديث."
+        exit 1
     fi
     echo "✅ تم تحديث GMD بنجاح!"
     echo ""
@@ -160,8 +172,8 @@ if [[ "${1:-}" == "--fix-desktop" ]]; then
     DESKTOP_DIR="$HOME/.local/share/applications"
     ICON_DIR="$HOME/.local/share/icons/hicolor/48x48/apps"
     mkdir -p "$DESKTOP_DIR" "$ICON_DIR"
-    if curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" \
-            -o "$ICON_DIR/gmd-icon.png" 2>/dev/null; then
+    if curl -fsSL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" \
+            -o "$ICON_DIR/gmd-icon.png" 2>/dev/null && [[ -s "$ICON_DIR/gmd-icon.png" ]]; then
         ICON_PATH="$ICON_DIR/gmd-icon.png"
     else
         ICON_PATH="utilities-terminal"
@@ -263,8 +275,8 @@ install_desktop_shortcut_auto() {
 
     echo "$ICON_INFO جاري تثبيت أيقونة البرنامج..."
     if command -v curl &>/dev/null; then
-        if curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" \
-                -o "$ICON_DIR/gmd-icon.png" 2>/dev/null; then
+        if curl -fsSL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png" \
+                -o "$ICON_DIR/gmd-icon.png" 2>/dev/null && [[ -s "$ICON_DIR/gmd-icon.png" ]]; then
             ICON_PATH="$ICON_DIR/gmd-icon.png"
             echo "$ICON_SUCCESS تم تنزيل الأيقونة بنجاح"
         else
@@ -482,26 +494,53 @@ update_yt_dlp() {
 # ----------------------------
 # تحديث البرنامج نفسه تلقائيًا
 # ----------------------------
-REPO_RAW_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd"
+REPO_RAW_URL="https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd"
+
+# دالة مشتركة لتحميل أحدث نسخة من المستودع
+_download_latest_gmd() {
+  local DEST="$1"
+  local TMP_FILE
+  TMP_FILE=$(mktemp /tmp/gmd_update.XXXXXX)
+  echo "$ICON_DOWNLOAD جاري تحميل أحدث نسخة من المستودع..."
+  if curl -fsSL "$REPO_RAW_URL" -o "$TMP_FILE" 2>/dev/null; then
+    if [[ -s "$TMP_FILE" ]]; then
+      chmod a+rx "$TMP_FILE"
+      mv "$TMP_FILE" "$DEST"
+      return 0
+    else
+      rm -f "$TMP_FILE"
+      echo "$ICON_ERROR الملف الذي تم تحميله فارغ."
+      return 1
+    fi
+  else
+    rm -f "$TMP_FILE"
+    echo "$ICON_ERROR فشل الاتصال بالمستودع. تحقق من الإنترنت."
+    return 1
+  fi
+}
+
+# تحديث تلقائي عند بدء التشغيل (كل 7 أيام)
 self_update() {
-  local now last diff TMP_FILE
+  local now last diff
   now=$(date +%s)
   last=$(cat "$UPDATE_MARKER" 2>/dev/null || echo 0)
   diff=$(( (now - last) / 86400 ))
   if (( diff >= 7 )); then
     echo "$ICON_INFO التحقق من وجود تحديثات..."
-    TMP_FILE=$(mktemp)
-    if curl -L "$REPO_RAW_URL" -o "$TMP_FILE" 2>/dev/null; then
-      if ! cmp -s "$SELF_PATH" "$TMP_FILE"; then
+    local TMP_FILE
+    TMP_FILE=$(mktemp /tmp/gmd_check.XXXXXX)
+    if curl -fsSL "$REPO_RAW_URL" -o "$TMP_FILE" 2>/dev/null && [[ -s "$TMP_FILE" ]]; then
+      if ! cmp -s "$SELF_PATH" "$TMP_FILE" 2>/dev/null; then
         echo "$ICON_DOWNLOAD تحديث GMD إلى النسخة الأحدث..."
         chmod a+rx "$TMP_FILE"
         mv "$TMP_FILE" "$SELF_PATH"
         echo "$now" > "$UPDATE_MARKER"
-        echo "$ICON_SUCCESS تم تحديث GMD بنجاح!"
-        echo "$ICON_INFO تم الحفاظ على اختصار سطح المكتب"
+        echo "$ICON_SUCCESS تم تحديث GMD بنجاح! جاري إعادة التشغيل..."
+        sleep 1
         exec "$SELF_PATH" "$@"
       else
         rm -f "$TMP_FILE"
+        echo "$now" > "$UPDATE_MARKER"
         echo "$ICON_INFO GMD محدث بالفعل."
       fi
     else
@@ -510,6 +549,32 @@ self_update() {
     fi
   else
     echo "$ICON_INFO تم التحقق من التحديثات مؤخرًا."
+  fi
+}
+
+# تحديث يدوي من قائمة الإعدادات مع إعادة تشغيل
+update_gmd_manual() {
+  echo "$ICON_DOWNLOAD جاري تحديث GMD..."
+  local BACKUP="${SELF_PATH}.bak"
+  # نسخ احتياطي من النسخة الحالية
+  cp "$SELF_PATH" "$BACKUP" 2>/dev/null || true
+
+  if _download_latest_gmd "$SELF_PATH"; then
+    local now
+    now=$(date +%s)
+    echo "$now" > "$UPDATE_MARKER"
+    echo "$ICON_SUCCESS تم تحديث GMD بنجاح!"
+    echo "$ICON_INFO جاري إعادة تشغيل البرنامج بالنسخة الجديدة..."
+    rm -f "$BACKUP" 2>/dev/null || true
+    sleep 1
+    exec "$SELF_PATH"
+  else
+    # استعادة النسخة الاحتياطية إذا فشل التحديث
+    if [[ -f "$BACKUP" ]]; then
+      mv "$BACKUP" "$SELF_PATH"
+      echo "$ICON_INFO تم استعادة النسخة السابقة."
+    fi
+    return 1
   fi
 }
 
@@ -1127,16 +1192,7 @@ settings_menu() {
       1) toggle_lang;;
       2) update_yt_dlp;;
       3)
-        echo "$ICON_DOWNLOAD جاري تحديث GMD..."
-        if [[ -f "$0" && -s "$0" ]]; then
-            cp "$0" ~/.local/bin/gmd
-            chmod +x ~/.local/bin/gmd
-        else
-            curl -L "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/GMD%20APPIAMGE%20BIULD/GMD.AppDir/usr/bin/gmd" \
-                 -o ~/.local/bin/gmd
-            chmod +x ~/.local/bin/gmd
-        fi
-        echo "$ICON_SUCCESS تم تحديث GMD بنجاح!"
+        update_gmd_manual
         ;;
       4)
         echo "🔧 جاري إصلاح اختصار سطح المكتب..."
