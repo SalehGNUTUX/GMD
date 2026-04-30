@@ -1,31 +1,44 @@
-# GMD - GNU Media Downloader v1.92
+<div dir="rtl">
 
-## 🆕 الإصدار 1.92 - نسختان: طرفية (CLI) ورسومية (GUI) + AppImage
+# GMD — منزّل وسائط غنو
 
-```
-   ____   __  __   ____  
-  / ___| |  \/  | |  _ \ 
- | |  _  | |\/| | | | | |
- | |_| | | |  | | | |_| |
-  \____| |_|  |_| |____/ 
--------------------------
-   GNU MEDIA DOWNLOADER
--------------------------
-       » BY GNUTUX «
-         » v1.92 «
-```
+**GNU Media Downloader** — واجهة رسومية حديثة لتنزيل وتحويل الوسائط على غنو/لينكس.  
+مبنية بـ **Electron 28 + React 18 + Tailwind CSS 3** مع دعم كامل للعربية والإنجليزية.
 
-**GMD v1.92** يأتي بإصدارين منفصلين:
-- **🖥️ النسخة الطرفية (CLI)** - للأوامر والسكريبتات
-- **🎨 النسخة الرسومية (GUI)** - واجهة مستخدم رسومية تعتمد على Zenity
+<div align="center">
 
-<img width="256" height="256" alt="GMD Icon" src="https://github.com/SalehGNUTUX/GMD/blob/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png?raw=true" />
+![الإصدار](https://img.shields.io/badge/إصدار-26.05.0-red)
+![الترخيص](https://img.shields.io/badge/ترخيص-GPL%20v3-blue)
+![المنصة](https://img.shields.io/badge/منصة-غنو%2Fلينكس-green)
+![المطور](https://img.shields.io/badge/المطور-GNUTUX-orange)
+
+</div>
+
+---
+
+## 📑 جدول المحتويات
+
+- [📸 لقطات الشاشة](#-لقطات-الشاشة)
+- [✨ المميزات](#-المميزات)
+- [📦 متطلبات النظام](#-متطلبات-النظام)
+- [🚀 التشغيل والتطوير](#-التشغيل-والتطوير)
+- [🏗️ البناء والتحزيم](#️-البناء-والتحزيم)
+- [📥 تنزيل الحزم الجاهزة](#-تنزيل-الحزم-الجاهزة)
+- [🏛️ البنية التقنية](#️-البنية-التقنية)
+- [⌨️ الاختصارات والتقنيات](#️-الاختصارات-والتقنيات)
+- [📄 الترخيص](#-الترخيص)
 
 ---
 
 ## 📸 لقطات الشاشة
 
-### النسخة الرسومية (GMD-GUI)
+### النسخة الحديثة (GMD-GUI v26.05 — React)
+
+| العربية | English |
+|---------|---------|
+| ![القائمة الرئيسية - عربي](screenshots-26.05/القائمة%20الرئيسية-العربية.png) | ![Main Menu - English](screenshots-26.05/القائمة%20الرئيسية-الإنجليزية.png) |
+
+### النسخة القديمة (GMD v1.92 — Zenity)
 
 | العربية | English |
 |---------|---------|
@@ -33,513 +46,257 @@
 
 ---
 
-## 📦 تحميل AppImage (شغّل فوراً بدون تثبيت)
+## ✨ المميزات
 
-### النسخة الرسومية (GUI) - موصى بها للمستخدمين العاديين
+### تنزيل الوسائط
+| الميزة | التفاصيل |
+|--------|-----------|
+| 📹 **تنزيل فيديو** | اختيار الجودة: أفضل متاحة، 1080p، 720p، 480p |
+| 🎵 **تنزيل صوت** | صيغ: MP3، M4A، OGG، OPUS، FLAC، WAV |
+| 🧠 **تنزيل وتحويل** | تنزيل وتحويل مباشر إلى أي صيغة |
+| ⚡ **خيارات إضافية** | قوائم تشغيل · قنوات · ترجمات · صور مصغرة · تنزيل شامل · روابط مباشرة بـ wget/aria2c |
 
-**تحميل وتشغيل مباشر**
+### معالجة الملفات المحلية
+| الميزة | التفاصيل |
+|--------|-----------|
+| 🔄 **تحويل ملفات** | فيديو · صوت · صور (JPG، PNG، WebP، GIF، BMP) — دفعة واحدة أو عدة ملفات |
+| ✂️ **قص وسائط** | تقطيع دقيق من رابط أو ملف محلي مع معاينة فيديو/صوت ومؤقت تفاعلي |
+| 📋 **معلومات الوسائط** | عرض تفاصيل الفيديو قبل التنزيل (العنوان، المدة، الجودة، الصيغة) |
+
+### الإعدادات والتخصيص
+- 🌐 تبديل اللغة: عربي (RTL) ↔ إنجليزي (LTR)
+- 🔤 اختيار الخط: **Noto Sans Arabic** أو **Ubuntu Arabic** مع معاينة فورية
+- 📁 مجلدات حفظ افتراضية لكل نوع (فيديو، صوت، مستندات، تنزيلات)
+- ⚙️ ترميزات متقدمة عند تحويل الملفات
+- 🔧 إدارة الاعتماديات: تثبيت wget/aria2c، تحديث yt-dlp مع عرض رقم الإصدار
+- 🖥️ إصلاح أيقونة سطح المكتب، إلغاء التثبيت الكامل
+
+### واجهة المستخدم
+- 🎨 ثيم داكن مع تأثيرات زجاجية ورسوم متحركة سلسة (framer-motion)
+- 🖱️ تحكم مخصص بنافذة التطبيق (Frame-less window)
+- 📊 شريط تقدم مباشر أثناء التنزيل مع إمكانية الإلغاء
+
+---
+
+## 📦 متطلبات النظام
+
+| المتطلب | الحد الأدنى | الملاحظة |
+|---------|------------|---------|
+| **Node.js** | 18+ | للتطوير والبناء |
+| **yt-dlp** | آخر إصدار | `~/.local/bin/yt-dlp` — يُثبَّت من الإعدادات |
+| **ffmpeg** | أي إصدار | مطلوب للتحويل والقص |
+| **wget** أو **aria2c** | اختياري | للتنزيل المباشر من روابط |
+
+---
+
+## 🚀 التشغيل والتطوير
+
 ```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-chmod +x GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-./GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-```
+# تثبيت التبعيات
+npm install
 
-### النسخة الطرفية (CLI) - للمطورين والمستخدمين المتقدمين
+# تشغيل وضع التطوير (Vite فقط)
+npm run dev
 
-**تحميل وتشغيل مباشر**
-```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage
-chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage
-./GMD_CLI_Media_Downloader-x86_64.AppImage
+# تشغيل مع Electron
+npm run electron:dev
+
+# بناء الإنتاج
+npm run build
 ```
 
 ---
 
-## ✨ مميزات الإصدار 1.92
+## 🏗️ البناء والتحزيم
 
-### 🖥️ **نسختان منفصلتان**
-- **GMD-CLI**: النسخة الطرفية الكلاسيكية (تعمل في أي طرفية)
-- **GMD-GUI**: نسخة رسومية حديثة بواجهة Zenity (أسهل للمستخدمين العاديين)
+### باستخدام npm
 
-### 📦 **حزم AppImage**
-- **شغّل فوراً** بدون تثبيت
-- **متوافقة مع جميع توزيعات Linux**
-- **حجم صغير** وسهلة النقل
-
-### 🚀 **تشغيل فوري بعد التثبيت (للنسخة الطرفية)**
-- لا حاجة لإدخال أي أمر يدوي بعد التثبيت
-- يُشغَّل تلقائياً مباشرة بعد اكتمال التثبيت
-
-### 🔙 **خيار الإلغاء والعودة في كل مرحلة**
-- كل قائمة فرعية تحتوي على خيار `0` للعودة الفورية
-- دعم ثنائي اللغة عربي وإنجليزي
-
-### ✂️ **قص الفيديو والصوت**
-- قص مباشر من رابط دون تحميل الملف كاملاً
-- قص ملف موجود على الجهاز
-
-### 📋 **معلومات الوسائط**
-- عرض تفاصيل الفيديو قبل التنزيل (العنوان، المدة، الجودة، المشاهدات)
-
----
-
-## 🚀 طرق التثبيت والتشغيل
-
-### الطريقة 1: استخدام AppImage (أسهل وأسرع)
-
-**للنسخة الرسومية (GUI)**
 ```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-chmod +x GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-./GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
+# بناء جميع الحزم (AppImage + DEB + RPM)
+npm run electron:build
+
+# بناء هدف محدد
+npx electron-builder --linux AppImage
+npx electron-builder --linux deb
+npx electron-builder --linux rpm
 ```
 
-**للنسخة الطرفية (CLI)**
+### باستخدام سكريبتات البناء
+
 ```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage
-chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage
-./GMD_CLI_Media_Downloader-x86_64.AppImage
+# بناء شامل (AppImage + DEB + RPM)
+./build-scripts/build.sh
+
+# بناء AppImage فقط
+./build-scripts/build-appimage.sh
+
+# بناء DEB فقط
+./build-scripts/build-deb.sh
+
+# بناء RPM (يتراجع لـ alien تلقائياً على Debian/Ubuntu)
+./build-scripts/build-rpm.sh
 ```
 
-### الطريقة 2: إضافة GMD إلى قائمة التطبيقات باستخدام GEARLEVER
+> **ملاحظة RPM**: على أنظمة Debian/Ubuntu يلزم تثبيت `alien rpm` مسبقاً:
+> ```bash
+> sudo apt install alien rpm
+> ```
 
-**Gearlever** هو تطبيق Flatpak رائع يسمح لك بدمج تطبيقات AppImage في قائمة التطبيقات الخاصة بنظامك.
+### مخرجات البناء
 
-#### الخطوة 1: تثبيت Gearlever
-```bash
-flatpak install flathub it.mijorus.gearlever
+الحزم تُوضع في مجلد `dist-electron/`:
 ```
-
-#### الخطوة 2: تشغيل Gearlever
-```bash
-flatpak run it.mijorus.gearlever
-```
-أو ابحث عن "Gearlever" في قائمة التطبيقات وشغّله.
-
-#### الخطوة 3: إضافة GMD إلى Gearlever
-
-**الطريقة (أ) - السحب والإفلات (الأسهل):**
-1. **افتح Gearlever**
-2. **اسحب ملف AppImage** (GMD-GUI أو GMD-CLI) وأفلته في نافذة Gearlever
-3. **اضغط على "Integrate"** لدمج التطبيق في النظام
-
-**الطريقة (ب) - عبر زر "Add AppImage":**
-1. **افتح Gearlever**
-2. **اضغط على زر "Add AppImage"** (➕)
-3. **اختر ملف AppImage** الذي تريد إضافته
-4. **اضغط "Integrate"**
-
-#### الخطوة 4: استمتع!
-بعد الإضافة، ستجد GMD في قائمة التطبيقات الخاصة بنظامك:
-- 📱 **GNOME**: اضغط على Super (Windows) وابحث عن "GMD"
-- 🐧 **KDE**: ابحث في قائمة التطبيقات
-- 🖥️ **XFCE**: ستجده في قائمة التطبيقات → Utilities
-
-### الطريقة 3: التثبيت الكامل للنسخة الطرفية (CLI)
-```bash
-bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd") --install-desktop
-```
-
-### الطريقة 4: تجربة مباشرة دون تثبيت
-
-**للنسخة الطرفية**
-```bash
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)
-```
-
-**للنسخة الرسومية (يجب أن يكون Zenity مثبتاً)**
-```bash
-bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui.sh)
+dist-electron/
+├── GMD-26.5.0.AppImage
+├── gmd_26.5.0_amd64.deb
+└── gmd-26.5.0.x86_64.rpm
 ```
 
 ---
 
-## 📋 القوائم الرئيسية
+## 📥 تنزيل الحزم الجاهزة
 
-### النسخة الطرفية (CLI)
-```
-┌─────────────────────────────────────┐
-│          GMD - v1.92 (CLI)         │
-│    منزل وسائط جنو - طرفية           │
-├─────────────────────────────────────┤
-│  ⬇️  1) تنزيل فيديو               │
-│  🎵  2) تنزيل صوت                  │
-│  🧠  3) تنزيل وتحويل مباشر        │
-│  🔄  4) تحويل وسائط               │
-│  ⚡  5) خيارات تنزيل أخرى          │
-│  ✂️  6) قص الفيديو/الصوت          │
-│  📋  7) معلومات الوسائط           │
-│  ⚙️  8) إعدادات                   │
-├─────────────────────────────────────┤
-│  🚪  0) خروج من البرنامج           │
-└─────────────────────────────────────┘
-```
+### الإصدار 26.05.0 (النسخة الحديثة)
 
-### النسخة الرسومية (GUI)
-![القائمة الرئيسية - GUI](https://github.com/SalehGNUTUX/GMD/blob/main/screenshot/gmd-gui-main-menu-ar.png)
+| الحزمة | الرابط | الحجم | SHA256 |
+|--------|--------|-------|--------|
+| 🐧 **AppImage** | [GMD-26.5.0.AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.AppImage) | 105 MB | `bfb8386cb3bca6a547a092c2d11de3bc6f5e8a526b59a52e0a83ff5f18b0cd2c` |
+| 🐧 **DEB** | [GMD-26.5.0.deb](https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.deb) | 71.1 MB | `f0d586deac8257aba29badea1ada61de973cd53c4c65b0e3d1e7d91219a197ab` |
+| 🐧 **RPM** | [GMD-26.5.0.rpm](https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.rpm) | 103 MB | `8c637b0848d427099188b60fc96fa0cc391f2aea96d8b514b203571c5c41a68d` |
 
----
-
-## 🛠️ الأوامر المتاحة (للنسخة الطرفية)
-
-| الأمر | الوصف |
-|-------|-------|
-| `gmd` | تشغيل البرنامج |
-| `gmd --install` | تثبيت وتشغيل فوري |
-| `gmd --install-desktop` | تثبيت مع أيقونة سطح المكتب |
-| `gmd --update` | تحديث البرنامج |
-| `gmd --clean-uninstall` | إلغاء تثبيت كامل |
-
----
-
-## 📦 روابط التحميل المباشرة
+### الإصدار 1.92 (النسخة القديمة — Zenity)
 
 | الإصدار | الرابط |
 |---------|--------|
-| **جميع الإصدارات** | [صفحة الإصدارات](https://github.com/SalehGNUTUX/GMD/releases/tag/GMD_1.92_Media_Downloader) |
-| **GMD-GUI (رسومية)** | [تحميل AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage) |
-| **GMD-CLI (طرفية)** | [تحميل AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage) |
+| **GMD-GUI (النسخة الرسومية)** | [تحميل AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage) |
+| **GMD-CLI (النسخة الطرفية)** | [تحميل AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage) |
 
----
+#### طرق تثبيت وتشغيل النسخة القديمة (v1.92)
 
-## 💡 متى تستخدم أي نسخة؟
+**الطريقة 1: استخدام AppImage (التشغيل المباشر)**
 
-### استخدم النسخة الرسومية (GMD-GUI) إذا:
-- أنت مستخدم عادي تفضل الواجهات الرسومية
-- لا تريد التعامل مع سطر الأوامر
-- تفضل النوافذ والقوائم المنبثقة
-
-### استخدم النسخة الطرفية (GMD-CLI) إذا:
-- أنت مطور أو مستخدم متقدم
-- تريد دمج البرنامج في سكريبتات
-- تعمل على خوادم بدون واجهة رسومية
-- تفضل السرعة والمرونة
-
----
-
-## 📁 هيكل الملفات (بعد التثبيت)
-
-```
-~/.local/bin/gmd                              # النسخة الطرفية
-~/.local/bin/gmd-gui                           # النسخة الرسومية (إذا ثبتت)
-~/.local/bin/yt-dlp                           # أداة التنزيل
-~/.local/share/applications/gmd.desktop       # اختصار النسخة الطرفية
-~/.local/share/applications/gmd-gui.desktop   # اختصار النسخة الرسومية
-~/.local/share/icons/hicolor/.../gmd-icon.png # الأيقونة
-```
-
----
-
-## 🎯 ملخص الإصدار 1.92
-
-| الميزة | GMD-CLI (طرفية) | GMD-GUI (رسومية) |
-|--------|-----------------|-------------------|
-| واجهة المستخدم | نصية (طرفية) | رسومية (Zenity) |
-| يعمل بدون X11 | ✅ نعم | ❌ لا (يحتاج واجهة رسومية) |
-| مناسب للخوادم | ✅ نعم | ❌ لا |
-| سهل للمبتدئين | ⚠ متوسط | ✅ سهل جداً |
-| AppImage متوفر | ✅ نعم | ✅ نعم |
-| قص الوسائط | ✅ نعم | ✅ نعم |
-| معلومات الوسائط | ✅ نعم | ✅ نعم |
-| تنزيل وتحويل | ✅ نعم | ✅ نعم |
-
----
-
-## 🌟 جربه الآن!
-
-### للنسخة الرسومية (موصى بها للمستخدمين الجدد):
 ```bash
+# للنسخة الرسومية (GUI)
 wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
 chmod +x GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
 ./GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-```
 
-### للنسخة الطرفية (للمستخدمين المتقدمين):
-```bash
+# للنسخة الطرفية (CLI)
 wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage
 chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage
 ./GMD_CLI_Media_Downloader-x86_64.AppImage
 ```
 
----
+**الطريقة 2: إضافة GMD إلى قائمة التطبيقات باستخدام Gearlever**
 
-## 📞 معلومات التواصل
-
-- **المستودع**: [github.com/SalehGNUTUX/GMD](https://github.com/SalehGNUTUX/GMD)
-- **الإصدارات**: [Releases Page](https://github.com/SalehGNUTUX/GMD/releases)
-- **موقع غنوتوكس**: [salehgnutux.github.io/gnutux/](https://salehgnutux.github.io/gnutux/)
-
-**الإصدار 1.92 - نسختان: طرفية للمحترفين ورسومية للجميع!** ✨
-
----
-
-## 🆕 Version 1.92 - Two Editions: CLI & GUI + AppImage
-
-```
-   ____   __  __   ____  
-  / ___| |  \/  | |  _ \ 
- | |  _  | |\/| | | | | |
- | |_| | | |  | | | |_| |
-  \____| |_|  |_| |____/ 
--------------------------
-   GNU MEDIA DOWNLOADER
--------------------------
-       » BY GNUTUX «
-         » v1.92 «
-```
-
-**GMD v1.92** comes in two separate editions:
-- **🖥️ CLI Edition** - for commands and scripts
-- **🎨 GUI Edition** - graphical user interface based on Zenity
-
-<img width="256" height="256" alt="GMD Icon" src="https://github.com/SalehGNUTUX/GMD/blob/main/GMD%20APPIAMGE%20BIULD/gmd-icon.png?raw=true" />
-
----
-
-## 📸 Screenshots
-
-### Graphical Edition (GMD-GUI)
-
-| العربية | English |
-|---------|---------|
-| ![القائمة الرئيسية - عربي](https://github.com/SalehGNUTUX/GMD/blob/main/screenshot/gmd-gui-main-menu-ar.png) | ![Main Menu - English](https://github.com/SalehGNUTUX/GMD/blob/main/screenshot/gmd-gui-main-menu-en.png) |
-
----
-
-## 📦 Download AppImage (Run instantly without installation)
-
-### GUI Edition - Recommended for regular users
-
-**Direct download and run**
 ```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-chmod +x GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-./GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-```
-
-### CLI Edition - For developers and advanced users
-
-**Direct download and run**
-```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage
-chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage
-./GMD_CLI_Media_Downloader-x86_64.AppImage
-```
-
----
-
-## ✨ Features of v1.92
-
-### 🖥️ **Two Separate Editions**
-- **GMD-CLI**: Classic terminal edition (works in any terminal)
-- **GMD-GUI**: Modern graphical edition with Zenity interface (easier for regular users)
-
-### 📦 **AppImage Packages**
-- **Run instantly** without installation
-- **Compatible with all Linux distributions**
-- **Small size** and portable
-
-### 🚀 **Instant Launch After Installation (CLI Edition)**
-- No manual commands needed after installation
-- Launches automatically right after installation
-
-### 🔙 **Cancel & Back Option at Every Step**
-- Every submenu has option `0` for immediate return
-- Bilingual support (Arabic/English)
-
-### ✂️ **Trim Video & Audio**
-- Trim directly from URL without downloading the full file
-- Trim existing local files
-
-### 📋 **Media Info**
-- View video details before downloading (title, duration, quality, views)
-
----
-
-## 🚀 Installation & Running Methods
-
-### Method 1: Using AppImage (Easiest & Fastest)
-
-**For GUI Edition**
-```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-chmod +x GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-./GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-```
-
-**For CLI Edition**
-```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage
-chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage
-./GMD_CLI_Media_Downloader-x86_64.AppImage
-```
-
-### Method 2: Adding GMD to Application Menu Using GEARLEVER
-
-**Gearlever** is a great Flatpak application that allows you to integrate AppImage applications into your system's application menu.
-
-#### Step 1: Install Gearlever
-```bash
+# تثبيت Gearlever
 flatpak install flathub it.mijorus.gearlever
-```
 
-#### Step 2: Run Gearlever
-```bash
+# تشغيل Gearlever
 flatpak run it.mijorus.gearlever
 ```
-Or search for "Gearlever" in your application menu and run it.
+ثم اسحب ملف AppImage وأفلته في نافذة Gearlever واضغط "Integrate".
 
-#### Step 3: Add GMD to Gearlever
+**الطريقة 3: التثبيت الكامل للنسخة الطرفية (CLI)**
 
-**Method (A) - Drag and Drop (Easiest):**
-1. **Open Gearlever**
-2. **Drag the AppImage file** (GMD-GUI or GMD-CLI) and drop it into the Gearlever window
-3. **Click "Integrate"** to integrate the application into your system
-
-**Method (B) - Via "Add AppImage" Button:**
-1. **Open Gearlever**
-2. **Click the "Add AppImage" button** (➕)
-3. **Select the AppImage file** you want to add
-4. **Click "Integrate"**
-
-#### Step 4: Enjoy!
-After integration, you'll find GMD in your system's application menu:
-- 📱 **GNOME**: Press Super (Windows) key and search for "GMD"
-- 🐧 **KDE**: Search in the application menu
-- 🖥️ **XFCE**: You'll find it in Applications → Utilities
-
-### Method 3: Full Installation for CLI Edition
 ```bash
 bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd") --install-desktop
 ```
 
-### Method 4: Try Directly Without Installation
+**الطريقة 4: تجربة مباشرة دون تثبيت**
 
-**For CLI Edition**
 ```bash
+# للنسخة الطرفية
 bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)
-```
 
-**For GUI Edition (Zenity must be installed)**
-```bash
+# للنسخة الرسومية (يجب أن يكون Zenity مثبتاً)
 bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui.sh)
 ```
 
----
+#### متى تستخدم أي نسخة قديمة؟
 
-## 📋 Main Menus
-
-### CLI Edition
-```
-┌─────────────────────────────────────┐
-│       GMD - v1.92 (CLI)            │
-│    GNU MEDIA DOWNLOADER             │
-├─────────────────────────────────────┤
-│  ⬇️  1) Download Video              │
-│  🎵  2) Download Audio              │
-│  🧠  3) Download & Convert Direct   │
-│  🔄  4) Convert Media               │
-│  ⚡  5) Extra Download Options      │
-│  ✂️  6) Trim Video/Audio            │
-│  📋  7) Media Info                  │
-│  ⚙️  8) Settings                    │
-├─────────────────────────────────────┤
-│  🚪  0) Exit Program                │
-└─────────────────────────────────────┘
-```
-
-### GUI Edition
-![Main Menu - GUI](https://github.com/SalehGNUTUX/GMD/blob/main/screenshot/gmd-gui-main-menu-en.png)
+| استخدم GMD-GUI (الرسومية) إذا: | استخدم GMD-CLI (الطرفية) إذا: |
+|-------------------------------|------------------------------|
+| تفضل الواجهات الرسومية | أنت مطور أو مستخدم متقدم |
+| لا تريد التعامل مع سطر الأوامر | تريد دمج البرنامج في سكريبتات |
+| تفضل النوافذ والقوائم المنبثقة | تعمل على خوادم بدون واجهة رسومية |
 
 ---
 
-## 🛠️ Available Commands (For CLI Edition)
-
-| Command | Description |
-|---------|-------------|
-| `gmd` | Run the program |
-| `gmd --install` | Install and launch instantly |
-| `gmd --install-desktop` | Install with desktop icon |
-| `gmd --update` | Update the program |
-| `gmd --clean-uninstall` | Complete uninstall |
-
----
-
-## 📦 Direct Download Links
-
-| Edition | Link |
-|---------|------|
-| **All Releases** | [Releases Page](https://github.com/SalehGNUTUX/GMD/releases/tag/GMD_1.92_Media_Downloader) |
-| **GMD-GUI (Graphical)** | [Download AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage) |
-| **GMD-CLI (Terminal)** | [Download AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage) |
-
----
-
-## 💡 When to Use Which Edition?
-
-### Use the Graphical Edition (GMD-GUI) if:
-- You're a regular user who prefers graphical interfaces
-- You don't want to deal with the command line
-- You prefer windows and popup menus
-
-### Use the Terminal Edition (GMD-CLI) if:
-- You're a developer or advanced user
-- You want to integrate the program into scripts
-- You work on servers without a graphical interface
-- You prefer speed and flexibility
-
----
-
-## 📁 File Structure (After Installation)
+## 🏛️ البنية التقنية
 
 ```
-~/.local/bin/gmd                              # CLI edition
-~/.local/bin/gmd-gui                           # GUI edition (if installed)
-~/.local/bin/yt-dlp                           # Download tool
-~/.local/share/applications/gmd.desktop       # CLI edition shortcut
-~/.local/share/applications/gmd-gui.desktop   # GUI edition shortcut
-~/.local/share/icons/hicolor/.../gmd-icon.png # Icon
+gmd-gui-react-v26.05/
+├── electron/
+│   ├── main.js          # العملية الرئيسية — كل عمليات النظام
+│   └── preload.js       # جسر IPC بين Electron وReact
+├── src/
+│   ├── App.jsx          # جذر التطبيق، التوجيه بين الشاشات
+│   ├── components/
+│   │   ├── MainMenu.jsx       # القائمة الرئيسية
+│   │   ├── DownloadVideo.jsx  # تنزيل فيديو
+│   │   ├── DownloadAudio.jsx  # تنزيل صوت
+│   │   ├── DownloadConvert.jsx # تنزيل وتحويل
+│   │   ├── ConvertLocal.jsx   # تحويل ملفات محلية
+│   │   ├── ExtraOptions.jsx   # خيارات إضافية
+│   │   ├── ClipMedia.jsx      # قص وسائط
+│   │   ├── MediaInfo.jsx      # معلومات الوسائط
+│   │   └── Settings.jsx       # الإعدادات
+│   ├── locales/
+│   │   ├── ar.json      # الترجمة العربية (الافتراضية)
+│   │   └── en.json      # الترجمة الإنجليزية
+│   └── index.css        # التنسيقات العامة والخطوط
+├── fonts/               # خطوط مدمجة
+│   ├── NotoSansArabic-Regular.ttf
+│   ├── NotoSansArabic.ttf
+│   ├── Ubuntu Arabic Regular.otf
+│   └── Ubuntu Arabic Bold.ttf
+├── build-scripts/       # سكريبتات البناء
+└── public/
+    └── gmd-icon.png     # أيقونة التطبيق
 ```
+
+### بروتوكولات مخصصة (في التطبيق المحزَّم)
+- **`app://localhost/`** — يخدم ملفات `dist/` بديلاً عن `file://` المحظور في Electron v28
+- **`media://`** — يخدم ملفات الوسائط المحلية للمعاينة داخل التطبيق
+
+### تدفق البيانات
+- **أوامر الصدفة** (yt-dlp, ffmpeg): `App.jsx` → IPC `run-command` → `spawn('bash')` في `main.js`، المخرجات تُبثّ عبر `command-output`/`command-done`
+- **نوافذ الحوار**: تمر عبر `showDialog()` في `main.js` مع `moveTop()` + `focus()` لضمان ظهورها
+- **الإعدادات**: محفوظة في `localStorage` تحت المفتاح `gmd-settings`
 
 ---
 
-## 🎯 v1.92 Summary
+## ⌨️ الاختصارات والتقنيات
 
-| Feature | GMD-CLI (Terminal) | GMD-GUI (Graphical) |
-|--------|-----------------|-------------------|
-| User Interface | Terminal-based | Graphical (Zenity) |
-| Works without X11 | ✅ Yes | ❌ No (needs GUI) |
-| Suitable for servers | ✅ Yes | ❌ No |
-| Beginner friendly | ⚠ Medium | ✅ Very easy |
-| AppImage available | ✅ Yes | ✅ Yes |
-| Trim media | ✅ Yes | ✅ Yes |
-| Media info | ✅ Yes | ✅ Yes |
-| Download & convert | ✅ Yes | ✅ Yes |
-
----
-
-## 🌟 Try It Now!
-
-### For GUI Edition (Recommended for new users):
-```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-chmod +x GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-./GMD-GUI_GNU_Media_Downloader-x86_64.AppImage
-```
-
-### For CLI Edition (For advanced users):
-```bash
-wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage
-chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage
-./GMD_CLI_Media_Downloader-x86_64.AppImage
-```
+| التقنية | الاستخدام |
+|---------|-----------|
+| **Electron 28** | إطار التطبيق المكتبي |
+| **React 18** | واجهة المستخدم |
+| **Vite 5** | أداة البناء |
+| **Tailwind CSS 3** | التنسيق |
+| **framer-motion** | الرسوم المتحركة |
+| **i18next** | الترجمة متعددة اللغات |
+| **yt-dlp** | تنزيل الوسائط |
+| **ffmpeg / ffprobe** | تحويل الوسائط والمعلومات |
 
 ---
 
-## 📞 Contact Information
+## 📄 الترخيص
 
-- **Repository**: [github.com/SalehGNUTUX/GMD](https://github.com/SalehGNUTUX/GMD)
-- **Releases**: [Releases Page](https://github.com/SalehGNUTUX/GMD/releases)
-- **Gnutux Site**: [salehgnutux.github.io/gnutux/](https://salehgnutux.github.io/gnutux/)
+**GNU General Public License v3.0**
 
-**Version 1.92 - Two editions: CLI for pros, GUI for everyone!** ✨
+هذا البرنامج برنامج حر ومفتوح المصدر. يمكنك إعادة توزيعه و/أو تعديله وفق شروط رخصة GNU العمومية الإصدار الثالث أو أي إصدار لاحق.
+
+---
+
+<div align="center">
+
+صُنع بـ ❤️ بواسطة **[GNUTUX](https://github.com/SalehGNUTUX)** · 2026  
+[مستودع المشروع](https://github.com/SalehGNUTUX/GMD) · [الموقع الإلكتروني](https://salehgnutux.github.io/GMD)
+
+</div>
+
+</div>
+```
