@@ -1,9 +1,13 @@
 <div dir="rtl">
+<div align="center">
 
 # GMD — منزّل وسائط غنو
 
+![GMD](https://github.com/SalehGNUTUX/GMD/blob/main/gmd-icon.png)
+
 **GNU Media Downloader** — واجهة رسومية حديثة لتنزيل وتحويل الوسائط على غنو/لينكس.  
 مبنية بـ **Electron 28 + React 18 + Tailwind CSS 3** مع دعم كامل للعربية والإنجليزية.
+</div>
 
 <div align="center">
 
