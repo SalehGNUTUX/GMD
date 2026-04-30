@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>GMD-GUI | GNU Media Downloader</title>
+  <!-- أيقونة المتصفح -->
+  <link rel="icon" type="image/png" href="gmd-icon.png">
+  <style>
+    /* ===== إعدادات الخطوط العامة ===== */
+    @font-face {
+      font-family: 'Ubuntu Arabic';
+      src: url('fonts/Ubuntu Arabic Regular.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Ubuntu Arabic';
+      src: url('fonts/Ubuntu Arabic Bold.ttf') format('opentype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #7c3aed;
+      --primary-glow: #a78bfa;
+      --surface-glass: rgba(23, 23, 33, 0.75);
+      --surface-border: rgba(255, 255, 255, 0.08);
+      --text-primary: #f0f0fe;
+      --text-secondary: #b0b0cc;
+      --accent: #f59e0b;
+      --radius-xl: 2.5rem;
+      --radius-lg: 1.75rem;
+      --radius-md: 1.25rem;
+      --transition: 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+      --shadow-glow: 0 20px 40px -12px rgba(124, 58, 237, 0.35);
+    }
+
+    body {
+      font-family: 'Ubuntu Arabic', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 10%, #1a102a, #0a0a12 80%);
+      min-height: 100vh;
+      color: var(--text-primary);
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      backdrop-filter: blur(10px);
+      position: relative;
+    }
+
+    /* تأثير خلفية زجاجي ديناميكي */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" opacity="0.1"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%237c3aed"/><stop offset="100%" stop-color="%230ea5e9"/></linearGradient></defs><circle cx="20%" cy="30%" r="400" fill="url(%23grad)" filter="blur(60px)"/><circle cx="80%" cy="70%" r="350" fill="%23f59e0b" filter="blur(80px)" opacity="0.3"/></svg>') center/cover no-repeat;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .container {
+      max-width: 1100px;
+      width: 100%;
+      background: var(--surface-glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-glow), 0 0 0 1px rgba(124, 58, 237, 0.2);
+      padding: 2.8rem 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      transition: all var(--transition);
+    }
+
+    /* الشعار والعنوان */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+    }
+
+    .icon-wrapper {
+      background: rgba(124, 58, 237, 0.2);
+      padding: 0.8rem;
+      border-radius: 2.2rem;
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 30px -8px #7c3aed;
+    }
+
+    .icon-wrapper img {
+      width: 88px;
+      height: 88px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.5));
+      transition: transform 0.4s ease;
+    }
+
+    .icon-wrapper img:hover {
+      transform: scale(1.05) rotate(2deg);
+    }
+
+    h1 {
+      font-size: 3.4rem;
+      font-weight: 700;
+      background: linear-gradient(to left, #e9d5ff, #c4b5fd, #fcd34d);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: -0.5px;
+      margin-top: 0.2rem;
+      filter: drop-shadow(0 4px 6px #00000040);
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.04);
+      padding: 0.5rem 2rem;
+      border-radius: 3rem;
+      backdrop-filter: blur(10px);
+      font-weight: 400;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* شبكة الميزات */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin: 0.8rem 0 0.5rem;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-lg);
+      padding: 1.4rem 1.2rem;
+      transition: all var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .feature-card:hover {
+      background: rgba(124, 58, 237, 0.1);
+      border-color: rgba(124, 58, 237, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 18px 28px -12px #7c3aed;
+    }
+
+    .feature-emoji {
+      font-size: 2rem;
+      filter: drop-shadow(0 0 6px var(--primary-glow));
+    }
+
+    .feature-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #e2e8f0;
+    }
+
+    .feature-desc {
+      font-size: 0.85rem;
+      color: #a0a0c0;
+    }
+
+    /* قسم معلومات الترخيص والمطور */
+    .info-panel {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,0.25);
+      backdrop-filter: blur(20px);
+      border-radius: var(--radius-md);
+      padding: 1.3rem 2rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #d4d4e8;
+      gap: 1.2rem;
+    }
+
+    .license-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      background: rgba(245, 158, 11, 0.12);
+      padding: 0.5rem 1.4rem;
+      border-radius: 3rem;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      font-weight: 700;
+      color: #fbbf24;
+    }
+
+    .developer-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.2rem;
+    }
+
+    .year {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #c4b5fd;
+    }
+
+    .gnu-message {
+      font-size: 0.9rem;
+      color: #b9b9d9;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      margin-top: 0.3rem;
+      justify-content: center;
+    }
+
+    .link-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 0.7rem 2rem;
+      border-radius: 3rem;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .link-btn:hover {
+      background: #7c3aed;
+      border-color: #a78bfa;
+      box-shadow: 0 0 18px #7c3aed;
+      transform: scale(1.03);
+    }
+
+    .system-info {
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(0,0,0,0.3);
+      padding: 0.3rem 1.2rem;
+      border-radius: 2rem;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      margin: 0.3rem 0;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 1.8rem 1.2rem;
+      }
+      h1 {
+        font-size: 2.4rem;
+      }
+      .info-panel {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Hero -->
+    <div class="hero">
+      <div class="icon-wrapper">
+        <img src="gmd-icon.png" alt="GMD أيقونة">
+      </div>
+      <h1>GMD-GUI</h1>
+      <div class="subtitle">GNU Media Downloader · واجهة React عصرية</div>
+    </div>
+
+    <!-- مميزات المشروع -->
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-emoji">🎨</span>
+        <span class="feature-title">واجهة زجاجية داكنة</span>
+        <span class="feature-desc">تأثيرات عصرية ورسوم متحركة سلسة.</span>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">🌐</span>
+        <span class="feature-title">العربية + English</span>
+        <span class="feature-desc">دعم كامل RTL و LTR بكل السلاسة.</span>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">📹🎵</span>
+        <span class="feature-title">وسائط متعددة</span>
+        <span class="feature-desc">فيديو حتى 1080p، صوت بجودة عالية.</span>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">⚡</span>
+        <span class="feature-title">yt-dlp + ffmpeg</span>
+        <span class="feature-desc">تنزيل، تحويل، قص مباشر.</span>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">📋</span>
+        <span class="feature-title">معلومات الوسائط</span>
+        <span class="feature-desc">معاينة وتفاصيل الملفات.</span>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">✂️</span>
+        <span class="feature-title">قص وتحرير</span>
+        <span class="feature-desc">فيديو/صوت من رابط أو ملف محلي.</span>
+      </div>
+    </div>
+
+    <!-- معلومات الترخيص وسنة التطوير والمطور -->
+    <div class="info-panel">
+      <div class="license-badge">
+        <span>🆓</span> <span>GPL v3 · برمجية حرة</span>
+      </div>
+      <div class="developer-info">
+        <div class="year">© 2026 gnutux</div>
+        <div class="gnu-message">
+          <span>❤️</span> غنو/لينكس · GNU/Linux
+        </div>
+      </div>
+    </div>
+
+    <!-- روابط المستودع والموقع -->
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 0.2rem;">
+      <div class="links">
+        <a href="https://github.com/SalehGNUTUX/GMD" target="_blank" rel="noopener" class="link-btn">
+          <span>🐙</span> مستودع GitHub
+        </a>
+        <a href="https://salehgnutux.github.io/GMD" target="_blank" rel="noopener" class="link-btn">
+          <span>🌍</span> الموقع الرسمي
+        </a>
+      </div>
+      <div style="margin-top: 0.8rem; font-size: 0.8rem; color: #9ca3af; display: flex; gap: 1rem;">
+        <span>الإصدار 26.05.0</span>
+        <span>•</span>
+        <span>React + Electron</span>
+      </div>
+    </div>
+
+    <!-- ملاحظة غنو/لينكس والتوزيعات -->
+    <hr>
+    <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.8rem; font-size: 0.9rem; color: #cbd5e1;">
+      <div class="system-info">
+        <span>🖥️</span> يعمل على غنو/لينكس · AppImage / DEB / RPM
+      </div>
+      <div style="background: rgba(124,58,237,0.2); padding:0.2rem 1rem; border-radius:2rem;">
+        ⚙️ yt-dlp · ffmpeg · wget · aria2c
+      </div>
+    </div>
+
+    <!-- تذييل رخصة وإرشاد -->
+    <div style="text-align: center; font-size: 0.8rem; color: #8b8baa; margin-top: 0.4rem;">
+      هذا المشروع مرخص تحت <strong>GNU General Public License v3</strong> · تطوير <strong>gnutux</strong> · 2026
+    </div>
+  </div>
+</body>
+</html>
