@@ -3,11 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>GMD-GUI | GNU Media Downloader</title>
-  <!-- أيقونة المتصفح -->
+  <title>GMD · GNU Media Downloader | منزّل وسائط غنو</title>
   <link rel="icon" type="image/png" href="gmd-icon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    /* ===== إعدادات الخطوط العامة ===== */
     @font-face {
       font-family: 'Ubuntu Arabic';
       src: url('fonts/Ubuntu Arabic Regular.otf') format('opentype');
@@ -32,357 +31,425 @@
     :root {
       --primary: #7c3aed;
       --primary-glow: #a78bfa;
-      --surface-glass: rgba(23, 23, 33, 0.75);
-      --surface-border: rgba(255, 255, 255, 0.08);
-      --text-primary: #f0f0fe;
-      --text-secondary: #b0b0cc;
-      --accent: #f59e0b;
-      --radius-xl: 2.5rem;
-      --radius-lg: 1.75rem;
-      --radius-md: 1.25rem;
-      --transition: 0.35s cubic-bezier(0.23, 1, 0.32, 1);
-      --shadow-glow: 0 20px 40px -12px rgba(124, 58, 237, 0.35);
+      --surface-glass: rgba(15, 15, 25, 0.8);
+      --text-primary: #f1f0ff;
+      --accent: #fbbf24;
+      --radius-3xl: 2.8rem;
+      --radius-2xl: 2rem;
+      --transition: 0.3s cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     body {
-      font-family: 'Ubuntu Arabic', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 20% 10%, #1a102a, #0a0a12 80%);
+      font-family: 'Ubuntu Arabic', system-ui, sans-serif;
+      background: radial-gradient(ellipse at 30% 20%, #1e1335 0%, #07060e 100%);
+      background-attachment: fixed;
       min-height: 100vh;
       color: var(--text-primary);
-      line-height: 1.6;
+      padding: 1.8rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-      backdrop-filter: blur(10px);
-      position: relative;
     }
 
-    /* تأثير خلفية زجاجي ديناميكي */
     body::before {
       content: "";
       position: fixed;
       inset: 0;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" opacity="0.1"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="%237c3aed"/><stop offset="100%" stop-color="%230ea5e9"/></linearGradient></defs><circle cx="20%" cy="30%" r="400" fill="url(%23grad)" filter="blur(60px)"/><circle cx="80%" cy="70%" r="350" fill="%23f59e0b" filter="blur(80px)" opacity="0.3"/></svg>') center/cover no-repeat;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" opacity="0.15"><defs><radialGradient id="a" cx="25%" cy="30%" r="50%"><stop offset="0%" stop-color="%23a78bfa"/><stop offset="100%" stop-color="transparent"/></radialGradient><radialGradient id="b" cx="80%" cy="70%" r="50%"><stop offset="0%" stop-color="%23fbbf24"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs><circle cx="25%" cy="30%" r="500" fill="url(%23a)"/><circle cx="80%" cy="70%" r="450" fill="url(%23b)"/></svg>') center/cover no-repeat;
       z-index: -1;
       pointer-events: none;
     }
 
-    .container {
-      max-width: 1100px;
+    .main-container {
+      max-width: 1200px;
       width: 100%;
-      background: var(--surface-glass);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-glow), 0 0 0 1px rgba(124, 58, 237, 0.2);
-      padding: 2.8rem 2.5rem;
       display: flex;
       flex-direction: column;
       gap: 2.5rem;
-      transition: all var(--transition);
     }
 
-    /* الشعار والعنوان */
-    .hero {
+    /* شريط التنقل */
+    .nav-glass {
+      background: var(--surface-glass);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4rem;
+      padding: 0.8rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      position: sticky;
+      top: 1rem;
+      z-index: 20;
+    }
+    .nav-btn {
+      background: rgba(255,255,255,0.05);
+      border: none;
+      color: #e0e0ff;
+      padding: 0.55rem 1.5rem;
+      border-radius: 3rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.25s;
+    }
+    .nav-btn:hover { background: #7c3aed; color: white; }
+    .lang-btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: white;
+      padding: 0.4rem 1.2rem;
+      border-radius: 2rem;
+      cursor: pointer;
+    }
+    .lang-btn.active { background: #7c3aed; border-color: #a78bfa; }
+
+    .glass-card {
+      background: var(--surface-glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-3xl);
+      padding: 2.5rem 2.5rem;
+    }
+
+    .hero-section {
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 1rem;
+      gap: 1.2rem;
     }
-
-    .icon-wrapper {
-      background: rgba(124, 58, 237, 0.2);
-      padding: 0.8rem;
-      border-radius: 2.2rem;
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(124, 58, 237, 0.4);
+    .icon-frame {
+      width: 256px;
+      height: 256px;
+      border-radius: 2.8rem;
+      background: rgba(124,58,237,0.15);
+      border: 2px solid rgba(167,139,250,0.6);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 12px 30px -8px #7c3aed;
+      box-shadow: 0 0 55px #7c3aed66;
+      animation: floatGlow 3s infinite alternate;
     }
-
-    .icon-wrapper img {
-      width: 88px;
-      height: 88px;
-      object-fit: contain;
-      filter: drop-shadow(0 8px 12px rgba(0,0,0,0.5));
-      transition: transform 0.4s ease;
+    @keyframes floatGlow {
+      0% { box-shadow: 0 0 45px #7c3aed66; transform: scale(1); }
+      100% { box-shadow: 0 0 75px #a78bfa; transform: scale(1.02); }
     }
-
-    .icon-wrapper img:hover {
-      transform: scale(1.05) rotate(2deg);
-    }
-
-    h1 {
-      font-size: 3.4rem;
+    .icon-frame img { width: 180px; height: 180px; }
+    .hero-title {
+      font-size: 3.5rem;
       font-weight: 700;
       background: linear-gradient(to left, #e9d5ff, #c4b5fd, #fcd34d);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      letter-spacing: -0.5px;
-      margin-top: 0.2rem;
-      filter: drop-shadow(0 4px 6px #00000040);
     }
 
-    .subtitle {
-      font-size: 1.25rem;
-      color: var(--text-secondary);
-      background: rgba(255,255,255,0.04);
-      padding: 0.5rem 2rem;
-      border-radius: 3rem;
-      backdrop-filter: blur(10px);
-      font-weight: 400;
-      border: 1px solid rgba(255,255,255,0.1);
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      border-bottom: 2px solid rgba(124,58,237,0.5);
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.8rem;
     }
 
-    /* شبكة الميزات */
+    /* بطاقات الميزات بتأثير hover */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
-      margin: 0.8rem 0 0.5rem;
+      gap: 1.3rem;
     }
-
-    .feature-card {
-      background: rgba(255, 255, 255, 0.03);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: var(--radius-lg);
+    .feature-item {
+      background: rgba(255,255,255,0.03);
+      border-radius: 1.8rem;
       padding: 1.4rem 1.2rem;
-      transition: all var(--transition);
+      border: 1px solid rgba(255,255,255,0.07);
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+    .feature-item:hover {
+      background: rgba(124,58,237,0.15);
+      border-color: #a78bfa;
+      transform: translateY(-6px);
+      box-shadow: 0 20px 28px -12px #7c3aed;
+    }
+
+    /* بطاقات التنزيل */
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.6rem;
+    }
+    .download-card {
+      background: rgba(10,10,20,0.6);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-2xl);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .download-card:hover {
+      transform: translateY(-6px);
+      border-color: #7c3aed;
+      box-shadow: 0 18px 30px -10px #7c3aed;
+    }
+    .download-link {
+      background: #7c3aed;
+      color: white;
+      padding: 0.7rem;
+      border-radius: 2.5rem;
+      font-weight: bold;
+      text-decoration: none;
+      display: block;
+      margin-top: 0.6rem;
+      transition: 0.25s;
+    }
+    .download-link:hover {
+      background: #a78bfa;
+      box-shadow: 0 0 20px #a78bfa;
+      transform: scale(1.02);
+    }
+    .sha-box {
+      background: #0b0b17;
+      border-radius: 0.9rem;
+      padding: 0.5rem;
+      font-family: monospace;
+      font-size: 0.7rem;
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
-
-    .feature-card:hover {
-      background: rgba(124, 58, 237, 0.1);
-      border-color: rgba(124, 58, 237, 0.4);
-      transform: translateY(-4px);
-      box-shadow: 0 18px 28px -12px #7c3aed;
-    }
-
-    .feature-emoji {
-      font-size: 2rem;
-      filter: drop-shadow(0 0 6px var(--primary-glow));
-    }
-
-    .feature-title {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #e2e8f0;
-    }
-
-    .feature-desc {
-      font-size: 0.85rem;
-      color: #a0a0c0;
-    }
-
-    /* قسم معلومات الترخيص والمطور */
-    .info-panel {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
       justify-content: space-between;
-      background: rgba(0,0,0,0.25);
-      backdrop-filter: blur(20px);
-      border-radius: var(--radius-md);
-      padding: 1.3rem 2rem;
-      border: 1px solid rgba(255,255,255,0.1);
-      color: #d4d4e8;
-      gap: 1.2rem;
+      border: 1px solid #2d2d4a;
+      margin: 0.8rem 0;
+    }
+    .copy-btn {
+      background: #7c3aed;
+      border: none;
+      color: white;
+      padding: 0.25rem 0.9rem;
+      border-radius: 2rem;
+      cursor: pointer;
     }
 
-    .license-badge {
+    /* أوامر طرفية */
+    .cmd-row {
       display: flex;
       align-items: center;
-      gap: 0.7rem;
-      background: rgba(245, 158, 11, 0.12);
-      padding: 0.5rem 1.4rem;
-      border-radius: 3rem;
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      font-weight: 700;
-      color: #fbbf24;
+      background: #0a0a14;
+      border: 1px solid #333;
+      border-radius: 1rem;
+      padding: 0.6rem 1rem;
+      margin: 0.7rem 0;
+      font-family: monospace;
+      direction: ltr;
+      text-align: left;
+      color: #c9d1d9;
+    }
+    .cmd-row code {
+      flex: 1;
+      word-break: break-all;
     }
 
-    .developer-info {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 0.2rem;
-    }
-
-    .year {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #c4b5fd;
-    }
-
-    .gnu-message {
-      font-size: 0.9rem;
-      color: #b9b9d9;
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .links {
+    /* معرض الصور */
+    .screenshot-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 1.2rem;
-      margin-top: 0.3rem;
+      gap: 1.8rem;
       justify-content: center;
     }
-
-    .link-btn {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.2);
-      padding: 0.7rem 2rem;
-      border-radius: 3rem;
-      color: white;
-      text-decoration: none;
-      font-weight: 600;
-      backdrop-filter: blur(10px);
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+    .screenshot-thumb {
+      border-radius: 1.5rem;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: 0.3s;
+      max-width: 100%;
+      height: auto;
     }
-
-    .link-btn:hover {
-      background: #7c3aed;
+    .screenshot-thumb:hover {
       border-color: #a78bfa;
-      box-shadow: 0 0 18px #7c3aed;
-      transform: scale(1.03);
+      transform: scale(1.02);
     }
-
-    .system-info {
-      font-size: 0.95rem;
-      display: flex;
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(12px);
+      z-index: 100;
       align-items: center;
-      gap: 0.6rem;
-      background: rgba(0,0,0,0.3);
-      padding: 0.3rem 1.2rem;
+      justify-content: center;
+    }
+    .lightbox img {
+      max-width: 90%;
+      max-height: 85vh;
       border-radius: 2rem;
+      box-shadow: 0 0 40px black;
+    }
+    .close-lightbox {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      font-size: 2.2rem;
+      color: white;
+      cursor: pointer;
     }
 
-    hr {
-      border: none;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      margin: 0.3rem 0;
-    }
-
-    @media (max-width: 640px) {
-      .container {
-        padding: 1.8rem 1.2rem;
-      }
-      h1 {
-        font-size: 2.4rem;
-      }
-      .info-panel {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
+    [data-lang] { display: none; }
+    [data-lang].active-lang { display: block; }
+    .active-inline { display: inline !important; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Hero -->
-    <div class="hero">
-      <div class="icon-wrapper">
-        <img src="gmd-icon.png" alt="GMD أيقونة">
-      </div>
-      <h1>GMD-GUI</h1>
-      <div class="subtitle">GNU Media Downloader · واجهة React عصرية</div>
+  <div class="main-container">
+    <!-- التنقل -->
+    <div class="nav-glass">
+      <a href="#modern" class="nav-btn"><i class="fas fa-rocket"></i> <span data-lang="ar" class="active-lang active-inline">الحديثة</span><span data-lang="en">Modern</span></a>
+      <a href="#downloads" class="nav-btn"><i class="fas fa-download"></i> <span data-lang="ar" class="active-lang active-inline">تنزيل</span><span data-lang="en">Download</span></a>
+      <a href="#cli" class="nav-btn"><i class="fas fa-terminal"></i> <span data-lang="ar" class="active-lang active-inline">الطرفية</span><span data-lang="en">CLI</span></a>
+      <a href="#screenshots" class="nav-btn"><i class="fas fa-camera"></i> <span data-lang="ar" class="active-lang active-inline">لقطات</span><span data-lang="en">Screens</span></a>
+      <button class="lang-btn active" id="btnAR" onclick="setLang('ar')">AR</button>
+      <button class="lang-btn" id="btnEN" onclick="setLang('en')">EN</button>
     </div>
 
-    <!-- مميزات المشروع -->
-    <div class="features-grid">
-      <div class="feature-card">
-        <span class="feature-emoji">🎨</span>
-        <span class="feature-title">واجهة زجاجية داكنة</span>
-        <span class="feature-desc">تأثيرات عصرية ورسوم متحركة سلسة.</span>
-      </div>
-      <div class="feature-card">
-        <span class="feature-emoji">🌐</span>
-        <span class="feature-title">العربية + English</span>
-        <span class="feature-desc">دعم كامل RTL و LTR بكل السلاسة.</span>
-      </div>
-      <div class="feature-card">
-        <span class="feature-emoji">📹🎵</span>
-        <span class="feature-title">وسائط متعددة</span>
-        <span class="feature-desc">فيديو حتى 1080p، صوت بجودة عالية.</span>
-      </div>
-      <div class="feature-card">
-        <span class="feature-emoji">⚡</span>
-        <span class="feature-title">yt-dlp + ffmpeg</span>
-        <span class="feature-desc">تنزيل، تحويل، قص مباشر.</span>
-      </div>
-      <div class="feature-card">
-        <span class="feature-emoji">📋</span>
-        <span class="feature-title">معلومات الوسائط</span>
-        <span class="feature-desc">معاينة وتفاصيل الملفات.</span>
-      </div>
-      <div class="feature-card">
-        <span class="feature-emoji">✂️</span>
-        <span class="feature-title">قص وتحرير</span>
-        <span class="feature-desc">فيديو/صوت من رابط أو ملف محلي.</span>
+    <!-- الهيرو -->
+    <div class="glass-card hero-section" id="modern">
+      <div class="icon-frame"><img src="gmd-icon.png" alt="GMD"></div>
+      <h1 class="hero-title">GMD · GNU Media Downloader</h1>
+      <div data-lang="ar" class="active-lang"><p style="font-size:1.4rem;">منزّل وسائط غنو — واجهة React عصرية</p></div>
+      <div data-lang="en"><p style="font-size:1.4rem;">GNU Media Downloader — Modern React Interface</p></div>
+    </div>
+
+    <!-- مميزات حديثة -->
+    <div class="glass-card">
+      <div class="section-title"><span>✨</span> <span data-lang="ar" class="active-lang">GMD-GUI v26.05</span><span data-lang="en">GMD-GUI v26.05</span></div>
+      <div class="features-grid">
+        <div class="feature-item"><span>📹</span> <strong data-lang="ar" class="active-lang">فيديو حتى 1080p</strong><strong data-lang="en">Video up to 1080p</strong></div>
+        <div class="feature-item"><span>🎵</span> <strong data-lang="ar" class="active-lang">صوت متعدد الصيغ</strong><strong data-lang="en">Multi-format audio</strong></div>
+        <div class="feature-item"><span>🔄</span> <strong data-lang="ar" class="active-lang">تحويل دفعة</strong><strong data-lang="en">Batch convert</strong></div>
+        <div class="feature-item"><span>✂️</span> <strong data-lang="ar" class="active-lang">قص ومعاينة</strong><strong data-lang="en">Trim & preview</strong></div>
+        <div class="feature-item"><span>📋</span> <strong data-lang="ar" class="active-lang">معلومات الوسائط</strong><strong data-lang="en">Media info</strong></div>
+        <div class="feature-item"><span>⚙️</span> <strong data-lang="ar" class="active-lang">إعدادات متقدمة</strong><strong data-lang="en">Advanced settings</strong></div>
+        <div class="feature-item"><span>🌐</span> <strong data-lang="ar" class="active-lang">عربي/English</strong><strong data-lang="en">Arabic/English</strong></div>
+        <div class="feature-item"><span>⬇️</span> <strong data-lang="ar" class="active-lang">روابط مباشرة</strong><strong data-lang="en">Direct links</strong></div>
       </div>
     </div>
 
-    <!-- معلومات الترخيص وسنة التطوير والمطور -->
-    <div class="info-panel">
-      <div class="license-badge">
-        <span>🆓</span> <span>GPL v3 · برمجية حرة</span>
-      </div>
-      <div class="developer-info">
-        <div class="year">© 2026 gnutux</div>
-        <div class="gnu-message">
-          <span>❤️</span> غنو/لينكس · GNU/Linux
+    <!-- تنزيلات -->
+    <div class="glass-card" id="downloads">
+      <div class="section-title"><span>📦</span> <span data-lang="ar" class="active-lang">تنزيل GMD v26.05</span><span data-lang="en">Download GMD v26.05</span></div>
+      <div class="download-grid">
+        <div class="download-card">
+          <i class="fa-brands fa-linux" style="font-size:3.5rem; filter:drop-shadow(0 0 12px #a78bfa);"></i>
+          <div style="margin:0.5rem 0;">AppImage</div>
+          <div class="sha-box"><span>bfb8386c...b0cd2c</span><button class="copy-btn" onclick="copyText('bfb8386cb3bca6a547a092c2d11de3bc6f5e8a526b59a52e0a83ff5f18b0cd2c')">نسخ</button></div>
+          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.AppImage" class="download-link">⬇️ AppImage</a>
+        </div>
+        <div class="download-card">
+          <i class="fa-brands fa-debian" style="font-size:3.5rem; filter:drop-shadow(0 0 12px #a78bfa);"></i>
+          <div style="margin:0.5rem 0;">DEB</div>
+          <div class="sha-box"><span>f0d586de...197ab</span><button class="copy-btn" onclick="copyText('f0d586deac8257aba29badea1ada61de973cd53c4c65b0e3d1e7d91219a197ab')">نسخ</button></div>
+          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.deb" class="download-link">⬇️ DEB</a>
+        </div>
+        <div class="download-card">
+          <i class="fa-brands fa-redhat" style="font-size:3.5rem; filter:drop-shadow(0 0 12px #a78bfa);"></i>
+          <div style="margin:0.5rem 0;">RPM</div>
+          <div class="sha-box"><span>8c637b08...a68d</span><button class="copy-btn" onclick="copyText('8c637b0848d427099188b60fc96fa0cc391f2aea96d8b514b203571c5c41a68d')">نسخ</button></div>
+          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.rpm" class="download-link">⬇️ RPM</a>
         </div>
       </div>
     </div>
 
-    <!-- روابط المستودع والموقع -->
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 0.2rem;">
-      <div class="links">
-        <a href="https://github.com/SalehGNUTUX/GMD" target="_blank" rel="noopener" class="link-btn">
-          <span>🐙</span> مستودع GitHub
-        </a>
-        <a href="https://salehgnutux.github.io/GMD" target="_blank" rel="noopener" class="link-btn">
-          <span>🌍</span> الموقع الرسمي
-        </a>
+    <!-- النسخة الطرفية -->
+    <div class="glass-card" id="cli">
+      <div class="section-title"><span>🖥️</span> <span data-lang="ar" class="active-lang">GMD CLI · النسخة الطرفية</span><span data-lang="en">GMD CLI · Terminal Edition</span></div>
+      <div data-lang="ar" class="active-lang">
+        <p style="margin-bottom:0.8rem;">للمطورين والمستخدمين المتقدمين، تعمل في الطرفية مباشرة.</p>
+        <div class="cmd-row"><code>wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage</code><button class="copy-btn" onclick="copyText('wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage')">نسخ</button></div>
+        <div class="cmd-row"><code>chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage</code><button class="copy-btn" onclick="copyText('chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage')">نسخ</button></div>
+        <div class="cmd-row"><code>./GMD_CLI_Media_Downloader-x86_64.AppImage</code><button class="copy-btn" onclick="copyText('./GMD_CLI_Media_Downloader-x86_64.AppImage')">نسخ</button></div>
+        <p style="margin-top:1.2rem;"><strong>تثبيت كامل للـ CLI:</strong></p>
+        <div class="cmd-row"><code>bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd") --install-desktop</code><button class="copy-btn" onclick="copyText('bash <(curl -sL \"https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd\") --install-desktop')">نسخ</button></div>
+        <p><strong>تجربة CLI مباشرة:</strong></p>
+        <div class="cmd-row"><code>bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)</code><button class="copy-btn" onclick="copyText('bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)')">نسخ</button></div>
+        <p><strong>تجربة GUI (Zenity):</strong></p>
+        <div class="cmd-row"><code>bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui.sh)</code><button class="copy-btn" onclick="copyText('bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui.sh)')">نسخ</button></div>
       </div>
-      <div style="margin-top: 0.8rem; font-size: 0.8rem; color: #9ca3af; display: flex; gap: 1rem;">
-        <span>الإصدار 26.05.0</span>
-        <span>•</span>
-        <span>React + Electron</span>
+      <div data-lang="en">
+        <p style="margin-bottom:0.8rem;">For developers and advanced users.</p>
+        <div class="cmd-row"><code>wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage</code><button class="copy-btn" onclick="copyText('wget https://github.com/SalehGNUTUX/GMD/releases/download/GMD_1.92_Media_Downloader/GMD_CLI_Media_Downloader-x86_64.AppImage')">Copy</button></div>
+        <div class="cmd-row"><code>chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage</code><button class="copy-btn" onclick="copyText('chmod +x GMD_CLI_Media_Downloader-x86_64.AppImage')">Copy</button></div>
+        <div class="cmd-row"><code>./GMD_CLI_Media_Downloader-x86_64.AppImage</code><button class="copy-btn" onclick="copyText('./GMD_CLI_Media_Downloader-x86_64.AppImage')">Copy</button></div>
+        <p style="margin-top:1.2rem;"><strong>Full CLI install:</strong></p>
+        <div class="cmd-row"><code>bash <(curl -sL "https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd") --install-desktop</code><button class="copy-btn" onclick="copyText('bash <(curl -sL \"https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd\") --install-desktop')">Copy</button></div>
+        <p><strong>Try CLI directly:</strong></p>
+        <div class="cmd-row"><code>bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)</code><button class="copy-btn" onclick="copyText('bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd)')">Copy</button></div>
+        <p><strong>Try GUI (needs Zenity):</strong></p>
+        <div class="cmd-row"><code>bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui.sh)</code><button class="copy-btn" onclick="copyText('bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui.sh)')">Copy</button></div>
       </div>
     </div>
 
-    <!-- ملاحظة غنو/لينكس والتوزيعات -->
-    <hr>
-    <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.8rem; font-size: 0.9rem; color: #cbd5e1;">
-      <div class="system-info">
-        <span>🖥️</span> يعمل على غنو/لينكس · AppImage / DEB / RPM
-      </div>
-      <div style="background: rgba(124,58,237,0.2); padding:0.2rem 1rem; border-radius:2rem;">
-        ⚙️ yt-dlp · ffmpeg · wget · aria2c
+    <!-- لقطات شاشة مع lightbox -->
+    <div class="glass-card" id="screenshots">
+      <div class="section-title"><span>📸</span> <span data-lang="ar" class="active-lang">لقطات الشاشة</span><span data-lang="en">Screenshots</span></div>
+      <div class="screenshot-row">
+        <div style="flex:1; min-width:240px;">
+          <p data-lang="ar" class="active-lang"><strong>القائمة الرئيسية - العربية</strong></p>
+          <p data-lang="en"><strong>Main Menu - Arabic</strong></p>
+          <img class="screenshot-thumb" src="screenshots-26.05/القائمة الرئيسية-العربية.png" alt="العربية" onclick="openLightbox(this.src)">
+        </div>
+        <div style="flex:1; min-width:240px;">
+          <p data-lang="ar"><strong>القائمة الرئيسية - الإنجليزية</strong></p>
+          <p data-lang="en"><strong>Main Menu - English</strong></p>
+          <img class="screenshot-thumb" src="screenshots-26.05/القائمة الرئيسية-الإنجليزية.png" alt="English" onclick="openLightbox(this.src)">
+        </div>
       </div>
     </div>
 
-    <!-- تذييل رخصة وإرشاد -->
-    <div style="text-align: center; font-size: 0.8rem; color: #8b8baa; margin-top: 0.4rem;">
-      هذا المشروع مرخص تحت <strong>GNU General Public License v3</strong> · تطوير <strong>gnutux</strong> · 2026
+    <!-- تذييل -->
+    <div class="glass-card" style="padding:1.5rem 2rem; text-align:center;">
+      <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem;">
+        <div><strong>© 2026 GNUTUX</strong> · <span data-lang="ar" class="active-lang active-inline">رخصة GPL v3</span><span data-lang="en">GPL v3 License</span></div>
+        <div>🏛️ <span data-lang="ar" class="active-lang active-inline">برمجية حرة لنظام غنو/لينكس</span><span data-lang="en">Free software for GNU/Linux</span></div>
+        <div>🔗 <a href="https://github.com/SalehGNUTUX/GMD" style="color:#c4b5fd;">GitHub</a> · <span data-lang="ar" class="active-lang active-inline">المستودع</span><span data-lang="en">Repository</span></div>
+      </div>
+      <hr style="border-color:rgba(255,255,255,0.1); margin:1rem 0;">
+      <p style="color:#b0b0cc;">❤️ <span data-lang="ar" class="active-lang active-inline">صُنع بحب من مجتمع البرمجيات الحرة. هذا الموقع جزء من مشروع GMD.</span><span data-lang="en">Made with love by the free software community. This site is part of the GMD project.</span></p>
     </div>
   </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" onclick="closeLightbox()">
+    <span class="close-lightbox">&times;</span>
+    <img id="lightboxImg" src="" alt="لقطة شاشة">
+  </div>
+
+  <script>
+    function setLang(lang) {
+      document.querySelectorAll('[data-lang]').forEach(el => el.classList.remove('active-lang','active-inline'));
+      document.querySelectorAll(`[data-lang="${lang}"]`).forEach(el => {
+        if (el.tagName === 'SPAN' && el.parentElement.querySelectorAll('[data-lang]').length > 1) {
+          el.classList.add('active-inline');
+        } else {
+          el.classList.add('active-lang');
+        }
+      });
+      document.getElementById('btnAR').classList.toggle('active', lang==='ar');
+      document.getElementById('btnEN').classList.toggle('active', lang==='en');
+    }
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => alert('تم النسخ / Copied!'));
+    }
+    function openLightbox(src) {
+      document.getElementById('lightboxImg').src = src;
+      document.getElementById('lightbox').style.display = 'flex';
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').style.display = 'none';
+    }
+    document.addEventListener('DOMContentLoaded', ()=> setLang('ar'));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+  </script>
 </body>
 </html>
