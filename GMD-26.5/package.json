@@ -1,0 +1,91 @@
+{
+  "name": "gmd-gui",
+  "version": "26.05.0",
+  "description": "GNU Media Downloader — Free and open-source media downloader and converter for GNU/Linux",
+  "main": "electron/main.js",
+  "author": {
+    "name": "GNUTUX",
+    "email": "gnutux.arabic@gmail.com",
+    "url": "https://salehgnutux.github.io/GMD"
+  },
+  "license": "GPL-3.0",
+  "homepage": "https://salehgnutux.github.io/GMD",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SalehGNUTUX/GMD"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "electron:dev": "npm run build && electron .",
+    "electron:build": "npm run build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-i18next": "^13.5.0",
+    "i18next": "^23.7.0",
+    "i18next-browser-languagedetector": "^7.2.0",
+    "lucide-react": "^0.294.0",
+    "framer-motion": "^10.16.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "vite": "^5.0.8"
+  },
+  "build": {
+    "appId": "org.gnutux.gmd",
+    "productName": "GMD",
+    "copyright": "Copyright © 2026 GNUTUX — GNU GPL v3",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "public/**/*",
+      "fonts/**/*"
+    ],
+    "icon": "public/gmd-icon.png",
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64", "arm64"] },
+        { "target": "deb",      "arch": ["x64"] },
+        { "target": "rpm",      "arch": ["x64"] }
+      ],
+      "category": "AudioVideo",
+      "description": "GNU Media Downloader — Download and convert media on GNU/Linux",
+      "maintainer": "GNUTUX <gnutux.arabic@gmail.com>",
+      "desktop": {
+        "Name": "GMD",
+        "GenericName": "Media Downloader",
+        "Comment": "GNU Media Downloader — Download and convert media on GNU/Linux",
+        "Icon": "gmd",
+        "Type": "Application",
+        "Categories": "AudioVideo;Network;Utility;",
+        "Keywords": "download;video;audio;youtube;convert;media;",
+        "StartupNotify": "true"
+      }
+    },
+    "deb": {
+      "depends": ["ffmpeg"],
+      "recommends": ["wget", "aria2"],
+      "packageCategory": "utils",
+      "priority": "optional",
+      "afterInstall": "build-scripts/after-install.sh",
+      "afterRemove":  "build-scripts/after-remove.sh"
+    },
+    "rpm": {
+      "depends": ["ffmpeg"]
+    },
+    "appImage": {}
+  }
+}

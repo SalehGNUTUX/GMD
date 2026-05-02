@@ -1,0 +1,121 @@
+/* ── Custom fonts ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  src: url('/fonts/NotoSansArabic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans Arabic';
+  src: url('/fonts/NotoSansArabic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu Arabic';
+  src: url('/fonts/Ubuntu Arabic Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Ubuntu Arabic';
+  src: url('/fonts/Ubuntu Arabic Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-950 text-white font-sans antialiased;
+  }
+
+  * {
+    @apply scrollbar-thin;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-dark-800 rounded;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gmd-600 rounded hover:bg-gmd-500 transition-colors;
+  }
+
+  .glass-panel {
+    @apply bg-dark-900/80 backdrop-blur-xl border border-dark-700/50 rounded-2xl;
+  }
+
+  .glow-border {
+    @apply relative;
+  }
+  .glow-border::before {
+    content: '';
+    @apply absolute inset-0 rounded-2xl bg-gradient-to-r from-gmd-500/20 via-transparent to-gmd-500/20 pointer-events-none;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-gmd-600 to-gmd-500 hover:from-gmd-500 hover:to-gmd-400 
+           text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-gmd-900/50
+           hover:shadow-gmd-500/30 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-dark-700 hover:bg-dark-600 text-dark-100 font-medium rounded-xl 
+           transition-all duration-300 border border-dark-600 hover:border-dark-500
+           hover:scale-[1.02] active:scale-[0.98];
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-xl text-white 
+           placeholder-dark-400 focus:outline-none focus:border-gmd-500 focus:ring-2 
+           focus:ring-gmd-500/20 transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:bg-dark-700/80 hover:border-gmd-500/30 hover:shadow-lg hover:shadow-gmd-900/20;
+  }
+}
+
+/* Select styling */
+.input-field option {
+  background-color: #1a1a2e;
+  color: #e2e8f0;
+}
+
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+/* Font switching via data-font attribute on <html> */
+html[data-font="noto"] body,
+html:not([data-font]) body {
+  font-family: 'Noto Sans Arabic', 'Inter', system-ui, sans-serif;
+}
+html[data-font="ubuntu"] body {
+  font-family: 'Ubuntu Arabic', 'Inter', system-ui, sans-serif;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+}

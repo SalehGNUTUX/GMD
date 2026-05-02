@@ -1,0 +1,267 @@
+import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { AnimatePresence, motion } from 'framer-motion'
+import Header from './components/Header'
+import MainMenu from './components/MainMenu'
+import DownloadVideo from './components/DownloadVideo'
+import DownloadAudio from './components/DownloadAudio'
+import DownloadConvert from './components/DownloadConvert'
+import ConvertLocal from './components/ConvertLocal'
+import ExtraOptions from './components/ExtraOptions'
+import ClipMedia from './components/ClipMedia'
+import MediaInfo from './components/MediaInfo'
+import Settings from './components/Settings'
+import ProgressModal from './components/ProgressModal'
+import ResultModal from './components/ResultModal'
+import { AlertTriangle } from 'lucide-react'
+
+function App() {
+  const { t, i18n } = useTranslation()
+  const [currentView, setCurrentView] = useState('menu')
+  const [progress, setProgress] = useState(null)
+  const [result, setResult] = useState(null)
+  const [ytdlpInstalled, setYtdlpInstalled] = useState(true)
+  const [ffmpegInstalled, setFfmpegInstalled] = useState(true)
+  const [showExitConfirm, setShowExitConfirm] = useState(false)
+
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
+    document.documentElement.lang = i18n.language
+    checkDependencies()
+  }, [i18n.language])
+
+  // Apply saved font on mount
+  useEffect(() => {
+    const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
+    document.documentElement.setAttribute('data-font', s.fontFamily || 'noto')
+  }, [])
+
+  const checkDependencies = async () => {
+    const ytdlp = await window.electronAPI.checkYtdlp()
+    const ffmpeg = await window.electronAPI.checkFfmpeg()
+    setYtdlpInstalled(ytdlp)
+    setFfmpegInstalled(ffmpeg)
+  }
+
+  const handleInstallYtdlp = async () => {
+    setProgress({ title: t('settings.updateYtdlp'), text: t('common.loading') })
+    const res = await window.electronAPI.installYtdlp()
+    setProgress(null)
+    if (res.success) {
+      setResult({ success: true, message: t('common.success') })
+      setYtdlpInstalled(true)
+    } else {
+      setResult({ success: false, message: res.error || t('common.failed') })
+    }
+  }
+
+  const handleRunCommand = async (cmd, title, text, savePath) => {
+    setProgress({ title, text, output: '' })
+
+    const handleOutput = (data) => {
+      setProgress(prev => {
+        if (!prev) return null
+        const newOutput = (prev.output || '') + data.data
+
+        // --- yt-dlp progress ---
+        // [download]  45.2% of 10.23MiB at 1.24MiB/s ETA 00:07
+        const lines = newOutput.split('\n')
+        for (let i = lines.length - 1; i >= Math.max(0, lines.length - 8); i--) {
+          const line = lines[i]
+          const full = line.match(/\[download\]\s+([\d.]+)%.*?at\s+([\d.]+\s*\S+)\s+ETA\s+([\d:]+)/)
+          if (full) {
+            return { ...prev, output: newOutput, percent: parseFloat(full[1]), speed: full[2].trim(), eta: full[3] }
+          }
+          const simple = line.match(/\[download\]\s+([\d.]+)%/)
+          if (simple) {
+            return { ...prev, output: newOutput, percent: parseFloat(simple[1]) }
+          }
+        }
+
+        // --- ffmpeg progress (time= based) ---
+        const durM = newOutput.match(/Duration:\s*(\d+):(\d+):([\d.]+)/)
+        if (durM) {
+          const totalSecs = +durM[1] * 3600 + +durM[2] * 60 + parseFloat(durM[3])
+          for (let i = lines.length - 1; i >= 0; i--) {
+            const tm = lines[i].match(/time=(\d+):(\d+):([\d.]+)/)
+            if (!tm) continue
+            const curSecs = +tm[1] * 3600 + +tm[2] * 60 + parseFloat(tm[3])
+            const percent = totalSecs > 0 ? Math.min(99, (curSecs / totalSecs) * 100) : null
+            const spM = lines[i].match(/speed=\s*([\d.]+)x/)
+            const speed = spM ? spM[1] + 'x' : null
+            let eta = null
+            if (spM && parseFloat(spM[1]) > 0 && totalSecs > 0) {
+              const rem = (totalSecs - curSecs) / parseFloat(spM[1])
+              eta = `${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(Math.floor(rem % 60)).padStart(2, '0')}`
+            }
+            return { ...prev, output: newOutput, percent, speed, eta }
+          }
+        }
+
+        return { ...prev, output: newOutput }
+      })
+    }
+
+    const handleDone = (data) => {
+      setTimeout(() => {
+        setProgress(null)
+        if (data.cancelled) return
+        setResult({
+          success: data.success,
+          message: data.success ? t('common.success') : t('common.failed'),
+          output: data.output,
+          savePath: data.success ? savePath : null
+        })
+      }, 500)
+    }
+
+    window.electronAPI.onCommandOutput(handleOutput)
+    window.electronAPI.onCommandDone(handleDone)
+
+    await window.electronAPI.runCommand({ cmd, title })
+
+    return () => {
+      window.electronAPI.removeAllListeners('command-output')
+      window.electronAPI.removeAllListeners('command-done')
+    }
+  }
+
+  const handleCancel = async () => {
+    await window.electronAPI.cancelCommand()
+    setProgress(null)
+  }
+
+  const handleExit = () => {
+    setShowExitConfirm(true)
+  }
+
+  const confirmExit = () => {
+    window.electronAPI.close()
+  }
+
+  const renderView = () => {
+    const props = { setCurrentView, handleRunCommand }
+    switch (currentView) {
+      case 'menu': return <MainMenu setCurrentView={setCurrentView} onExit={handleExit} />
+      case 'video': return <DownloadVideo {...props} />
+      case 'audio': return <DownloadAudio {...props} />
+      case 'smart': return <DownloadConvert {...props} />
+      case 'convert': return <ConvertLocal {...props} />
+      case 'extra': return <ExtraOptions {...props} />
+      case 'clip': return <ClipMedia {...props} />
+      case 'info': return <MediaInfo {...props} />
+      case 'settings': return <Settings {...props} setYtdlpInstalled={setYtdlpInstalled} setFfmpegInstalled={setFfmpegInstalled} />
+      default: return <MainMenu setCurrentView={setCurrentView} onExit={handleExit} />
+    }
+  }
+
+  return (
+    <div className="h-screen w-screen bg-dark-950 flex flex-col overflow-hidden select-none">
+      <Header 
+        title={`${t('app.title')} ${t('app.version')}`} 
+        onBack={currentView !== 'menu' ? () => setCurrentView('menu') : null}
+      />
+
+      {/* Dependency Warnings */}
+      {(!ytdlpInstalled || !ffmpegInstalled) && (
+        <motion.div 
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          className="bg-gmd-900/50 border-b border-gmd-700/30 px-6 py-3"
+        >
+          <div className="flex items-center gap-3 max-w-4xl mx-auto">
+            <AlertTriangle className="w-5 h-5 text-gmd-400 flex-shrink-0" />
+            <div className="flex-1 text-sm text-gmd-200">
+              {!ytdlpInstalled && (
+                <span className="block">{t('errors.ytdlpNotInstalled')}</span>
+              )}
+              {!ffmpegInstalled && (
+                <span className="block">{t('errors.ffmpegNotInstalled')}</span>
+              )}
+            </div>
+            {!ytdlpInstalled && (
+              <button onClick={handleInstallYtdlp} className="btn-primary text-sm py-2 px-4">
+                {t('settings.updateYtdlp')}
+              </button>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 relative overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="h-full overflow-y-auto p-6"
+          >
+            <div className="max-w-4xl mx-auto">
+              {renderView()}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {progress && (
+          <ProgressModal
+            title={progress.title}
+            text={progress.text}
+            output={progress.output}
+            percent={progress.percent}
+            speed={progress.speed}
+            eta={progress.eta}
+            onCancel={handleCancel}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {result && (
+          <ResultModal 
+            success={result.success}
+            message={result.message}
+            output={result.output}
+            savePath={result.savePath}
+            onClose={() => setResult(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showExitConfirm && (
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="glass-panel p-8 max-w-md w-full mx-4 text-center"
+            >
+              <h3 className="text-xl font-bold mb-4">{t('common.confirmExit')}</h3>
+              <div className="flex gap-3 justify-center mt-6">
+                <button onClick={() => setShowExitConfirm(false)} className="btn-secondary">
+                  {t('common.cancel')}
+                </button>
+                <button onClick={confirmExit} className="btn-primary bg-red-600 hover:bg-red-500">
+                  {t('common.yes')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+export default App
