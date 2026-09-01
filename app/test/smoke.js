@@ -4,13 +4,17 @@
 // test-only ever lands in src/. Run it with `npm test`, which starts the Vite
 // dev server and Electron first (see test/run.sh).
 //
-// It guards the invariants that the 26.5.1 patch release established:
+// It guards the invariants the 26.9.0 release established:
 //   - the version has exactly one source of truth (package.json)
 //   - the IPC listeners are registered once, not once per operation
 //   - success is decided by exit code and output file, never by grepping output
 //   - a batch stops at its first failure and a missing binary is reported
 //   - media:// serves only files the user picked
 const http = require('http'), fs = require('fs'), path = require('path')
+
+// The version lives in package.json only; tests read it rather than repeat it,
+// so a release bump never means editing the test suite.
+const PKG_VERSION = require(path.join(__dirname, '..', 'package.json')).version
 const WS_TIMEOUT = 60000
 const get = u => new Promise((res, rej) => http.get(u, r => { let d=''; r.on('data',c=>d+=c); r.on('end',()=>res(JSON.parse(d))) }).on('error', rej))
 
@@ -56,8 +60,8 @@ const get = u => new Promise((res, rej) => http.get(u, r => { let d=''; r.on('da
   const title = await evalJS(`document.querySelector('h1,header h1,[class*="text-lg"]')?.textContent || document.body.innerText.slice(0,80)`)
   const ver = await evalJS(`window.electronAPI.getAppVersion()`)
   check('renderer mounted', !!title.value, JSON.stringify(String(title.value).slice(0,50)))
-  check('version from package.json via IPC', ver.value === '26.5.1', 'got ' + JSON.stringify(ver.value))
-  const shown = await evalJS(`document.body.innerText.includes('v26.5.1')`)
+  check('version from package.json via IPC', ver.value === PKG_VERSION, 'got ' + JSON.stringify(ver.value))
+  const shown = await evalJS(`document.body.innerText.includes(${JSON.stringify('v' + PKG_VERSION)})`)
   check('version rendered in the header', shown.value === true)
 
   // 2. exactly one listener pair, no matter how many operations ran
@@ -109,9 +113,9 @@ const get = u => new Promise((res, rej) => http.get(u, r => { let d=''; r.on('da
   check('update check reaches the releases API', u && u.ok === true, u && (u.error || ''))
   if (u && u.ok) {
     check('update check reports a comparable version', /^\d+\.\d+\.\d+$/.test(u.version || ''), 'version=' + u.version)
-    check('update check knows the current version', u.current === '26.5.1')
+    check('update check knows the current version', u.current === PKG_VERSION)
     check('a dev tree is reported as an uninstallable channel', u.channel === 'dev', 'channel=' + u.channel)
-    // 26.5.1 is ahead of the published 26.05 release, so nothing should be offered
+    // this build is ahead of anything published, so nothing should be offered
     check('a newer local build is not offered a downgrade', u.updateAvailable === false,
           'latest published = ' + u.version)
   }

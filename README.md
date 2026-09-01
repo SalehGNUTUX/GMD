@@ -11,7 +11,7 @@
 
 <div align="center">
 
-![الإصدار](https://img.shields.io/badge/إصدار-26.5.1-red)
+![الإصدار](https://img.shields.io/badge/إصدار-26.9.0-red)
 ![الترخيص](https://img.shields.io/badge/ترخيص-GPL%20v3-blue)
 ![المنصة](https://img.shields.io/badge/منصة-غنو%2Fلينكس-green)
 ![المطور](https://img.shields.io/badge/المطور-GNUTUX-orange)
@@ -166,9 +166,9 @@ npx electron-builder --linux rpm
 الحزم تُوضع في مجلد `dist-electron/`:
 ```
 app/dist-electron/
-├── GMD-26.5.1.AppImage
-├── gmd_26.5.1_amd64.deb
-└── gmd-26.5.1.x86_64.rpm
+├── GMD-26.9.0.AppImage
+├── gmd_26.9.0_amd64.deb
+└── gmd-26.9.0.x86_64.rpm
 ```
 
 ---

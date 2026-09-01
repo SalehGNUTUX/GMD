@@ -10,11 +10,12 @@
 const Module = require('module')
 const path = require('path')
 const APP = process.env.APP || path.join(__dirname, '..')
+const PKG_VERSION = require(path.join(APP, 'package.json')).version
 
 const orig = Module._load
 Module._load = function (req, parent, isMain) {
   if (req === 'electron') return {
-    app: { getVersion: () => process.env.FAKE_VERSION || '26.5.1', isPackaged: false },
+    app: { getVersion: () => process.env.FAKE_VERSION || PKG_VERSION, isPackaged: false },
     shell: { showItemInFolder: () => {} },
   }
   return orig.apply(this, arguments)
@@ -35,7 +36,8 @@ const check = (l, ok, extra='') => { ok ? pass++ : fail++; console.log(`${ok?'PA
   if (r.ok) {
     check('newest stable release resolves to a version', /^\d+\.\d+\.\d+$/.test(r.version), 'version=' + r.version)
     check('tag "GMD-26.05" parses to 26.5.0', r.version === '26.5.0', 'tag=' + r.tag + ' version=' + r.version)
-    check('26.5.1 is not offered an update from 26.5.0', r.updateAvailable === false)
+    check('the current build is not offered an older release', r.updateAvailable === false,
+          PKG_VERSION + ' vs published ' + r.version)
     check('release notes and url returned', typeof r.notes === 'string' && /github\.com/.test(r.releaseUrl || ''))
     check('dev channel gets no installable asset', r.asset === null, 'asset=' + JSON.stringify(r.asset))
   }
