@@ -13,7 +13,8 @@ import MediaInfo from './components/MediaInfo'
 import Settings from './components/Settings'
 import ProgressModal from './components/ProgressModal'
 import ResultModal from './components/ResultModal'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, ArrowUpCircle, X } from 'lucide-react'
+import { readUpdatePrefs } from './components/UpdateManager'
 
 function App() {
   const { t, i18n } = useTranslation()
@@ -24,6 +25,7 @@ function App() {
   const [ffmpegInstalled, setFfmpegInstalled] = useState(true)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [appVersion, setAppVersion] = useState('')
+  const [updateInfo, setUpdateInfo] = useState(null)
 
   // The IPC listeners are registered exactly once for the lifetime of the app;
   // each operation swaps the handlers these refs point at. Registering them per
@@ -53,10 +55,25 @@ function App() {
     window.electronAPI.getAppVersion().then(v => setAppVersion(v))
   }, [])
 
-
-  // package.json is the only place the version is written
+  // Quiet check on launch. Throttled to once every six hours so a user who opens
+  // GMD repeatedly does not burn through GitHub's unauthenticated rate limit.
   useEffect(() => {
-    window.electronAPI.getAppVersion().then(v => setAppVersion(v))
+    const { autoCheck, allowPrerelease, lastCheck } = readUpdatePrefs()
+    if (!autoCheck) return
+    if (Date.now() - lastCheck < 6 * 60 * 60 * 1000) return
+    const timer = setTimeout(async () => {
+      const res = await window.electronAPI.updateCheck({ allowPrerelease })
+      const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
+      localStorage.setItem('gmd-settings', JSON.stringify({ ...s, lastUpdateCheck: Date.now() }))
+      if (res.ok && res.updateAvailable) setUpdateInfo(res)
+    }, 3000)   // let the window settle first
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Apply saved font on mount
+  useEffect(() => {
+    const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
+    document.documentElement.setAttribute('data-font', s.fontFamily || 'noto')
   }, [])
 
   const checkDependencies = async () => {
@@ -191,6 +208,34 @@ function App() {
         
         onBack={currentView !== 'menu' ? () => setCurrentView('menu') : null}
       />
+
+      {/* A new release is out */}
+      <AnimatePresence>
+        {updateInfo && currentView !== 'settings' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="bg-emerald-900/25 border-b border-emerald-700/30 px-6 py-3 overflow-hidden"
+          >
+            <div className="flex items-center gap-3 max-w-4xl mx-auto">
+              <ArrowUpCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              <span className="flex-1 text-sm text-emerald-100">
+                {t('update.bannerTitle', { version: updateInfo.version })}
+              </span>
+              <button onClick={() => setCurrentView('settings')}
+                className="btn-primary text-sm py-1.5 px-3 flex-shrink-0">
+                {t('update.bannerAction')}
+              </button>
+              <button onClick={() => setUpdateInfo(null)}
+                aria-label={t('update.bannerDismiss')}
+                className="text-emerald-300/60 hover:text-emerald-200 flex-shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Dependency Warnings */}
       {(!ytdlpInstalled || !ffmpegInstalled) && (

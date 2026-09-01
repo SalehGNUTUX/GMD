@@ -245,5 +245,31 @@
     "ytdlpNotInstalled": "yt-dlp is not installed and is required for downloading",
     "ffmpegNotInstalled": "ffmpeg is not installed. Convert and trim features will not work.",
     "fetchFailed": "Could not fetch media info. Check the URL and internet connection."
+  },
+  "update": {
+    "title": "Application updates",
+    "checkNow": "Check for updates",
+    "upToDate": "You are on the latest version ({{version}})",
+    "available": "New version available: {{version}}",
+    "prerelease": "beta",
+    "releaseNotes": "What's new in this release",
+    "downloadInstall": "Download now",
+    "installNow": "Install now",
+    "installing": "Installing… your system may ask for a password",
+    "installed": "Installed successfully",
+    "restartNow": "Restart GMD now",
+    "failed": "Could not check for updates",
+    "rateLimited": "GitHub's request limit was reached. Try again shortly.",
+    "noAsset": "The new release has no package matching how this copy was installed.",
+    "openRelease": "Open the release page",
+    "manualNeeded": "Automatic installation failed. The package was downloaded — install it with:",
+    "showFile": "Show file",
+    "autoCheck": "Check for updates automatically",
+    "autoCheckDesc": "Checks on launch, at most once every six hours",
+    "allowPrerelease": "Accept beta releases",
+    "allowPrereleaseDesc": "When on, beta versions are offered before they are stable",
+    "bannerTitle": "A new version of GMD is available: {{version}}",
+    "bannerAction": "Go to updates",
+    "bannerDismiss": "Not now"
   }
 }

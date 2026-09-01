@@ -3,6 +3,7 @@ const path = require('path')
 const { spawn, execFile } = require('child_process')
 const fs = require('fs')
 const os = require('os')
+const updater = require('./updater')
 
 // Must be called before app is ready
 protocol.registerSchemesAsPrivileged([
@@ -503,6 +504,25 @@ ipcMain.handle('uninstall', async () => {
 
 // ── Language sync (for native context menu) ───────────────────────────────────
 ipcMain.on('set-language', (event, lang) => { appLanguage = lang })
+
+// ── App self-update ──────────────────────────────────────────────────────────
+ipcMain.handle('update-check', async (event, opts) => {
+  const r = await updater.check(opts || {})
+  log(`update check: ${JSON.stringify({ ok: r.ok, available: r.updateAvailable, version: r.version, channel: r.channel })}`)
+  return r
+})
+
+ipcMain.handle('update-download', async (event, asset) => {
+  const r = await updater.download(asset, p => mainWindow?.webContents.send('update-progress', p))
+  log(`update download: ${r.ok ? 'ok ' + r.file : 'failed ' + (r.error || r.cancelled)}`)
+  return r
+})
+
+ipcMain.handle('update-cancel',  ()             => updater.cancelDownload())
+ipcMain.handle('update-install', (event, file)  => updater.install(file))
+ipcMain.handle('update-restart', ()             => updater.restart())
+ipcMain.handle('update-reveal',  (event, file)  => updater.revealFile(file))
+ipcMain.handle('update-channel', async ()       => (await updater.detectChannel()).kind)
 
 // ── Misc ─────────────────────────────────────────────────────────────────────
 ipcMain.handle('get-app-version', () => app.getVersion())

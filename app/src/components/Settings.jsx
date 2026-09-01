@@ -4,8 +4,10 @@ import { motion } from 'framer-motion'
 import {
   Settings, Globe, RefreshCw, Monitor, Trash2, AlertTriangle,
   Folder, FolderOpen, ToggleLeft, ToggleRight, Sliders,
-  Package, CheckCircle, Copy, ExternalLink, Info, ChevronDown, ChevronUp, Type
+  Package, CheckCircle, Copy, ExternalLink, Info, ChevronDown, ChevronUp, Type,
+  ArrowUpCircle
 } from 'lucide-react'
+import UpdateManager from './UpdateManager'
 
 const REPO_URL = 'https://github.com/SalehGNUTUX/GMD'
 const WEBSITE_URL = 'https://salehgnutux.github.io/GMD'
@@ -35,7 +37,7 @@ function SettingsView({ setCurrentView, setYtdlpInstalled, setFfmpegInstalled })
 
   // Sections expand state
   const [sections, setSections] = useState({
-    general: true, fonts: false, paths: false, encoding: false, deps: false, app: false, about: false
+    general: true, fonts: false, updates: false, paths: false, encoding: false, deps: false, app: false, about: false
   })
 
   const toggleSection = (key) =>
@@ -332,6 +334,15 @@ function SettingsView({ setCurrentView, setYtdlpInstalled, setFfmpegInstalled })
       </div>
 
       {/* ── Dependencies ── */}
+      <div className="glass-panel p-5">
+        <SectionHeader icon={ArrowUpCircle} title={t('update.title')} expanded={sections.updates} onToggle={() => toggleSection('updates')} color="text-emerald-400" />
+        {sections.updates && (
+          <div className="pt-3 pb-1">
+            <UpdateManager />
+          </div>
+        )}
+      </div>
+
       <div className="glass-panel p-5">
         <SectionHeader icon={Package} title={t('settings.depsManagement')} expanded={sections.deps} onToggle={() => toggleSection('deps')} />
         {sections.deps && (
