@@ -1,13 +1,14 @@
 #!/bin/sh
 # Post-install: copy icon to system paths then refresh desktop/icon caches.
+# Icon is in app.asar.unpacked (asarUnpack in package.json) so it is readable by shell.
 
 ICON_SRC=""
 for CANDIDATE in \
-    "/opt/GMD/resources/app.asar.unpacked/public/gmd-icon.png" \
-    "/opt/GMD/resources/public/gmd-icon.png" \
     "/usr/lib/gmd/resources/app.asar.unpacked/public/gmd-icon.png" \
-    "/usr/lib/gmd/resources/public/gmd-icon.png" \
-    "/usr/share/GMD/resources/app.asar.unpacked/public/gmd-icon.png"; do
+    "/usr/lib/gmd-gui/resources/app.asar.unpacked/public/gmd-icon.png" \
+    "/opt/GMD/resources/app.asar.unpacked/public/gmd-icon.png" \
+    "/opt/gmd/resources/app.asar.unpacked/public/gmd-icon.png" \
+    "/usr/share/gmd/resources/app.asar.unpacked/public/gmd-icon.png"; do
     if [ -f "$CANDIDATE" ]; then
         ICON_SRC="$CANDIDATE"
         break
