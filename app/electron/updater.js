@@ -176,6 +176,7 @@ function download(asset, onProgress) {
       const headers = { 'User-Agent': UA }
       if (from > 0) headers.Range = `bytes=${from}-`
       const req = https.get(url, { headers }, res => {
+        state.res = res
         if ([301, 302, 303, 307, 308].includes(res.statusCode)) {
           res.resume(); request(res.headers.location, redirects + 1); return
         }
@@ -191,7 +192,7 @@ function download(asset, onProgress) {
         }
 
         const out = fs.createWriteStream(part, { flags: from > 0 ? 'a' : 'w' })
-        state.req = req
+        state.out = out
         res.on('data', chunk => {
           received += chunk.length
           const elapsed = (Date.now() - started) / 1000
@@ -202,6 +203,10 @@ function download(asset, onProgress) {
             bytesPerSecond: elapsed > 0 ? Math.round((received - from) / elapsed) : 0,
           })
         })
+        // Cancelling destroys the request. A plain destroy() emits 'close' but no
+        // 'error', so without this the promise would never settle and the caller
+        // would wait forever on a download the user already stopped.
+        res.on('close', () => { if (state.aborted) finish({ ok: false, cancelled: true }) })
         res.pipe(out)
         out.on('finish', () => {
           if (state.aborted) { finish({ ok: false, cancelled: true }); return }
@@ -214,8 +219,10 @@ function download(asset, onProgress) {
         })
         out.on('error', e => finish({ ok: false, error: e.message }))
       })
+      state.req = req
       req.setTimeout(60000, () => req.destroy(new Error('timeout')))
       req.on('error', e => finish({ ok: false, error: state.aborted ? 'cancelled' : e.message, cancelled: state.aborted }))
+      req.on('close', () => { if (state.aborted) finish({ ok: false, cancelled: true }) })
     }
 
     let settled = false
@@ -232,8 +239,11 @@ function download(asset, onProgress) {
 
 function cancelDownload() {
   if (!activeDownload) return false
-  activeDownload.aborted = true
-  try { activeDownload.req?.destroy() } catch (e) {}
+  const state = activeDownload
+  state.aborted = true
+  try { state.req?.destroy() } catch (e) {}
+  // Flush and close the partial file so a later resume sees a consistent size
+  try { state.out?.end() } catch (e) {}
   return true
 }
 

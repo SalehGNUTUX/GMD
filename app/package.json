@@ -22,7 +22,8 @@
     "preview": "vite preview",
     "test": "node test/updater.js && bash test/run.sh",
     "test:updater": "node test/updater.js",
-    "test:app": "bash test/run.sh"
+    "test:app": "bash test/run.sh",
+    "test:download": "node test/download.js"
   },
   "dependencies": {
     "react": "^18.2.0",
