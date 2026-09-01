@@ -1,0 +1,146 @@
+name: بناء الحزم ونشر الإصدار
+
+# يُشغَّل عند دفع وسم يبدأ بـ v (مثال: v26.5.1) أو يدوياً من صفحة Actions.
+# ينتج AppImage و deb و rpm لمعماريّتَي x64 و arm64، ثمّ يرفعها إلى الإصدار.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: 'نشر الإصدار كتجريبيّ'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: الفحوص
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: تثبيت الاعتماديّات
+        working-directory: app
+        run: npm ci
+      - name: فحص وحدة التحديث الذاتيّ
+        working-directory: app
+        run: npm run test:updater
+      - name: التحقّق من تطابق الترجمة
+        working-directory: app
+        run: |
+          node -e '
+            const fs = require("fs");
+            const flat = (o, p = "") => Object.entries(o).reduce((a, [k, v]) =>
+              Object.assign(a, v && typeof v === "object" ? flat(v, p + k + ".") : { [p + k]: v }), {});
+            const ar = Object.keys(flat(JSON.parse(fs.readFileSync("src/locales/ar.json"))));
+            const en = Object.keys(flat(JSON.parse(fs.readFileSync("src/locales/en.json"))));
+            const a = ar.filter(k => !en.includes(k)), b = en.filter(k => !ar.includes(k));
+            if (a.length || b.length) { console.error("مفاتيح غير متطابقة:", a, b); process.exit(1); }
+            console.log(`الترجمة متطابقة: ${ar.length} مفتاحاً في اللغتين`);
+          '
+      - name: التحقّق من الأرقام المغربيّة 0-9
+        run: |
+          if grep -rlP '[\x{0660}-\x{0669}]' --include='*.json' --include='*.jsx' --include='*.js' --include='*.md' app/src app/electron README.md CHANGELOG.md 2>/dev/null; then
+            echo "وُجدت أرقام مشرقيّة ١-٩ — استعمل الأرقام المغربيّة 0-9"; exit 1
+          fi
+          echo "لا أرقام مشرقيّة"
+      - name: التحقّق من عدم بناء الأوامر نصّاً
+        run: |
+          if grep -rn "spawn('bash'\|spawn(\"bash\"\|bash', \['-c'" app/electron app/src; then
+            echo "عادت أوامر الصدفة النصّيّة — مرّر مصفوفة وُسَطاء بدلها"; exit 1
+          fi
+          echo "كلّ الأوامر تُمرَّر مصفوفةَ وُسَطاء"
+
+  build:
+    name: بناء ${{ matrix.arch }}
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: أدوات التحزيم
+        run: sudo apt-get update && sudo apt-get install -y rpm fakeroot
+
+      - name: تثبيت الاعتماديّات
+        working-directory: app
+        run: npm ci
+
+      - name: بناء الواجهة
+        working-directory: app
+        run: npm run build
+
+      - name: بناء الحزم
+        working-directory: app
+        run: npx electron-builder --linux AppImage deb rpm --${{ matrix.arch }} --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: مجاميع التحقّق
+        working-directory: app/dist-electron
+        run: |
+          shopt -s nullglob
+          for f in *.AppImage *.deb *.rpm; do sha256sum "$f" >> "SHA256SUMS-${{ matrix.arch }}.txt"; done
+          cat "SHA256SUMS-${{ matrix.arch }}.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gmd-${{ matrix.arch }}
+          path: |
+            app/dist-electron/*.AppImage
+            app/dist-electron/*.deb
+            app/dist-electron/*.rpm
+            app/dist-electron/SHA256SUMS-*.txt
+          if-no-files-found: error
+
+  release:
+    name: نشر الإصدار
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: استخراج ملاحظات الإصدار من CHANGELOG
+        id: notes
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          # القسم الخاصّ بهذا الإصدار فقط، من عنوانه حتى العنوان التالي
+          awk -v v="$VER" '
+            $0 ~ "^## \\[" v "\\]" { inside = 1; next }
+            inside && /^## \[/     { exit }
+            inside                 { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "الإصدار $VER" > RELEASE_NOTES.md
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+
+      - name: إنشاء الإصدار
+        uses: softprops/action-gh-release@v2
+        with:
+          name: GMD ${{ steps.notes.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          # كلّ إصدار تجريبيّ حتّى يُعلَن استقراره يدوياً
+          prerelease: true
+          files: artifacts/**
+          fail_on_unmatched_files: true

@@ -19,7 +19,10 @@
     "build": "vite build",
     "electron:dev": "npm run build && electron .",
     "electron:build": "npm run build && electron-builder",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node test/updater.js && bash test/run.sh",
+    "test:updater": "node test/updater.js",
+    "test:app": "bash test/run.sh"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -53,6 +56,9 @@
       "electron/**/*",
       "public/**/*",
       "fonts/**/*"
+    ],
+    "asarUnpack": [
+      "public/gmd-icon.png"
     ],
     "icon": "public/gmd-icon.png",
     "linux": {
