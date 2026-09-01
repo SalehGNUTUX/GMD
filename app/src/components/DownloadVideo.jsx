@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, Folder, Film, ListVideo, Check, Loader2 } from 'lucide-react'
+import UrlInput from './UrlInput'
 
 const qualities = [
   { id: '1080p', label: 'video.quality1080', format: 'bv*[height<=1080]+ba/best[height<=1080]' },
@@ -106,17 +107,19 @@ function DownloadVideo({ setCurrentView, handleRunCommand }) {
     const q = qualities.find(q => q.id === quality)
     const target = urlOverride || url
 
-    let cmd
+    const args = ['-f', q.format]
     if (playlistItems) {
       // Download specific items: build a comma-separated indices list
-      const indices = playlistItems.map(e => e.index).join(',')
-      cmd = `"${ytdlp}" -f "${q.format}" --playlist-items "${indices}" -o "${savePath}/%(playlist_index)s - %(title)s.%(ext)s" "${target}"`
+      args.push('--playlist-items', playlistItems.map(e => e.index).join(','))
+      args.push('-o', `${savePath}/%(playlist_index)s - %(title)s.%(ext)s`)
     } else {
-      cmd = `"${ytdlp}" -f "${q.format}" -o "${savePath}/%(title)s.%(ext)s" "${target}"`
+      args.push('-o', `${savePath}/%(title)s.%(ext)s`)
     }
+    args.push('--', target)
+
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
     localStorage.setItem('gmd-settings', JSON.stringify({ ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), video: savePath } }))
-    await handleRunCommand(cmd, t('video.title'), t('video.downloading'), savePath)
+    await handleRunCommand({ bin: ytdlp, args }, t('video.title'), t('video.downloading'), savePath)
   }
 
   const handleDownload = async () => {
@@ -146,11 +149,7 @@ function DownloadVideo({ setCurrentView, handleRunCommand }) {
 
       <div className="glass-panel p-6 space-y-4">
         <label className="block text-sm font-medium text-dark-300 mb-2">{t('common.url')}</label>
-        <div className="relative">
-          <Link className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-          <input type="text" value={url} onChange={e => setUrl(e.target.value)}
-            placeholder={t('common.enterUrl')} className="input-field ps-12" />
-        </div>
+        <UrlInput value={url} onChange={setUrl} placeholder={t('common.enterUrl')} icon={Link} />
       </div>
 
       <div className="glass-panel p-6 space-y-4">
@@ -174,7 +173,7 @@ function DownloadVideo({ setCurrentView, handleRunCommand }) {
         <label className="block text-sm font-medium text-dark-300 mb-2">{t('common.savePath')}</label>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Folder className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
+            <Folder className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500 pointer-events-none z-10" />
             <input type="text" value={savePath} readOnly placeholder={t('common.chooseFolder')} className="input-field ps-12" />
           </div>
           <button onClick={chooseFolder} className="btn-secondary whitespace-nowrap">{t('common.chooseFolder')}</button>

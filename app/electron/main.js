@@ -1,6 +1,6 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, protocol } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell, protocol, Menu } = require('electron')
 const path = require('path')
-const { spawn, exec } = require('child_process')
+const { spawn, execFile } = require('child_process')
 const fs = require('fs')
 const os = require('os')
 
@@ -17,6 +17,19 @@ const LOG_FILE = path.join(os.homedir(), '.config', 'gmd-gui', 'gmd.log')
 
 let mainWindow
 let activeChild = null
+let cancelRequested = false
+
+// Files the user explicitly picked through one of our dialogs. The media://
+// protocol serves these and nothing else, so a crafted media:// URL cannot read
+// an arbitrary path off the disk.
+const pickedFiles = new Set()
+function remember(paths) {
+  for (const p of [].concat(paths || [])) {
+    if (p) pickedFiles.add(path.resolve(p))
+  }
+  return paths
+}
+let appLanguage = 'ar'   // kept in sync via 'set-language' IPC
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
@@ -49,7 +62,9 @@ function createWindow() {
     minWidth: 900,
     minHeight: 600,
     title: 'GMD v26.05',
-    icon: path.join(__dirname, '../public/gmd-icon.png'),
+    icon: isDev
+      ? path.join(__dirname, '../public/gmd-icon.png')
+      : path.join(process.resourcesPath, 'app.asar.unpacked', 'public', 'gmd-icon.png'),
     show: false,
     frame: false,
     titleBarStyle: 'hidden',
@@ -68,6 +83,20 @@ function createWindow() {
   }
 
   mainWindow.once('ready-to-show', () => mainWindow.show())
+
+  // Native right-click context menu for editable fields
+  mainWindow.webContents.on('context-menu', (event, params) => {
+    if (!params.isEditable && !params.selectionText) return
+    const ar = appLanguage === 'ar'
+    const menu = Menu.buildFromTemplate([
+      { label: ar ? 'قص'          : 'Cut',        role: 'cut',       enabled: params.editFlags.canCut },
+      { label: ar ? 'نسخ'         : 'Copy',       role: 'copy',      enabled: params.editFlags.canCopy },
+      { label: ar ? 'لصق'         : 'Paste',      role: 'paste',     enabled: params.editFlags.canPaste },
+      { type: 'separator' },
+      { label: ar ? 'تحديد الكل'  : 'Select All', role: 'selectAll' },
+    ])
+    menu.popup({ window: mainWindow })
+  })
 }
 
 // Register 'app://' protocol before window creation to bypass ASAR file:// restriction in Electron v28+
@@ -79,10 +108,16 @@ app.whenReady().then(() => {
     callback({ path: path.normalize(path.join(__dirname, '../dist', decodeURIComponent(filePath))) })
   })
 
-  // Serve local filesystem files for media preview (video/audio player)
+  // Serve local files for the in-app preview player — restricted to files the
+  // user picked through our dialogs (see pickedFiles).
   protocol.registerFileProtocol('media', (request, callback) => {
-    const filePath = decodeURIComponent(request.url.slice('media://'.length))
-    callback({ path: filePath })
+    const requested = path.resolve(decodeURIComponent(request.url.slice('media://'.length)))
+    if (!pickedFiles.has(requested)) {
+      log(`media:// denied for un-picked path: ${requested}`)
+      callback({ error: -10 })   // net::ERR_ACCESS_DENIED
+      return
+    }
+    callback({ path: requested })
   })
 
   createWindow()
@@ -123,7 +158,7 @@ ipcMain.handle('select-file', async () => {
       },
       { name: 'All Files', extensions: ['*'] }
     ]
-  })).then(result => result.canceled ? null : result.filePaths[0])
+  })).then(result => result.canceled ? null : remember(result.filePaths)[0])
 })
 
 ipcMain.handle('select-multiple-files', async () => {
@@ -138,7 +173,7 @@ ipcMain.handle('select-multiple-files', async () => {
       },
       { name: 'All Files', extensions: ['*'] }
     ]
-  })).then(result => result.canceled ? [] : result.filePaths)
+  })).then(result => result.canceled ? [] : remember(result.filePaths))
 })
 
 ipcMain.handle('open-folder', async (event, folderPath) => shell.openPath(folderPath))
@@ -149,24 +184,24 @@ ipcMain.handle('check-ytdlp', async () =>
 )
 
 ipcMain.handle('check-ffmpeg', async () =>
-  new Promise(resolve => exec('which ffmpeg', e => resolve(!e)))
+  new Promise(resolve => execFile('which', ['ffmpeg'], e => resolve(!e)))
 )
 
 ipcMain.handle('check-tool', async (event, tool) =>
-  new Promise(resolve => exec(`which ${tool}`, e => resolve(!e)))
+  new Promise(resolve => execFile('which', [String(tool)], e => resolve(!e)))
 )
 
 ipcMain.handle('get-tool-version', async (event, tool) =>
   new Promise(resolve => {
     const cmds = {
-      'yt-dlp': `"${YTDLP}" --version`,
-      'wget':   'wget --version',
-      'aria2c': 'aria2c --version',
-      'ffmpeg': 'ffmpeg -version',
+      'yt-dlp': [YTDLP,   ['--version']],
+      'wget':   ['wget',   ['--version']],
+      'aria2c': ['aria2c', ['--version']],
+      'ffmpeg': ['ffmpeg', ['-version']],
     }
-    const cmd = cmds[tool]
-    if (!cmd) { resolve(null); return }
-    exec(cmd, { timeout: 5000 }, (error, stdout) => {
+    const entry = cmds[tool]
+    if (!entry) { resolve(null); return }
+    execFile(entry[0], entry[1], { timeout: 5000 }, (error, stdout) => {
       if (error || !stdout) { resolve(null); return }
       const m = stdout.match(/(\d+\.\d+[\d.]*[-\w]*)/)?.[1] || null
       resolve(m)
@@ -178,7 +213,7 @@ ipcMain.handle('get-tool-version', async (event, tool) =>
 ipcMain.handle('detect-package-manager', async () => {
   const managers = ['apt', 'dnf', 'pacman', 'zypper', 'yum', 'apk', 'emerge']
   for (const pm of managers) {
-    const found = await new Promise(r => exec(`which ${pm}`, e => r(!e)))
+    const found = await new Promise(r => execFile('which', [pm], e => r(!e)))
     if (found) return pm
   }
   return null
@@ -186,20 +221,24 @@ ipcMain.handle('detect-package-manager', async () => {
 
 // ── Install tool via package manager ─────────────────────────────────────────
 ipcMain.handle('install-tool', async (event, { tool, pm }) => {
+  const ALLOWED = ['wget', 'aria2c', 'ffmpeg']
+  if (!ALLOWED.includes(tool)) return { success: false, error: 'unsupported-tool' }
   const pkgName = tool === 'aria2c' ? 'aria2' : tool
-  let installCmd
-  switch (pm) {
-    case 'apt':    installCmd = `apt install -y ${pkgName}`; break
-    case 'dnf':    installCmd = `dnf install -y ${pkgName}`; break
-    case 'pacman': installCmd = `pacman -S --noconfirm ${pkgName}`; break
-    case 'zypper': installCmd = `zypper install -y ${pkgName}`; break
-    case 'yum':    installCmd = `yum install -y ${pkgName}`; break
-    case 'apk':    installCmd = `apk add ${pkgName}`; break
-    default: return { success: false, error: 'unsupported', cmd: `sudo ${pm} install ${pkgName}` }
+
+  const RECIPES = {
+    apt:    ['apt',    ['install', '-y', pkgName]],
+    dnf:    ['dnf',    ['install', '-y', pkgName]],
+    pacman: ['pacman', ['-S', '--noconfirm', pkgName]],
+    zypper: ['zypper', ['install', '-y', pkgName]],
+    yum:    ['yum',    ['install', '-y', pkgName]],
+    apk:    ['apk',    ['add', pkgName]],
   }
+  const recipe = RECIPES[pm]
+  if (!recipe) return { success: false, error: 'unsupported', cmd: `sudo ${pm} install ${pkgName}` }
+  const installCmd = [recipe[0], ...recipe[1]].join(' ')
 
   return new Promise(resolve => {
-    const child = spawn('pkexec', installCmd.split(' '), { stdio: ['ignore', 'pipe', 'pipe'] })
+    const child = spawn('pkexec', [recipe[0], ...recipe[1]], { stdio: ['ignore', 'pipe', 'pipe'] })
     let out = ''
     child.stdout?.on('data', d => { out += d.toString() })
     child.stderr?.on('data', d => { out += d.toString() })
@@ -214,64 +253,118 @@ ipcMain.handle('install-tool', async (event, { tool, pm }) => {
 })
 
 // ── yt-dlp install / update ──────────────────────────────────────────────────
+const YTDLP_URL = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp'
+
 ipcMain.handle('install-ytdlp', async () => {
   ensureDir(BIN_DIR)
   return new Promise(resolve => {
-    const cmd = `curl -fsSL 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp' -o "${YTDLP}" && chmod a+rx "${YTDLP}"`
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) { log(`yt-dlp install error: ${error.message}`); resolve({ success: false, error: error.message }) }
-      else resolve({ success: true })
+    execFile('curl', ['-fsSL', YTDLP_URL, '-o', YTDLP], { timeout: 300000 }, error => {
+      if (error) {
+        log(`yt-dlp install error: ${error.message}`)
+        resolve({ success: false, error: error.message })
+        return
+      }
+      try {
+        fs.chmodSync(YTDLP, 0o755)
+        resolve({ success: true })
+      } catch (e) {
+        log(`yt-dlp chmod error: ${e.message}`)
+        resolve({ success: false, error: e.message })
+      }
     })
   })
 })
 
 ipcMain.handle('update-ytdlp', async () =>
   new Promise(resolve => {
-    exec(`"${YTDLP}" -U`, (error, stdout) => {
+    execFile(YTDLP, ['-U'], { timeout: 300000 }, (error, stdout) => {
       if (error) resolve({ success: false, error: error.message })
       else resolve({ success: true, output: stdout })
     })
   })
 )
 
-// ── Run command (streaming) ──────────────────────────────────────────────────
-ipcMain.handle('run-command', async (event, { cmd, title }) =>
-  new Promise(resolve => {
-    log(`Running: ${cmd}`)
-    const child = spawn('bash', ['-c', cmd])
-    activeChild = child
-    let output = ''
+// ── Run jobs (streaming, sequential) ─────────────────────────────────────────
+// jobs: [{ bin, args, outFile? }]
+// Arguments are passed as an argv array and NEVER through a shell, so a URL or a
+// file path containing $(...), backticks or quotes is data, not code.
+// Success is decided by exit code (plus the existence of outFile when given) —
+// never by grepping the output for the word "error", which yt-dlp and ffmpeg
+// both print on recoverable warnings.
+ipcMain.handle('run-command', async (event, { jobs, title }) => {
+  const list = Array.isArray(jobs) ? jobs.filter(j => j && j.bin) : []
+  if (!list.length) return { success: false, output: '', code: null, cancelled: false }
 
-    child.stdout.on('data', data => {
-      const str = data.toString()
-      output += str
-      mainWindow.webContents.send('command-output', { title, data: str, type: 'stdout' })
+  cancelRequested = false
+  let output = ''
+  let lastCode = 0
+  let failed = false
+
+  const send = (data, type, jobIndex) => {
+    output += data
+    mainWindow?.webContents.send('command-output', {
+      title, data, type, jobIndex: jobIndex + 1, jobCount: list.length
+    })
+  }
+
+  for (let i = 0; i < list.length; i++) {
+    if (cancelRequested) break
+    const { bin, args, outFile } = list[i]
+    const argv = Array.isArray(args) ? args.map(String) : []
+    log(`Running [${i + 1}/${list.length}]: ${bin} ${JSON.stringify(argv)}`)
+
+    lastCode = await new Promise(resolve => {
+      let settled = false
+      const finish = code => {
+        if (settled) return
+        settled = true
+        activeChild = null
+        resolve(code)
+      }
+      let child
+      try {
+        child = spawn(bin, argv)
+      } catch (e) {
+        send(`[gmd] ${e.message}\n`, 'stderr', i)
+        finish(127)
+        return
+      }
+      activeChild = child
+      child.stdout.on('data', d => send(d.toString(), 'stdout', i))
+      child.stderr.on('data', d => send(d.toString(), 'stderr', i))
+      child.on('error', e => { send(`[gmd] ${e.message}\n`, 'stderr', i); finish(127) })
+      child.on('close', code => finish(code))
     })
 
-    child.stderr.on('data', data => {
-      const str = data.toString()
-      output += str
-      mainWindow.webContents.send('command-output', { title, data: str, type: 'stderr' })
-    })
+    // null / SIGINT / SIGTERM mean the user cancelled, not that the job failed
+    if (cancelRequested || lastCode === null || lastCode === 130 || lastCode === 143) {
+      cancelRequested = true
+      break
+    }
+    if (lastCode !== 0) { failed = true; break }
+    if (outFile && !fs.existsSync(outFile)) {
+      send(`[gmd] expected output file was not created: ${outFile}\n`, 'stderr', i)
+      failed = true
+      break
+    }
+  }
 
-    child.on('close', code => {
-      activeChild = null
-      const cancelled = code === null || code === 130 || code === 143
-      const success = !cancelled && code === 0 && !output.match(/error|ERROR|failed|فشل/i)
-      mainWindow.webContents.send('command-done', { title, success, output, cancelled })
-      resolve({ success, output, code, cancelled })
-    })
-  })
-)
+  const cancelled = cancelRequested
+  const success = !cancelled && !failed
+  cancelRequested = false
+  mainWindow?.webContents.send('command-done', { title, success, output, cancelled })
+  return { success, output, code: lastCode, cancelled }
+})
 
 // ── Cancel active command ─────────────────────────────────────────────────────
 ipcMain.handle('cancel-command', async () => {
+  cancelRequested = true          // also stops any queued jobs that have not started
   if (activeChild) {
+    const child = activeChild
     try {
-      activeChild.kill('SIGTERM')
-      setTimeout(() => { try { activeChild?.kill('SIGKILL') } catch(e) {} }, 2000)
+      child.kill('SIGTERM')
+      setTimeout(() => { try { child.kill('SIGKILL') } catch(e) {} }, 2000)
     } catch(e) {}
-    activeChild = null
     return true
   }
   return false
@@ -280,8 +373,8 @@ ipcMain.handle('cancel-command', async () => {
 // ── Check if URL is a playlist ────────────────────────────────────────────────
 ipcMain.handle('check-playlist', async (event, url) =>
   new Promise(resolve => {
-    const cmd = `"${YTDLP}" --flat-playlist --dump-single-json --no-warnings "${url}"`
-    exec(cmd, { timeout: 20000 }, (error, stdout) => {
+    const argv = ['--flat-playlist', '--dump-single-json', '--no-warnings', '--', String(url)]
+    execFile(YTDLP, argv, { timeout: 20000, maxBuffer: 32 * 1024 * 1024 }, (error, stdout) => {
       if (error || !stdout) { resolve(null); return }
       try {
         const info = JSON.parse(stdout)
@@ -303,7 +396,7 @@ ipcMain.handle('check-playlist', async (event, url) =>
 // ── Media info (online) ──────────────────────────────────────────────────────
 ipcMain.handle('get-media-info', async (event, url) =>
   new Promise(resolve => {
-    exec(`"${YTDLP}" --dump-json "${url}"`, { timeout: 30000 }, (error, stdout) => {
+    execFile(YTDLP, ['--dump-json', '--', String(url)], { timeout: 30000, maxBuffer: 32 * 1024 * 1024 }, (error, stdout) => {
       if (error || !stdout) { resolve(null); return }
       try {
         const info = JSON.parse(stdout)
@@ -324,9 +417,9 @@ ipcMain.handle('get-media-info', async (event, url) =>
 // ── File info (local, via ffprobe) ───────────────────────────────────────────
 ipcMain.handle('get-file-info', async (event, filePath) => {
   return new Promise(resolve => {
-    const escaped = filePath.replace(/"/g, '\\"')
-    exec(`ffprobe -v quiet -print_format json -show_format -show_streams "${escaped}"`,
-      { timeout: 15000 },
+    const argv = ['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', String(filePath)]
+    execFile('ffprobe', argv,
+      { timeout: 15000, maxBuffer: 8 * 1024 * 1024 },
       (error, stdout) => {
         if (error || !stdout) { resolve(null); return }
         try {
@@ -374,7 +467,7 @@ ipcMain.handle('install-desktop', async () => {
   const iconDest = path.join(iconDir, 'gmd.png')
   const iconSrc  = isDev
     ? path.join(__dirname, '../public/gmd-icon.png')
-    : path.join(process.resourcesPath, 'public', 'gmd-icon.png')
+    : path.join(process.resourcesPath, 'app.asar.unpacked', 'public', 'gmd-icon.png')
 
   if (fs.existsSync(iconSrc)) fs.copyFileSync(iconSrc, iconDest)
 
@@ -392,7 +485,7 @@ Keywords=download;video;audio;youtube;convert;media;
 StartupNotify=true
 `
   fs.writeFileSync(path.join(desktopDir, 'gmd.desktop'), desktopContent)
-  exec(`update-desktop-database "${desktopDir}" 2>/dev/null || true`)
+  execFile('update-desktop-database', [desktopDir], () => {})   // best effort
   return true
 })
 
@@ -407,6 +500,9 @@ ipcMain.handle('uninstall', async () => {
   app.quit()
   return true
 })
+
+// ── Language sync (for native context menu) ───────────────────────────────────
+ipcMain.on('set-language', (event, lang) => { appLanguage = lang })
 
 // ── Misc ─────────────────────────────────────────────────────────────────────
 ipcMain.handle('get-app-version', () => '26.05.0')

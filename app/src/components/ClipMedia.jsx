@@ -5,6 +5,7 @@ import {
   Link, Folder, Scissors, File, HardDrive, Film, Music2,
   Info, ToggleLeft, ToggleRight, ChevronDown, ChevronUp
 } from 'lucide-react'
+import UrlInput from './UrlInput'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function pad(n) { return String(Math.floor(n)).padStart(2, '0') }
@@ -207,22 +208,32 @@ function ClipMedia({ setCurrentView, handleRunCommand }) {
     const end   = ffmpegTimecode(endSec)
     const homeDir = await window.electronAPI.getHomeDir()
     const ytdlp = `${homeDir}/.local/bin/yt-dlp`
-    let cmd
+    let job
 
     if (clipType === 'url') {
-      cmd = `"${ytdlp}" --download-sections "*${start}-${end}" --force-keyframes-at-cuts -o "${savePath}/%(title)s_clip.%(ext)s" "${url}"`
+      job = {
+        bin: ytdlp,
+        args: ['--download-sections', `*${start}-${end}`, '--force-keyframes-at-cuts',
+               '-o', `${savePath}/%(title)s_clip.%(ext)s`, '--', url]
+      }
     } else {
       const ext  = convertMode ? outFormat : filePath.split('.').pop()
       const base = filePath.split('/').pop().replace(/\.[^/.]+$/, '')
       const out  = `${savePath}/${base}_clip.${ext}`
-      const encOpts = convertMode ? outFormats.find(f => f.id === outFormat)?.opts || '-c copy' : '-c copy'
-      cmd = `ffmpeg -ss "${start}" -to "${end}" -i "${filePath}" ${encOpts} "${out}" -y`
+      // encOpts comes from the constant outFormats table, so splitting it is safe
+      const encOpts = (convertMode ? outFormats.find(f => f.id === outFormat)?.opts || '-c copy' : '-c copy')
+        .split(' ').filter(Boolean)
+      job = {
+        bin: 'ffmpeg',
+        args: ['-ss', start, '-to', end, '-i', filePath, ...encOpts, '-y', out],
+        outFile: out
+      }
     }
 
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
     localStorage.setItem('gmd-settings', JSON.stringify({ ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), clip: savePath } }))
 
-    await handleRunCommand(cmd, t('clip.title'), t('clip.trimming'), savePath)
+    await handleRunCommand(job, t('clip.title'), t('clip.trimming'), savePath)
   }
 
   // Media preview URL (media:// protocol serves local files)
@@ -263,11 +274,7 @@ function ClipMedia({ setCurrentView, handleRunCommand }) {
       {clipType === 'url' ? (
         <div className="glass-panel p-6 space-y-4">
           <label className="block text-sm font-medium text-dark-300">{t('common.url')}</label>
-          <div className="relative">
-            <Link className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-            <input type="text" value={url} onChange={e => setUrl(e.target.value)}
-              placeholder={t('common.enterUrl')} className="input-field ps-12" />
-          </div>
+          <UrlInput value={url} onChange={setUrl} placeholder={t('common.enterUrl')} icon={Link} />
         </div>
       ) : (
         <div className="glass-panel p-6 space-y-4">

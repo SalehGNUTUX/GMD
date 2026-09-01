@@ -95,14 +95,32 @@ function ConvertLocal({ setCurrentView, handleRunCommand }) {
     if (folder) setSavePath(folder)
   }
 
+  // Returns an argv array. Every value here comes from the constant tables above
+  // or from a <select> restricted to them — never from free user input.
   const buildOpts = () => {
-    if (!advancedEnabled || !currentFmt.codecs) return currentFmt.defaultOpts
+    const asArgs = str => str ? str.split(' ').filter(Boolean) : []
+    if (!advancedEnabled || !currentFmt.codecs) return asArgs(currentFmt.defaultOpts)
     const parts = []
-    if (currentFmt.codecs.video && videoCodec) parts.push(`-c:v ${videoCodec}`)
+    if (currentFmt.codecs.video && videoCodec) parts.push('-c:v', videoCodec)
     else if (currentFmt.codecs.video && currentFmt.defaultOpts.includes('-c:v'))
-      parts.push(currentFmt.defaultOpts.split(' ').slice(0, 4).join(' '))
-    if (currentFmt.codecs.audio && audioCodec) parts.push(`-c:a ${audioCodec}`)
-    return parts.length ? parts.join(' ') : currentFmt.defaultOpts
+      parts.push(...asArgs(currentFmt.defaultOpts).slice(0, 4))
+    if (currentFmt.codecs.audio && audioCodec) parts.push('-c:a', audioCodec)
+    return parts.length ? parts : asArgs(currentFmt.defaultOpts)
+  }
+
+  // One ffmpeg job per input file; outFile lets the main process verify the
+  // conversion actually produced something instead of trusting the exit code alone.
+  const ffmpegJob = (input, opts) => {
+    const base = input.split('/').pop().replace(/\.[^/.]+$/, '')
+    const outFile = `${savePath}/${base}.${currentFmt.id}`
+    return { bin: 'ffmpeg', args: ['-i', input, ...opts, '-y', outFile], outFile }
+  }
+
+  const rememberDir = () => {
+    const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
+    localStorage.setItem('gmd-settings', JSON.stringify({
+      ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), convert: savePath }
+    }))
   }
 
   const handleConvert = async () => {
@@ -110,28 +128,14 @@ function ConvertLocal({ setCurrentView, handleRunCommand }) {
     if (!multiMode) {
       if (!filePath) { alert(t('errors.noFile')); return }
       if (!savePath) { alert(t('errors.noFolder')); return }
-      const baseName = filePath.split('/').pop().replace(/\.[^/.]+$/, '')
-      const outputFile = `${savePath}/${baseName}.${currentFmt.id}`
-      const cmd = `ffmpeg -i "${filePath}" ${opts} "${outputFile}" -y`
-      // Remember last dir
-      const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
-      localStorage.setItem('gmd-settings', JSON.stringify({
-        ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), convert: savePath }
-      }))
-      await handleRunCommand(cmd, t('convert.title'), t('convert.converting'), savePath)
+      rememberDir()
+      await handleRunCommand(ffmpegJob(filePath, opts), t('convert.title'), t('convert.converting'), savePath)
     } else {
       if (!fileList.length) { alert(t('errors.noFiles')); return }
       if (!savePath) { alert(t('errors.noFolder')); return }
-      const cmds = fileList.map(fp => {
-        const base = fp.split('/').pop().replace(/\.[^/.]+$/, '')
-        return `ffmpeg -i "${fp}" ${opts} "${savePath}/${base}.${currentFmt.id}" -y`
-      })
-      const batchCmd = cmds.join(' && ')
-      const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
-      localStorage.setItem('gmd-settings', JSON.stringify({
-        ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), convert: savePath }
-      }))
-      await handleRunCommand(batchCmd, t('convert.title'), t('convert.converting'), savePath)
+      rememberDir()
+      await handleRunCommand(fileList.map(fp => ffmpegJob(fp, opts)),
+        t('convert.title'), t('convert.converting'), savePath)
     }
   }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { Link, Folder, Zap, ListVideo, Tv, Subtitles, Image, Package, Download, AlertCircle } from 'lucide-react'
+import UrlInput from './UrlInput'
 
 const ytdlpOptions = [
   { id: 'PLAYLIST',      label: 'extra.playlist',      desc: 'extra.playlistDesc',      icon: ListVideo },
@@ -54,47 +55,54 @@ function ExtraOptions({ setCurrentView, handleRunCommand }) {
 
     const homeDir = await window.electronAPI.getHomeDir()
     const ytdlp = `${homeDir}/.local/bin/yt-dlp`
-    let cmd, title, text, finalSavePath = savePath
+    let job, title, text, finalSavePath = savePath
 
     switch (selectedOption) {
       case 'PLAYLIST':
         title = t('extra.playlist')
         text = t('common.processing')
-        cmd = `"${ytdlp}" -o "${savePath}/%(playlist_title)s/%(title)s.%(ext)s" "${url}"`
+        job = { bin: ytdlp, args: ['-o', `${savePath}/%(playlist_title)s/%(title)s.%(ext)s`, '--', url] }
         break
       case 'CHANNEL':
         title = t('extra.channel')
         text = t('common.processing')
-        cmd = `"${ytdlp}" -o "${savePath}/%(uploader)s/%(title)s.%(ext)s" "${url}"`
+        job = { bin: ytdlp, args: ['-o', `${savePath}/%(uploader)s/%(title)s.%(ext)s`, '--', url] }
         break
       case 'SUBS':
         title = t('extra.subtitles')
         text = t('common.processing')
-        cmd = `"${ytdlp}" --write-auto-sub --skip-download -o "${savePath}/%(title)s" "${url}"`
+        job = { bin: ytdlp, args: ['--write-auto-sub', '--skip-download',
+                                   '-o', `${savePath}/%(title)s`, '--', url] }
         break
       case 'THUMBS':
         title = t('extra.thumbnails')
         text = t('common.processing')
-        cmd = `"${ytdlp}" --write-thumbnail --skip-download -o "${savePath}/%(title)s" "${url}"`
+        job = { bin: ytdlp, args: ['--write-thumbnail', '--skip-download',
+                                   '-o', `${savePath}/%(title)s`, '--', url] }
         break
       case 'COMPLETE': {
         title = t('extra.complete')
         text = t('common.processing')
         const stamp = new Date().toISOString().slice(0,19).replace(/[^0-9]/g,'')
         const completeDir = `${savePath}/complete_${stamp}`
-        cmd = `"${ytdlp}" -f 'bestvideo+bestaudio/best' --write-thumbnail --write-sub --write-auto-sub --all-subs --write-description --write-info-json -o "${completeDir}/%(title)s.%(ext)s" "${url}"`
+        job = { bin: ytdlp, args: [
+          '-f', 'bestvideo+bestaudio/best',
+          '--write-thumbnail', '--write-sub', '--write-auto-sub', '--all-subs',
+          '--write-description', '--write-info-json',
+          '-o', `${completeDir}/%(title)s.%(ext)s`, '--', url
+        ] }
         finalSavePath = completeDir
         break
       }
       case 'DIRECT_WGET':
         title = 'wget'
         text = t('common.processing')
-        cmd = `wget -P "${savePath}" "${url}"`
+        job = { bin: 'wget', args: ['-P', savePath, '--', url] }
         break
       case 'DIRECT_ARIA2C':
         title = 'aria2c'
         text = t('common.processing')
-        cmd = `aria2c -d "${savePath}" "${url}"`
+        job = { bin: 'aria2c', args: ['-d', savePath, '--', url] }
         break
     }
 
@@ -104,7 +112,7 @@ function ExtraOptions({ setCurrentView, handleRunCommand }) {
       ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), extra: savePath }
     }))
 
-    await handleRunCommand(cmd, title, text, finalSavePath)
+    await handleRunCommand(job, title, text, finalSavePath)
   }
 
   const toolMissing = (selectedOption === 'DIRECT_WGET' && wgetInstalled === false) ||
@@ -130,11 +138,7 @@ function ExtraOptions({ setCurrentView, handleRunCommand }) {
       {/* URL */}
       <div className="glass-panel p-6 space-y-4">
         <label className="block text-sm font-medium text-dark-300">{t('common.url')}</label>
-        <div className="relative">
-          <Link className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-          <input type="text" value={url} onChange={(e) => setUrl(e.target.value)}
-            placeholder={t('common.enterUrl')} className="input-field pl-12" />
-        </div>
+        <UrlInput value={url} onChange={setUrl} placeholder={t('common.enterUrl')} icon={Link} />
       </div>
 
       {/* Options */}
@@ -150,12 +154,12 @@ function ExtraOptions({ setCurrentView, handleRunCommand }) {
                 className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
                   selectedOption === opt.id ? 'border-gmd-500 bg-gmd-900/30' : 'border-dark-600 bg-dark-800/50 hover:border-dark-500'
                 }`}>
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   selectedOption === opt.id ? 'bg-gmd-600' : 'bg-dark-700'
                 }`}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
-                <div>
+                <div className="text-start">
                   <div className="font-medium">{t(opt.label)}</div>
                   <div className="text-sm text-dark-400">{t(opt.desc)}</div>
                 </div>
@@ -226,9 +230,9 @@ function ExtraOptions({ setCurrentView, handleRunCommand }) {
         <label className="block text-sm font-medium text-dark-300">{t('common.savePath')}</label>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Folder className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
+            <Folder className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500 pointer-events-none z-10" />
             <input type="text" value={savePath} readOnly
-              placeholder={t('common.chooseFolder')} className="input-field pl-12" />
+              placeholder={t('common.chooseFolder')} className="input-field ps-12" />
           </div>
           <button onClick={chooseFolder} className="btn-secondary whitespace-nowrap">{t('common.chooseFolder')}</button>
         </div>

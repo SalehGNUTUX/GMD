@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, Folder, Music, FileAudio, ListVideo, Check, Loader2 } from 'lucide-react'
+import UrlInput from './UrlInput'
 
 const formats = [
   { id: 'mp3',  label: 'audio.mp3',  opts: '--extract-audio --audio-format mp3 --audio-quality 0' },
@@ -103,14 +104,17 @@ function DownloadAudio({ setCurrentView, handleRunCommand }) {
     const homeDir = await window.electronAPI.getHomeDir()
     const ytdlp = `${homeDir}/.local/bin/yt-dlp`
     const target = urlOverride || url
-    let cmd
 
+    // fmt.opts is a fixed constant above — splitting it is safe, unlike the
+    // user-supplied url and savePath which each get their own argv slot.
+    const args = [...fmt.opts.split(' ')]
     if (playlistItems) {
-      const indices = playlistItems.map(e => e.index).join(',')
-      cmd = `"${ytdlp}" ${fmt.opts} --playlist-items "${indices}" -o "${savePath}/%(playlist_index)s - %(title)s.%(ext)s" "${target}"`
+      args.push('--playlist-items', playlistItems.map(e => e.index).join(','))
+      args.push('-o', `${savePath}/%(playlist_index)s - %(title)s.%(ext)s`)
     } else {
-      cmd = `"${ytdlp}" ${fmt.opts} -o "${savePath}/%(title)s.%(ext)s" "${target}"`
+      args.push('-o', `${savePath}/%(title)s.%(ext)s`)
     }
+    args.push('--', target)
 
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
     if (!s.defaultPaths?.enabled) {
@@ -118,7 +122,7 @@ function DownloadAudio({ setCurrentView, handleRunCommand }) {
         ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), audio: savePath }
       }))
     }
-    await handleRunCommand(cmd, t('audio.title'), t('audio.downloading'), savePath)
+    await handleRunCommand({ bin: ytdlp, args }, t('audio.title'), t('audio.downloading'), savePath)
   }
 
   const handleDownload = async () => {
@@ -147,11 +151,7 @@ function DownloadAudio({ setCurrentView, handleRunCommand }) {
 
       <div className="glass-panel p-6 space-y-4">
         <label className="block text-sm font-medium text-dark-300">{t('common.url')}</label>
-        <div className="relative">
-          <Link className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
-          <input type="text" value={url} onChange={e => setUrl(e.target.value)}
-            placeholder={t('common.enterUrl')} className="input-field ps-12" />
-        </div>
+        <UrlInput value={url} onChange={setUrl} placeholder={t('common.enterUrl')} icon={Link} />
       </div>
 
       <div className="glass-panel p-6 space-y-4">
@@ -173,7 +173,7 @@ function DownloadAudio({ setCurrentView, handleRunCommand }) {
         <label className="block text-sm font-medium text-dark-300">{t('common.savePath')}</label>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Folder className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
+            <Folder className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500 pointer-events-none z-10" />
             <input type="text" value={savePath} readOnly
               placeholder={t('common.chooseFolder')} className="input-field ps-12" />
           </div>
