@@ -11,7 +11,7 @@
 
 <div align="center">
 
-![الإصدار](https://img.shields.io/badge/إصدار-26.05.0-red)
+![الإصدار](https://img.shields.io/badge/إصدار-26.5.1-red)
 ![الترخيص](https://img.shields.io/badge/ترخيص-GPL%20v3-blue)
 ![المنصة](https://img.shields.io/badge/منصة-غنو%2Fلينكس-green)
 ![المطور](https://img.shields.io/badge/المطور-GNUTUX-orange)
@@ -31,6 +31,8 @@
 - [🏛️ البنية التقنية](#️-البنية-التقنية)
 - [⌨️ الاختصارات والتقنيات](#️-الاختصارات-والتقنيات)
 - [📄 الترخيص](#-الترخيص)
+
+> سجلُّ التغييرات الكامل في [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -75,6 +77,12 @@
 - 🔧 إدارة الاعتماديات: تثبيت wget/aria2c، تحديث yt-dlp مع عرض رقم الإصدار
 - 🖥️ إصلاح أيقونة سطح المكتب، إلغاء التثبيت الكامل
 
+### التحديث الذاتي
+- 🔔 **تحقُّق تلقائي عند التشغيل** من صدور إصدار جديد، مع شريط تنبيه في أعلى النافذة (يمكن تعطيله)
+- ⬇️ **تنزيل داخل البرنامج** بشريط تقدُّم وسرعة، **قابل للاستئناف** إن انقطع الاتصال، ومُتحقَّق من حجمه
+- 📦 **تثبيت يناسب طريقة التثبيت**: نسخة AppImage تستبدل نفسها، وحزم deb/rpm تُسلَّم لمدير حزم النظام عبر `pkexec`
+- 🧪 خيار قبول **الإصدارات التجريبية** (beta) قبل استقرارها — معطَّل افتراضياً
+
 ### واجهة المستخدم
 - 🎨 ثيم داكن مع تأثيرات زجاجية ورسوم متحركة سلسة (framer-motion)
 - 🖱️ تحكم مخصص بنافذة التطبيق (Frame-less window)
@@ -95,7 +103,11 @@
 
 ## 🚀 التشغيل والتطوير
 
+> جميع أوامر التطوير تُنفَّذ داخل مجلَّد `app/`.
+
 ```bash
+cd app
+
 # تثبيت التبعيات
 npm install
 
@@ -118,6 +130,9 @@ npm run build
 ```bash
 # بناء جميع الحزم (AppImage + DEB + RPM)
 npm run electron:build
+
+# الفحوص (تتطلّب ffmpeg)
+npm test
 
 # بناء هدف محدد
 npx electron-builder --linux AppImage
@@ -150,10 +165,10 @@ npx electron-builder --linux rpm
 
 الحزم تُوضع في مجلد `dist-electron/`:
 ```
-dist-electron/
-├── GMD-26.5.0.AppImage
-├── gmd_26.5.0_amd64.deb
-└── gmd-26.5.0.x86_64.rpm
+app/dist-electron/
+├── GMD-26.5.1.AppImage
+├── gmd_26.5.1_amd64.deb
+└── gmd-26.5.1.x86_64.rpm
 ```
 
 ---
@@ -231,9 +246,10 @@ bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui.s
 ## 🏛️ البنية التقنية
 
 ```
-gmd-gui-react-v26.05/
+app/
 ├── electron/
 │   ├── main.js          # العملية الرئيسية — كل عمليات النظام
+│   ├── updater.js       # التحقُّق من التحديثات وتنزيلها وتثبيتها
 │   └── preload.js       # جسر IPC بين Electron وReact
 ├── src/
 │   ├── App.jsx          # جذر التطبيق، التوجيه بين الشاشات
@@ -246,7 +262,8 @@ gmd-gui-react-v26.05/
 │   │   ├── ExtraOptions.jsx   # خيارات إضافية
 │   │   ├── ClipMedia.jsx      # قص وسائط
 │   │   ├── MediaInfo.jsx      # معلومات الوسائط
-│   │   └── Settings.jsx       # الإعدادات
+│   │   ├── Settings.jsx       # الإعدادات
+│   │   └── UpdateManager.jsx  # واجهة التحديث الذاتي
 │   ├── locales/
 │   │   ├── ar.json      # الترجمة العربية (الافتراضية)
 │   │   └── en.json      # الترجمة الإنجليزية
