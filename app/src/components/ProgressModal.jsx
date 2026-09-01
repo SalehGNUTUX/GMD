@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { Loader2, Terminal, XCircle, Zap, Clock } from 'lucide-react'
 
-function ProgressModal({ title, text, output, percent, speed, eta, onCancel }) {
+function ProgressModal({ title, text, output, percent, speed, eta, jobIndex, jobCount, onCancel }) {
   const { t } = useTranslation()
   const scrollRef = useRef(null)
 
@@ -13,6 +13,7 @@ function ProgressModal({ title, text, output, percent, speed, eta, onCancel }) {
 
   const hasPercent = percent !== null && percent !== undefined
   const displayPercent = hasPercent ? Math.min(Math.round(percent), 100) : null
+  const hasQueue = jobCount > 1
 
   return (
     <motion.div
@@ -32,6 +33,11 @@ function ProgressModal({ title, text, output, percent, speed, eta, onCancel }) {
           <div className="flex items-center gap-3 mb-2">
             <Loader2 className="w-6 h-6 animate-spin text-gmd-400 flex-shrink-0" />
             <h3 className="text-xl font-bold flex-1">{title}</h3>
+            {hasQueue && (
+              <span dir="ltr" className="font-mono text-sm text-gmd-300 bg-gmd-900/40 border border-gmd-700/40 rounded-lg px-2.5 py-1 flex-shrink-0">
+                {jobIndex} / {jobCount}
+              </span>
+            )}
           </div>
           <p className="text-dark-400 text-sm">{text}</p>
         </div>

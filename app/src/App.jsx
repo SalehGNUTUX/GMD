@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import Header from './components/Header'
@@ -23,17 +23,34 @@ function App() {
   const [ytdlpInstalled, setYtdlpInstalled] = useState(true)
   const [ffmpegInstalled, setFfmpegInstalled] = useState(true)
   const [showExitConfirm, setShowExitConfirm] = useState(false)
+  const [appVersion, setAppVersion] = useState('')
+
+  // The IPC listeners are registered exactly once for the lifetime of the app;
+  // each operation swaps the handlers these refs point at. Registering them per
+  // operation (as before) left every previous listener attached, so the Nth
+  // download processed each output line N times and opened N result dialogs.
+  const onOutputRef = useRef(null)
+  const onDoneRef   = useRef(null)
+
+  useEffect(() => {
+    window.electronAPI.onCommandOutput(data => onOutputRef.current?.(data))
+    window.electronAPI.onCommandDone(data => onDoneRef.current?.(data))
+    return () => {
+      window.electronAPI.removeAllListeners('command-output')
+      window.electronAPI.removeAllListeners('command-done')
+    }
+  }, [])
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
     document.documentElement.lang = i18n.language
+    window.electronAPI.setLanguage(i18n.language)
     checkDependencies()
   }, [i18n.language])
 
-  // Apply saved font on mount
+  // package.json is the only place the version is written
   useEffect(() => {
-    const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
-    document.documentElement.setAttribute('data-font', s.fontFamily || 'noto')
+    window.electronAPI.getAppVersion().then(v => setAppVersion(v))
   }, [])
 
   const checkDependencies = async () => {
@@ -55,13 +72,21 @@ function App() {
     }
   }
 
-  const handleRunCommand = async (cmd, title, text, savePath) => {
-    setProgress({ title, text, output: '' })
+  // jobs: [{ bin, args, outFile? }] — one entry per process to run in sequence.
+  const handleRunCommand = async (jobs, title, text, savePath) => {
+    const list = Array.isArray(jobs) ? jobs : [jobs]
+    setProgress({ title, text, output: '', jobCount: list.length, jobIndex: 1 })
 
     const handleOutput = (data) => {
       setProgress(prev => {
         if (!prev) return null
         const newOutput = (prev.output || '') + data.data
+        const base = {
+          ...prev,
+          output: newOutput,
+          jobIndex: data.jobIndex || prev.jobIndex,
+          jobCount: data.jobCount || prev.jobCount,
+        }
 
         // --- yt-dlp progress ---
         // [download]  45.2% of 10.23MiB at 1.24MiB/s ETA 00:07
@@ -70,11 +95,11 @@ function App() {
           const line = lines[i]
           const full = line.match(/\[download\]\s+([\d.]+)%.*?at\s+([\d.]+\s*\S+)\s+ETA\s+([\d:]+)/)
           if (full) {
-            return { ...prev, output: newOutput, percent: parseFloat(full[1]), speed: full[2].trim(), eta: full[3] }
+            return { ...base, percent: parseFloat(full[1]), speed: full[2].trim(), eta: full[3] }
           }
           const simple = line.match(/\[download\]\s+([\d.]+)%/)
           if (simple) {
-            return { ...prev, output: newOutput, percent: parseFloat(simple[1]) }
+            return { ...base, percent: parseFloat(simple[1]) }
           }
         }
 
@@ -94,11 +119,11 @@ function App() {
               const rem = (totalSecs - curSecs) / parseFloat(spM[1])
               eta = `${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(Math.floor(rem % 60)).padStart(2, '0')}`
             }
-            return { ...prev, output: newOutput, percent, speed, eta }
+            return { ...base, percent, speed, eta }
           }
         }
 
-        return { ...prev, output: newOutput }
+        return base
       })
     }
 
@@ -115,15 +140,13 @@ function App() {
       }, 500)
     }
 
-    window.electronAPI.onCommandOutput(handleOutput)
-    window.electronAPI.onCommandDone(handleDone)
+    onOutputRef.current = handleOutput
+    onDoneRef.current   = handleDone
 
-    await window.electronAPI.runCommand({ cmd, title })
-
-    return () => {
-      window.electronAPI.removeAllListeners('command-output')
-      window.electronAPI.removeAllListeners('command-done')
-    }
+    // The handlers stay installed after the call returns: 'command-done' is sent
+    // just before the IPC reply, and clearing them here would race that event and
+    // leave the progress dialog open forever. The next operation overwrites them.
+    return window.electronAPI.runCommand({ jobs: list, title })
   }
 
   const handleCancel = async () => {
@@ -158,7 +181,8 @@ function App() {
   return (
     <div className="h-screen w-screen bg-dark-950 flex flex-col overflow-hidden select-none">
       <Header 
-        title={`${t('app.title')} ${t('app.version')}`} 
+        title={appVersion ? `${t('app.title')} v${appVersion}` : t('app.title')}
+        
         onBack={currentView !== 'menu' ? () => setCurrentView('menu') : null}
       />
 
@@ -213,6 +237,8 @@ function App() {
             title={progress.title}
             text={progress.text}
             output={progress.output}
+            jobIndex={progress.jobIndex}
+            jobCount={progress.jobCount}
             percent={progress.percent}
             speed={progress.speed}
             eta={progress.eta}
