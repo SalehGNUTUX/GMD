@@ -53,6 +53,12 @@ function App() {
     window.electronAPI.getAppVersion().then(v => setAppVersion(v))
   }, [])
 
+
+  // package.json is the only place the version is written
+  useEffect(() => {
+    window.electronAPI.getAppVersion().then(v => setAppVersion(v))
+  }, [])
+
   const checkDependencies = async () => {
     const ytdlp = await window.electronAPI.checkYtdlp()
     const ffmpeg = await window.electronAPI.checkFfmpeg()

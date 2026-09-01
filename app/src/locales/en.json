@@ -1,7 +1,6 @@
 {
   "app": {
     "title": "GMD — GNU Media Downloader",
-    "version": "v26.05",
     "welcome": "Welcome to GMD",
     "subtitle": "Choose an operation to perform"
   },

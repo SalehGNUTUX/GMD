@@ -1,6 +1,6 @@
 {
   "name": "gmd-gui",
-  "version": "26.05.0",
+  "version": "26.5.1",
   "description": "GNU Media Downloader — Free and open-source media downloader and converter for GNU/Linux",
   "main": "electron/main.js",
   "author": {
@@ -57,9 +57,25 @@
     "icon": "public/gmd-icon.png",
     "linux": {
       "target": [
-        { "target": "AppImage", "arch": ["x64", "arm64"] },
-        { "target": "deb",      "arch": ["x64"] },
-        { "target": "rpm",      "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "category": "AudioVideo",
       "description": "GNU Media Downloader — Download and convert media on GNU/Linux",
@@ -76,15 +92,22 @@
       }
     },
     "deb": {
-      "depends": ["ffmpeg"],
-      "recommends": ["wget", "aria2"],
+      "depends": [
+        "ffmpeg"
+      ],
+      "recommends": [
+        "wget",
+        "aria2"
+      ],
       "packageCategory": "utils",
       "priority": "optional",
       "afterInstall": "build-scripts/after-install.sh",
-      "afterRemove":  "build-scripts/after-remove.sh"
+      "afterRemove": "build-scripts/after-remove.sh"
     },
     "rpm": {
-      "depends": ["ffmpeg"]
+      "depends": [
+        "ffmpeg"
+      ]
     },
     "appImage": {}
   }

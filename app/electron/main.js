@@ -61,7 +61,7 @@ function createWindow() {
     height: 750,
     minWidth: 900,
     minHeight: 600,
-    title: 'GMD v26.05',
+    title: `GMD v${app.getVersion()}`,
     icon: isDev
       ? path.join(__dirname, '../public/gmd-icon.png')
       : path.join(process.resourcesPath, 'app.asar.unpacked', 'public', 'gmd-icon.png'),
@@ -505,5 +505,5 @@ ipcMain.handle('uninstall', async () => {
 ipcMain.on('set-language', (event, lang) => { appLanguage = lang })
 
 // ── Misc ─────────────────────────────────────────────────────────────────────
-ipcMain.handle('get-app-version', () => '26.05.0')
+ipcMain.handle('get-app-version', () => app.getVersion())
 ipcMain.handle('get-home-dir',    () => os.homedir())
