@@ -120,6 +120,18 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: التحقّق من رمز النشر
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "السرّ RELEASE_TOKEN غير مضبوط."
+            echo "بدونه يَنشر الإصدارَ حسابُ github-actions[bot] لا صاحبُ المستودع،"
+            echo "وهو ما يظهر للزائر في صفحة الإصدارات ولا يمكن تغييره بعد النشر."
+            echo "أنشئ رمزاً شخصيّاً بصلاحيّة contents:write وضعه في أسرار المستودع."
+            exit 1
+          fi
+
       - name: استخراج ملاحظات الإصدار من CHANGELOG
         id: notes
         run: |
@@ -138,6 +150,9 @@ jobs:
       - name: إنشاء الإصدار
         uses: softprops/action-gh-release@v2
         with:
+          # بلا هذا الرمز يُنسب الإصدار إلى github-actions[bot]، وإصداراتُ
+          # المشروع كلُّها منسوبةٌ إلى صاحب المستودع منذ أوّلها.
+          token: ${{ secrets.RELEASE_TOKEN }}
           name: GMD ${{ steps.notes.outputs.version }}
           body_path: RELEASE_NOTES.md
           # كلّ إصدار تجريبيّ حتّى يُعلَن استقراره يدوياً
