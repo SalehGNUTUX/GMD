@@ -1,0 +1,4 @@
+node_modules
+dist-electron/
+*.log
+.DS_Store

@@ -49,6 +49,7 @@
     "appId": "org.gnutux.gmd",
     "productName": "GMD",
     "copyright": "Copyright © 2026 GNUTUX — GNU GPL v3",
+    "artifactName": "GMD-${version}-${arch}.${ext}",
     "directories": {
       "output": "dist-electron"
     },

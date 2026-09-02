@@ -307,6 +307,7 @@
     <div class="nav-glass">
       <a href="#modern" class="nav-btn"><i class="fas fa-rocket"></i> <span data-lang="ar" class="active-lang active-inline">الحديثة</span><span data-lang="en">Modern</span></a>
       <a href="#downloads" class="nav-btn"><i class="fas fa-download"></i> <span data-lang="ar" class="active-lang active-inline">تنزيل</span><span data-lang="en">Download</span></a>
+      <a href="#phone" class="nav-btn"><i class="fas fa-mobile-screen"></i> <span data-lang="ar" class="active-lang active-inline">الهاتف</span><span data-lang="en">Android</span></a>
       <a href="#cli" class="nav-btn"><i class="fas fa-terminal"></i> <span data-lang="ar" class="active-lang active-inline">الطرفية</span><span data-lang="en">CLI</span></a>
       <a href="#screenshots" class="nav-btn"><i class="fas fa-camera"></i> <span data-lang="ar" class="active-lang active-inline">لقطات</span><span data-lang="en">Screens</span></a>
       <button class="lang-btn active" id="btnAR" onclick="setLang('ar')">AR</button>
@@ -323,7 +324,7 @@
 
     <!-- مميزات حديثة -->
     <div class="glass-card">
-      <div class="section-title"><span>✨</span> <span data-lang="ar" class="active-lang">GMD-GUI v26.05</span><span data-lang="en">GMD-GUI v26.05</span></div>
+      <div class="section-title"><span>✨</span> <span data-lang="ar" class="active-lang">GMD-GUI v26.9.0</span><span data-lang="en">GMD-GUI v26.9.0</span></div>
       <div class="features-grid">
         <div class="feature-item"><span>📹</span> <strong data-lang="ar" class="active-lang">فيديو حتى 1080p</strong><strong data-lang="en">Video up to 1080p</strong></div>
         <div class="feature-item"><span>🎵</span> <strong data-lang="ar" class="active-lang">صوت متعدد الصيغ</strong><strong data-lang="en">Multi-format audio</strong></div>
@@ -333,31 +334,49 @@
         <div class="feature-item"><span>⚙️</span> <strong data-lang="ar" class="active-lang">إعدادات متقدمة</strong><strong data-lang="en">Advanced settings</strong></div>
         <div class="feature-item"><span>🌐</span> <strong data-lang="ar" class="active-lang">عربي/English</strong><strong data-lang="en">Arabic/English</strong></div>
         <div class="feature-item"><span>⬇️</span> <strong data-lang="ar" class="active-lang">روابط مباشرة</strong><strong data-lang="en">Direct links</strong></div>
+        <div class="feature-item"><span>🔄</span> <strong data-lang="ar" class="active-lang">تحديث ذاتي</strong><strong data-lang="en">Self-update</strong></div>
       </div>
     </div>
 
     <!-- تنزيلات -->
     <div class="glass-card" id="downloads">
-      <div class="section-title"><span>📦</span> <span data-lang="ar" class="active-lang">تنزيل GMD v26.05</span><span data-lang="en">Download GMD v26.05</span></div>
+      <div class="section-title"><span>📦</span> <span data-lang="ar" class="active-lang">تنزيل GMD v26.9.0 · غنو/لينكس</span><span data-lang="en">Download GMD v26.9.0 · GNU/Linux</span></div>
       <div class="download-grid">
         <div class="download-card">
           <i class="fa-brands fa-linux" style="font-size:3.5rem; filter:drop-shadow(0 0 12px #a78bfa);"></i>
           <div style="margin:0.5rem 0;">AppImage</div>
-          <div class="sha-box"><span>bfb8386c...b0cd2c</span><button class="copy-btn" onclick="copyText('0a270b2453672054fd3fa7cbdd2a260a2ede2f9d7cc98782c4e59946d6de27bb')">نسخ</button></div>
-          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.AppImage" class="download-link">⬇️ AppImage</a>
+          <div class="sha-box"><a href="https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/SHA256SUMS-x64.txt" style="color:inherit;">SHA256SUMS</a></div>
+          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-x64.AppImage" class="download-link">⬇️ AppImage</a>
         </div>
         <div class="download-card">
           <i class="fa-brands fa-debian" style="font-size:3.5rem; filter:drop-shadow(0 0 12px #a78bfa);"></i>
           <div style="margin:0.5rem 0;">DEB</div>
-          <div class="sha-box"><span>f0d586de...197ab</span><button class="copy-btn" onclick="copyText('75bff6ec573d092f742aaf9243d5d1f47c695a329ac0190f6d27e40b5f8d8dbc')">نسخ</button></div>
-          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.deb" class="download-link">⬇️ DEB</a>
+          <div class="sha-box"><a href="https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/SHA256SUMS-x64.txt" style="color:inherit;">SHA256SUMS</a></div>
+          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-x64.deb" class="download-link">⬇️ DEB</a>
         </div>
         <div class="download-card">
           <i class="fa-brands fa-redhat" style="font-size:3.5rem; filter:drop-shadow(0 0 12px #a78bfa);"></i>
           <div style="margin:0.5rem 0;">RPM</div>
-          <div class="sha-box"><span>8c637b08...a68d</span><button class="copy-btn" onclick="copyText('60c70c07d8c360111939a86a99f0a8e41f63fb18f70d522d76bd36805e629732')">نسخ</button></div>
-          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/GMD-26.05/GMD-26.5.0.rpm" class="download-link">⬇️ RPM</a>
+          <div class="sha-box"><a href="https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/SHA256SUMS-x64.txt" style="color:inherit;">SHA256SUMS</a></div>
+          <a href="https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-x64.rpm" class="download-link">⬇️ RPM</a>
         </div>
+      </div>
+    </div>
+
+    <!-- نسخة الهاتف -->
+    <div class="glass-card" id="phone">
+      <div class="section-title"><span>📱</span> <span data-lang="ar" class="active-lang">GMD لأندرويد</span><span data-lang="en">GMD for Android</span></div>
+      <div data-lang="ar" class="active-lang">
+        <p style="margin-bottom:0.8rem;">لنسخة الهاتف مستودعها وموقعها. تنزيل فيديو وصوت، ومشاركة الرابط من أيّ تطبيق إلى GMD مباشرة، بأدوات yt-dlp وffmpeg مضمَّنة داخل الحزمة.</p>
+        <p style="margin-bottom:1rem; opacity:0.8;">أندرويد 7.0 فما فوق · حزمة لكلّ معماريّة · GPL v3</p>
+        <a href="https://salehgnutux.github.io/GMD-PHONE/" class="download-link">📱 موقع نسخة الهاتف</a>
+        <a href="https://github.com/SalehGNUTUX/GMD-PHONE/releases" class="download-link">⬇️ تنزيل APK</a>
+      </div>
+      <div data-lang="en">
+        <p style="margin-bottom:0.8rem;">The phone edition has its own repository and site. Download video and audio, and share a link from any app straight into GMD, with yt-dlp and ffmpeg bundled in the package.</p>
+        <p style="margin-bottom:1rem; opacity:0.8;">Android 7.0+ · per-architecture packages · GPL v3</p>
+        <a href="https://salehgnutux.github.io/GMD-PHONE/" class="download-link">📱 Phone edition site</a>
+        <a href="https://github.com/SalehGNUTUX/GMD-PHONE/releases" class="download-link">⬇️ Download APK</a>
       </div>
     </div>
 
