@@ -1,4 +1,4 @@
-node_modules/
+node_modules
 app/dist/
 app/dist-electron/
 app/test/fixtures/
