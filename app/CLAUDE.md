@@ -25,6 +25,43 @@ npx electron-builder --linux rpm
 
 There are no tests or linters configured.
 
+## مزالقُ التحزيمِ — تُقرَأُ قبلَ أيِّ بناءٍ أو نشر
+
+### حزمةُ rpm لا تُبنى على Debian 13 وما بعدَه
+
+‏`npx electron-builder --linux rpm` يفشلُ محلّيّاً برسالةٍ مُضلِّلة:
+
+```
+Process failed: rpmbuild failed (exit code 1)
+```
+
+والسببُ ليس في المشروعِ ولا في المسار: يشحنُ electron-builder‏ 24.13 أداةَ
+‏`fpm 1.9.3`، وهي ترصفُ الملفّاتِ في `$topdir/BUILD/`، بينما `rpm 4.20` — وهي
+نسخةُ Debian 13 — تبحثُ عنها في `$topdir/BUILD/<name>-<version>-build/BUILDROOT/`
+وقد أُلغيَ فيها دعمُ وسمِ `BuildRoot` الذي كان يُصالحُ بينهما. تعريفُ
+‏`_buildrootdir` لا يُصلحُه، وتنظيفُ المسارِ من الفراغاتِ والعربيّةِ لا يُصلحُه.
+
+الخطأُ الحقيقيُّ لا يظهرُ إلّا بتشغيلِ `rpmbuild` يدويّاً على spec محفوظةٍ بـ
+‏`fpm --debug-workspace`، وهو حينَها: `File not found: .../BUILDROOT/...`.
+
+**العمل:** تُبنى حزمُ rpm في آليّةِ GitHub (‏`ubuntu-latest` ما زالت على rpm 4.18)
+لا محلّيّاً. وAppImage وdeb تُبنيانِ محلّيّاً بلا مشكلة.
+
+### `${arch}` في `artifactName` يختلفُ باختلافِ الصيغة
+
+‏`"artifactName": "GMD-${version}-${arch}.${ext}"` لا يُنتِجُ `x64` في الصيغِ كلِّها،
+بل يترجمُ electron-builder المعماريّةَ بعرفِ كلِّ صيغة:
+
+| الصيغة | الاسمُ الناتجُ لـ`--x64` |
+|---|---|
+| AppImage | `GMD-26.9.0-x86_64.AppImage` |
+| deb | `GMD-26.9.0-amd64.deb` |
+| rpm | `GMD-26.9.0-x86_64.rpm` |
+
+**العمل:** روابطُ التنزيلِ في `index.html` تُكتَبُ من أسماءِ الملفّاتِ الفعليّةِ بعدَ
+البناء، لا من قالبِ `artifactName`. نُشرت مرّةً بـ`-x64.` في الصيغِ الثلاثِ فكانت
+ثلاثةَ روابطَ ميّتة.
+
 ## Architecture
 
 This is an **Electron 28 + React 18 + Vite** desktop app. The renderer is a standard React SPA; the main process handles all system calls.
