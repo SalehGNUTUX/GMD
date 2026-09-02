@@ -628,6 +628,14 @@ choose_file_path() {
 # ----------------------------
 # خيارات الجودة والصيغ مع دعم الرجوع
 # ----------------------------
+# الجودةُ سقفٌ على الضلعِ الأصغرِ لا على الارتفاع: مقطعُ «720p» عموديّاً مقاسُه
+# 720×1280، فترشيحُ `height<=720` لا يُطابِقُ منه شيئاً ويموتُ التنزيلُ بـ
+# «Requested format is not available». وحقلُ `res` في `-S` هو الضلعُ الأصغرُ نفسُه
+# فيَصحُّ في الاتّجاهَين، وهو ترتيبٌ لا شرطٌ قاطعٌ فلا يفشلُ إن عُدِمَ ما تحتَ السقف.
+# و`[height>0]` يُبعِدُ مجهولَ المقاسِ عن التفضيلِ الأوّلِ ويُبقيه احتياطاً أخيراً.
+CAPPED_FORMAT="bv*[height>0]+ba/b[height>0]/bv*+ba/b"
+SORT_OPT=""
+
 choose_video_quality() {
   while true; do
     if [[ "$L" == "ar" ]]; then
@@ -657,10 +665,10 @@ choose_video_quality() {
     fi
     read -p "➤ " quality
     case $quality in
-      1) FORMAT="bv*[height<=1080]+ba/best[height<=1080]"; EXT_OPT=""; return 0;;
-      2) FORMAT="bv*[height<=720]+ba/best[height<=720]"; EXT_OPT=""; return 0;;
-      3) FORMAT="bv*[height<=480]+ba/best[height<=480]"; EXT_OPT=""; return 0;;
-      4) FORMAT="bestvideo+bestaudio/best"; EXT_OPT=""; return 0;;
+      1) FORMAT="$CAPPED_FORMAT"; SORT_OPT="-S res:1080"; EXT_OPT=""; return 0;;
+      2) FORMAT="$CAPPED_FORMAT"; SORT_OPT="-S res:720";  EXT_OPT=""; return 0;;
+      3) FORMAT="$CAPPED_FORMAT"; SORT_OPT="-S res:480";  EXT_OPT=""; return 0;;
+      4) FORMAT="bv*+ba/b";       SORT_OPT="";            EXT_OPT=""; return 0;;
       0) return 1;;
       *) echo "$ICON_ERROR خيار غير صالح.";;
     esac
@@ -932,7 +940,7 @@ download_and_convert() {
       echo "$ICON_DOWNLOAD جاري التنزيل مباشرة..."
       if [[ "$EXT" == "mp4" || "$EXT" == "webm" ]]; then
         choose_video_quality || { rm -f "$INFO_FILE"; return 1; }
-        "$YTDLP" -f "$FORMAT" -o "$SAVE_PATH/${TITLE}.%(ext)s" "$URL"
+        "$YTDLP" -f "$FORMAT" $SORT_OPT -o "$SAVE_PATH/${TITLE}.%(ext)s" "$URL"
       else
         local AO
         case $EXT in
@@ -981,7 +989,7 @@ download_and_convert() {
     echo "$ICON_ERROR لا يمكن الحصول على معلومات الملف. جاري التنزيل المباشر..."
     if [[ "$EXT" == "mp4" || "$EXT" == "webm" ]]; then
       choose_video_quality || { rm -f "$INFO_FILE"; return 1; }
-      "$YTDLP" -f "$FORMAT" -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
+      "$YTDLP" -f "$FORMAT" $SORT_OPT -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
     else
       local AO2
       case $EXT in
@@ -1016,7 +1024,7 @@ download_video() {
   choose_save_path || return 1
 
   echo "$ICON_DOWNLOAD جاري تحميل الفيديو..."
-  "$YTDLP" -f "$FORMAT" $EXT_OPT -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
+  "$YTDLP" -f "$FORMAT" $SORT_OPT $EXT_OPT -o "$SAVE_PATH/%(title)s.%(ext)s" "$URL"
 
   local OUTPUT_FILE
   OUTPUT_FILE=$(find "$SAVE_PATH" -type f -newer /proc/self 2>/dev/null | head -1)

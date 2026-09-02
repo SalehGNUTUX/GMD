@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { Link, Folder, Brain, FileAudio, Film } from 'lucide-react'
 import UrlInput from './UrlInput'
+import { qualities, videoFormatArgs } from '../quality'
 
 const formats = [
   { id: 'mp3', label: 'MP3', type: 'audio', ext: 'mp3' },
@@ -12,13 +13,6 @@ const formats = [
   { id: 'flac', label: 'FLAC', type: 'audio', ext: 'flac' },
   { id: 'mp4', label: 'MP4', type: 'video', ext: 'mp4' },
   { id: 'webm', label: 'WEBM', type: 'video', ext: 'webm' },
-]
-
-const qualities = [
-  { id: '1080p', label: 'video.quality1080', format: 'bv*[height<=1080]+ba/best[height<=1080]' },
-  { id: '720p', label: 'video.quality720', format: 'bv*[height<=720]+ba/best[height<=720]' },
-  { id: '480p', label: 'video.quality480', format: 'bv*[height<=480]+ba/best[height<=480]' },
-  { id: 'best', label: 'video.qualityBest', format: 'bestvideo+bestaudio/best' },
 ]
 
 function DownloadConvert({ setCurrentView, handleRunCommand }) {
@@ -60,8 +54,7 @@ function DownloadConvert({ setCurrentView, handleRunCommand }) {
     let args
 
     if (fmt.type === 'video') {
-      const quality = qualities.find(q => q.id === selectedQuality)
-      args = ['-f', quality.format, '--merge-output-format', fmt.ext]
+      args = [...videoFormatArgs(selectedQuality), '--merge-output-format', fmt.ext]
     } else {
       args = ['--extract-audio', '--audio-format', fmt.ext, '--audio-quality', '0']
     }
