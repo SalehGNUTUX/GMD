@@ -1,29 +1,29 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+هذا الملفُّ يُرشِدُ Claude Code‏ (claude.ai/code) حينَ يعملُ على شيفرةِ هذا المستودع.
 
-## Commands
+## الأوامر
 
 ```bash
-# Development (Vite dev server only — no Electron)
+# التطوير (خادمُ Vite وحدَه — بلا Electron)
 npm run dev
 
-# Development with Electron (builds first then launches)
+# التطويرُ مع Electron (يَبني أوّلاً ثمّ يُشغّل)
 npm run electron:dev
 
-# Production build (Vite only)
+# بناءُ الإنتاج (‏Vite وحدَه)
 npm run build
 
-# Package as AppImage + deb + rpm
+# التحزيمُ إلى AppImage و deb و rpm
 npm run electron:build
 
-# Package a specific target
+# تحزيمُ صيغةٍ بعينِها
 npx electron-builder --linux AppImage
 npx electron-builder --linux deb
 npx electron-builder --linux rpm
 ```
 
-There are no tests or linters configured.
+لا اختباراتٍ ولا مُدقِّقاتِ أسلوبٍ مضبوطةً في المشروع.
 
 ## مزالقُ التحزيمِ — تُقرَأُ قبلَ أيِّ بناءٍ أو نشر
 
@@ -50,63 +50,106 @@ Process failed: rpmbuild failed (exit code 1)
 ### `${arch}` في `artifactName` يختلفُ باختلافِ الصيغة
 
 ‏`"artifactName": "GMD-${version}-${arch}.${ext}"` لا يُنتِجُ `x64` في الصيغِ كلِّها،
-بل يترجمُ electron-builder المعماريّةَ بعرفِ كلِّ صيغة:
+بل يترجمُ electron-builder المعماريّةَ بعرفِ كلِّ صيغة، ولا يطّردُ بينَ المعماريّتَين
+إلّا في deb وحدَه:
 
-| الصيغة | الاسمُ الناتجُ لـ`--x64` |
-|---|---|
-| AppImage | `GMD-26.9.0-x86_64.AppImage` |
-| deb | `GMD-26.9.0-amd64.deb` |
-| rpm | `GMD-26.9.0-x86_64.rpm` |
+| الصيغة | `--x64` | `--arm64` |
+|---|---|---|
+| AppImage | `GMD-26.9.0-x86_64.AppImage` | `GMD-26.9.0-arm64.AppImage` |
+| deb | `GMD-26.9.0-amd64.deb` | `GMD-26.9.0-arm64.deb` |
+| rpm | `GMD-26.9.0-x86_64.rpm` | `GMD-26.9.0-aarch64.rpm` |
 
 **العمل:** روابطُ التنزيلِ في `index.html` تُكتَبُ من أسماءِ الملفّاتِ الفعليّةِ بعدَ
 البناء، لا من قالبِ `artifactName`. نُشرت مرّةً بـ`-x64.` في الصيغِ الثلاثِ فكانت
 ثلاثةَ روابطَ ميّتة.
 
-## Architecture
+## البنية
 
-This is an **Electron 28 + React 18 + Vite** desktop app. The renderer is a standard React SPA; the main process handles all system calls.
+تطبيقُ سطحِ مكتبٍ بـ**‏Electron 28 و React 18 و Vite**. الواجهةُ تطبيقُ React أُحاديُّ
+الصفحة، وعمليّةُ main تتولّى كلَّ نداءاتِ النظام.
 
-### Process boundary
+### حدُّ العمليّتَين
 
-All OS operations happen in `electron/main.js` via `ipcMain.handle` and are called from the renderer through `window.electronAPI` which is exposed by `electron/preload.js` via `contextBridge`. Never call Node.js APIs directly from React components.
+كلُّ عمليّاتِ النظامِ تجري في `electron/main.js` عبرَ `ipcMain.handle`، وتُستدعى من
+الواجهةِ عبرَ `window.electronAPI` الذي يكشفُه `electron/preload.js` بـ`contextBridge`.
+لا تُستدعى واجهاتُ Node.js مباشرةً من مكوّناتِ React أبداً.
 
-### Key data flows
+### مسالكُ البياناتِ الأساسيّة
 
-- **External processes** (yt-dlp, ffmpeg): `handleRunCommand(jobs, title, text, savePath)` in `src/App.jsx` → `run-command` IPC → `spawn(bin, argv)` in `main.js`.
-  - `jobs` is `[{ bin, args, outFile? }]` (a single object is accepted and wrapped). Jobs run **sequentially**; the first non-zero exit stops the rest.
-  - **Never build a command as a string and never use `bash -c`.** Every user-controlled value (URL, save path, file path) must occupy its own `args` slot. Constant option strings from the module-level format tables may be `.split(' ')`, but nothing that came from an input field or a file dialog. Pass `--` before a URL so a leading `-` cannot be read as a flag.
-  - Success = exit code 0 for every job, plus `fs.existsSync(outFile)` when a job declares one. Do **not** grep the output for "error": yt-dlp and ffmpeg both print it on recoverable warnings.
-  - Output streams back via `command-output` (carrying `jobIndex` / `jobCount`) and `command-done`. `activeChild` holds the running process and `cancelRequested` also stops jobs that have not started yet; both are reset by `cancel-command`.
-  - The IPC listeners are registered **once** in an `App.jsx` mount effect and dispatch through `onOutputRef` / `onDoneRef`. Never call `onCommandOutput` / `onCommandDone` per operation — that was the cause of duplicated result dialogs.
-- **File dialogs**: All calls go through `showDialog()` helper in `main.js` which calls `mainWindow.moveTop()` + `focus()` before and after to keep the dialog in front of the window.
-- **Version**: `package.json` is the single source of truth, read via `app.getVersion()` and exposed through the `get-app-version` IPC. Do not hardcode it anywhere else. Versions follow a year.month series, written as plain semver with no leading zero: the 26.09 series is `26.9.0`, not `26.09.0`. electron-builder normalises leading zeros away in artifact names, which is what made the tag, the source and the package files disagree before 26.9.0. Tests read the version from `package.json`, so a bump never means editing them.
-- **Settings**: Stored in `localStorage` under the key `gmd-settings` as JSON. Structure: `{ defaultPaths: { enabled, video, audio, documents, downloads }, advancedEncoding: bool, lastSaveDirs: { video, audio, convert, extra, smart, clip } }`. Read at component mount via `useEffect`.
-- **Language**: Persisted automatically by `i18next-browser-languagedetector` in `localStorage` as `i18nextLng`. Default fallback is `'ar'`.
+- **العمليّاتُ الخارجيّة** (‏yt-dlp و ffmpeg): `handleRunCommand(jobs, title, text, savePath)`
+  في `src/App.jsx` ← نداءُ `run-command` ← `spawn(bin, argv)` في `main.js`.
+  - `jobs` مصفوفةُ `[{ bin, args, outFile? }]` (ويُقبَلُ كائنٌ واحدٌ فيُغلَّفُ). تجري
+    المهامُّ **بالتتابع**، وأوّلُ خروجٍ بغيرِ صفرٍ يوقفُ ما بعدَه.
+  - **لا يُبنى أمرٌ نصّاً ولا يُستعمَلُ `bash -c` البتّة.** كلُّ قيمةٍ يتحكّمُ فيها
+    المستخدمُ — الرابطُ ومسارُ الحفظِ ومسارُ الملفِّ — تشغلُ خانتَها المستقلّةَ في
+    `args`. أمّا نصوصُ الخياراتِ الثابتةُ في جداولِ الصيغِ على مستوى الوحدةِ فيجوزُ
+    فيها `.split(' ')`، ولا يجوزُ في شيءٍ جاءَ من حقلِ إدخالٍ أو نافذةِ ملفّات. ويُمرَّرُ
+    `--` قبلَ الرابطِ كي لا تُقرأَ شَرطتُه البادئةُ خياراً.
+  - النجاحُ = رمزُ خروجٍ صفرٌ لكلِّ مهمّة، ومعه `fs.existsSync(outFile)` إن أعلنت
+    المهمّةُ ملفَّ خرج. و**لا** يُفتَّشُ الخرجُ عن كلمةِ "error": فـyt-dlp وffmpeg
+    كلاهما يطبعُها على تحذيرٍ يُتجاوَز.
+  - يعودُ الخرجُ عبرَ `command-output` (يحملُ `jobIndex` و`jobCount`) وَ`command-done`.
+    ويحملُ `activeChild` العمليّةَ الجارية، و`cancelRequested` يوقفُ أيضاً المهامَّ التي
+    لم تبدأ بعد، ويُصفِّرُهما `cancel-command`.
+  - تُسجَّلُ مستمعاتُ IPC **مرّةً واحدةً** في أثرِ تركيبِ `App.jsx` وتُوزَّعُ عبرَ
+    `onOutputRef` و`onDoneRef`. ولا يُستدعى `onCommandOutput` أو `onCommandDone` لكلِّ
+    عمليّة — فذلك كان سببَ تكرارِ صناديقِ النتيجة.
+- **نوافذُ الملفّات**: كلُّها تمرُّ بمساعدِ `showDialog()` في `main.js`، وهو يستدعي
+  `mainWindow.moveTop()` و`focus()` قبلَها وبعدَها كي تبقى النافذةُ في المقدّمة.
+- **رقمُ الإصدار**: `package.json` مصدرُه الوحيد، يُقرَأُ بـ`app.getVersion()` ويُكشَفُ
+  عبرَ نداءِ `get-app-version`. لا يُكتَبُ صريحاً في موضعٍ آخرَ البتّة. والترقيمُ سلسلةُ
+  سنةٍ‑شهرٍ تُكتَبُ semver بلا صفرٍ بادئ: سلسلةُ 26.09 رقمُها `26.9.0` لا `26.09.0`، لأنّ
+  electron-builder يحذفُ الصفرَ البادئَ من أسماءِ الحزم، وهو ما جعلَ الوسمَ والمصدرَ
+  والحزمَ تختلفُ قبلَ 26.9.0. والاختباراتُ تقرأُ الرقمَ من `package.json` فلا يستلزمُ
+  رفعُه تعديلَها.
+- **الإعدادات**: تُحفَظُ في `localStorage` تحتَ مفتاحِ `gmd-settings` بصيغةِ JSON.
+  بنيتُها: `{ defaultPaths: { enabled, video, audio, documents, downloads }, advancedEncoding: bool, lastSaveDirs: { video, audio, convert, extra, smart, clip } }`.
+  وتُقرَأُ عندَ تركيبِ المكوّنِ في `useEffect`.
+- **اللغة**: يحفظُها `i18next-browser-languagedetector` تلقائيّاً في `localStorage`
+  تحتَ `i18nextLng`، والافتراضُ عندَ التعذُّرِ `'ar'`.
 
-### Routing
+### التنقُّل
 
-There is no router. `src/App.jsx` holds a `currentView` string state and `renderView()` renders the matching component. Views: `menu`, `video`, `audio`, `smart`, `convert`, `extra`, `clip`, `info`, `settings`.
+لا موجِّهَ في المشروع. يحملُ `src/App.jsx` حالةً نصّيّةً اسمُها `currentView`، وتَرسمُ
+`renderView()` المكوّنَ المطابق. والمشاهد: `menu` و`video` و`audio` و`smart` و`convert`
+و`extra` و`clip` و`info` و`settings`.
 
-### Custom protocols (packaged app)
+### البروتوكولاتُ الخاصّة (في الحزمةِ المبنيّة)
 
-Two protocols are registered in `app.whenReady()` after `registerSchemesAsPrivileged()`:
-- `app://localhost/` — serves files from `dist/` (replaces `file://` which Chromium blocks for ASAR in Electron v28). Main window loads `app://localhost/index.html`.
-- `media://` — serves local files to the in-app video/audio preview player (e.g. `media:///home/user/video.mp4`). Restricted to paths the user picked through `select-file` / `select-multiple-files`; anything else gets `ERR_ACCESS_DENIED`. If a new dialog starts returning paths the preview must render, pass them through `remember()` in `main.js`.
+يُسجَّلُ بروتوكولانِ في `app.whenReady()` بعدَ `registerSchemesAsPrivileged()`:
+- `app://localhost/` — يخدمُ ملفّاتِ `dist/`، بديلاً عن `file://` الذي يحجبُه Chromium
+  لأرشيفِ ASAR في Electron‏ 28. والنافذةُ الرئيسةُ تُحمّلُ `app://localhost/index.html`.
+- `media://` — يخدمُ الملفّاتِ المحلّيّةَ لمشغّلِ المعاينةِ داخلَ البرنامج (مثال:
+  `media:///home/user/video.mp4`). وهو مقصورٌ على المساراتِ التي اختارَها المستخدمُ
+  فعلاً عبرَ `select-file` أو `select-multiple-files`، وما عداها يُردُّ بـ
+  `ERR_ACCESS_DENIED`. فإن استُحدِثت نافذةٌ تُعيدُ مساراتٍ يجبُ أن تُعايَن، فمرِّرها
+  بـ`remember()` في `main.js`.
 
-### Translations
+### الترجمة
 
-Two JSON files: `src/locales/ar.json` (Arabic, RTL, default) and `src/locales/en.json` (English). All user-visible strings must have entries in both files. Direction is set on `<html>` in `App.jsx`'s `useEffect` when the language changes.
+ملفّانِ بصيغةِ JSON: ‏`src/locales/ar.json` (العربيّةُ، من اليمين، وهي الافتراض) و
+`src/locales/en.json` (الإنجليزيّة). كلُّ نصٍّ يراه المستخدمُ له مدخلٌ في الملفَّين
+معاً — والآليّةُ تفحصُ تطابقَ المفاتيحِ وتُفشِلُ البناءَ إن اختلفا. ويُضبَطُ الاتّجاهُ
+على `<html>` في `useEffect` بـ`App.jsx` عندَ تغيُّرِ اللغة.
 
-### Styling conventions
+### أعرافُ التنسيق
 
-- Dark theme only. Color palette: `dark-*` (backgrounds/borders) and `gmd-*` (red accent) — both defined in `tailwind.config.js`.
-- Reusable CSS classes in `src/index.css`: `.glass-panel`, `.btn-primary`, `.btn-secondary`, `.input-field`.
-- RTL-safe spacing: use `ps-*`/`pe-*` (logical) instead of `pl-*`/`pr-*`, and `start-*`/`end-*` instead of `left-*`/`right-*` in components that must work in both directions.
-- Range/slider elements must have `dir="ltr"` explicitly, otherwise they invert in RTL mode.
+- سمةٌ داكنةٌ لا غير. ولوحةُ الألوان: `dark-*` للخلفيّاتِ والحدود، و`gmd-*` للَونِ
+  التمييزِ الأحمر — وكلاهما مُعرَّفٌ في `tailwind.config.js`.
+- أصنافُ CSS المشتركةُ في `src/index.css`: ‏`.glass-panel` و`.btn-primary` و
+  `.btn-secondary` و`.input-field`.
+- تباعُدٌ سليمٌ في الاتّجاهَين: استعمل `ps-*` و`pe-*` المنطقيّةَ بدلَ `pl-*` و`pr-*`،
+  و`start-*` و`end-*` بدلَ `left-*` و`right-*`، في كلِّ مكوّنٍ يجبُ أن يعملَ في
+  الاتّجاهَين.
+- عناصرُ المزلاقِ (‏range) يلزمُها `dir="ltr"` صريحاً، وإلّا انقلبت في وضعِ اليمين.
 
-### External tools
+### الأدواتُ الخارجيّة
 
-- **yt-dlp**: installed per-user at `~/.local/bin/yt-dlp`. Path resolved at runtime via `getHomeDir` IPC.
-- **ffmpeg / ffprobe**: expected on system `$PATH`. `ffprobe` is used by `get-file-info` IPC for media metadata (via `execFile`, not `exec`).
-- **Package manager detection**: `detect-package-manager` IPC checks for `apt`, `dnf`, `pacman`, `zypper`, `yum`, `apk` in order.
-- **Tool installation**: uses `pkexec` for GUI privilege escalation. Falls back to returning the manual `sudo` command string for the user to copy.
+- **‏yt-dlp**: مثبَّتٌ لكلِّ مستخدمٍ في `~/.local/bin/yt-dlp`. ويُستخرَجُ مسارُه وقتَ
+  التشغيلِ عبرَ نداءِ `getHomeDir`.
+- **‏ffmpeg و ffprobe**: يُنتظَرانِ في `$PATH` النظام. ويُستعمَلُ `ffprobe` في نداءِ
+  `get-file-info` لقراءةِ بياناتِ الوسائط — بـ`execFile` لا `exec`.
+- **كشفُ مديرِ الحزم**: نداءُ `detect-package-manager` يفحصُ `apt` ثمّ `dnf` ثمّ
+  `pacman` ثمّ `zypper` ثمّ `yum` ثمّ `apk` بهذا الترتيب.
+- **تثبيتُ الأدوات**: يستعملُ `pkexec` لرفعِ الصلاحيّاتِ رسوميّاً، وإن تعذّرَ أعادَ نصَّ
+  أمرِ `sudo` لينسخَه المستخدمُ بنفسِه.
