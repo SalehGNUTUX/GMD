@@ -3,13 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, Folder, Film, ListVideo, Check, Loader2 } from 'lucide-react'
 import UrlInput from './UrlInput'
-
-const qualities = [
-  { id: '1080p', label: 'video.quality1080', format: 'bv*[height<=1080]+ba/best[height<=1080]' },
-  { id: '720p',  label: 'video.quality720',  format: 'bv*[height<=720]+ba/best[height<=720]' },
-  { id: '480p',  label: 'video.quality480',  format: 'bv*[height<=480]+ba/best[height<=480]' },
-  { id: 'best',  label: 'video.qualityBest', format: 'bestvideo+bestaudio/best' },
-]
+import { qualities, videoFormatArgs } from '../quality'
 
 function PlaylistModal({ info, onDownloadAll, onDownloadSelected, onClose, t }) {
   const [selected, setSelected] = useState(() => new Set(info.entries.map((_, i) => i)))
@@ -104,10 +98,9 @@ function DownloadVideo({ setCurrentView, handleRunCommand }) {
     if (!savePath) { alert(t('errors.noFolder')); return }
     const homeDir = await window.electronAPI.getHomeDir()
     const ytdlp = `${homeDir}/.local/bin/yt-dlp`
-    const q = qualities.find(q => q.id === quality)
     const target = urlOverride || url
 
-    const args = ['-f', q.format]
+    const args = videoFormatArgs(quality)
     if (playlistItems) {
       // Download specific items: build a comma-separated indices list
       args.push('--playlist-items', playlistItems.map(e => e.index).join(','))

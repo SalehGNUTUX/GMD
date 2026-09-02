@@ -202,6 +202,12 @@ choose_local_file() {
 # ----------------------------
 # قائمة جودة الفيديو
 # ----------------------------
+# الجودةُ سقفٌ على الضلعِ الأصغرِ لا على الارتفاع: مقطعُ «720p» عموديّاً مقاسُه
+# 720×1280، فترشيحُ `height<=720` لا يُطابِقُ منه شيئاً ويموتُ التنزيلُ بـ
+# «Requested format is not available». وحقلُ `res` في `-S` هو الضلعُ الأصغرُ نفسُه
+# فيَصحُّ في الاتّجاهَين، وهو ترتيبٌ لا شرطٌ قاطعٌ فلا يفشلُ إن عُدِمَ ما تحتَ السقف.
+CAPPED_FORMAT="bv*[height>0]+ba/b[height>0]/bv*+ba/b"
+
 choose_video_quality() {
     local CHOICE
     CHOICE=$(zrun --list \
@@ -218,11 +224,13 @@ choose_video_quality() {
                   2>/dev/null)
     [[ -z "$CHOICE" ]] && return 1
 
+    # تُعادُ الصيغةُ والترتيبُ مفصولَين بـ«|»، لأنّ الدالّةَ تُنادى داخلَ $( ) فأيُّ
+    # إسنادٍ لمتغيّرٍ عامٍّ فيها يضيعُ في الصدفةِ الفرعيّة.
     case "$CHOICE" in
-        "1080p")  echo "bv*[height<=1080]+ba/best[height<=1080]" ;;
-        "720p")   echo "bv*[height<=720]+ba/best[height<=720]" ;;
-        "480p")   echo "bv*[height<=480]+ba/best[height<=480]" ;;
-        *)         echo "bestvideo+bestaudio/best" ;;
+        "1080p")  echo "$CAPPED_FORMAT|-S res:1080" ;;
+        "720p")   echo "$CAPPED_FORMAT|-S res:720" ;;
+        "480p")   echo "$CAPPED_FORMAT|-S res:480" ;;
+        *)         echo "bv*+ba/b|" ;;
     esac
 }
 
@@ -313,14 +321,16 @@ do_download_video() {
 
     URL=$(get_url) || return 0
 
-    FORMAT=$(choose_video_quality) || return 0
+    local QSEL SORT_OPT
+    QSEL=$(choose_video_quality) || return 0
+    FORMAT="${QSEL%%|*}"; SORT_OPT="${QSEL#*|}"
 
     SAVE_PATH=$(choose_save_path)
 
     run_with_progress \
         "$(t 'تنزيل فيديو' 'Download Video')" \
         "$(t '⬇️ جاري تنزيل الفيديو...' '⬇️ Downloading video...')" \
-        "\"$YTDLP\" -f \"$FORMAT\" -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
+        "\"$YTDLP\" -f \"$FORMAT\" $SORT_OPT -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
 
     local STATUS=$?
     show_result "$STATUS"
@@ -364,9 +374,10 @@ do_download_convert() {
     # تحديد الأمر حسب النوع
     local CMD
     if [[ "$EXT" == "mp4" || "$EXT" == "webm" ]]; then
-        local FORMAT
-        FORMAT=$(choose_video_quality) || return 0
-        CMD="\"$YTDLP\" -f \"$FORMAT\" --merge-output-format $EXT -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
+        local FORMAT QSEL SORT_OPT
+        QSEL=$(choose_video_quality) || return 0
+        FORMAT="${QSEL%%|*}"; SORT_OPT="${QSEL#*|}"
+        CMD="\"$YTDLP\" -f \"$FORMAT\" $SORT_OPT --merge-output-format $EXT -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
     else
         CMD="\"$YTDLP\" --extract-audio --audio-format $EXT --audio-quality 0 -o \"$SAVE_PATH/%(title)s.%(ext)s\" \"$URL\""
     fi
