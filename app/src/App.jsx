@@ -11,14 +11,18 @@ import ExtraOptions from './components/ExtraOptions'
 import ClipMedia from './components/ClipMedia'
 import MediaInfo from './components/MediaInfo'
 import Settings from './components/Settings'
+import History from './components/History'
 import ProgressModal from './components/ProgressModal'
 import ResultModal from './components/ResultModal'
 import { AlertTriangle, ArrowUpCircle, X } from 'lucide-react'
 import { readUpdatePrefs } from './components/UpdateManager'
+import { addHistory } from './history'
 
 function App() {
   const { t, i18n } = useTranslation()
   const [currentView, setCurrentView] = useState('menu')
+  /** رابطٌ أُعيدت محاولته من السجلّ؛ الطابع الزمنيّ يجعل كلّ إعادةٍ حدثاً جديداً. */
+  const [retryUrl, setRetryUrl] = useState(null)
   const [progress, setProgress] = useState(null)
   const [result, setResult] = useState(null)
   const [ytdlpInstalled, setYtdlpInstalled] = useState(true)
@@ -96,7 +100,12 @@ function App() {
   }
 
   // jobs: [{ bin, args, outFile? }] — one entry per process to run in sequence.
-  const handleRunCommand = async (jobs, title, text, savePath) => {
+  /**
+   * [meta] وصفُ المحاولة كما طلبها المستخدم — الرابط ونوعه وخياره وقائمة تشغيله —
+   * يُسجَّل في سجلّ التنزيلات مهما آلت إليه. والعمليّات المحلّيّة (تحويل ملفّ، قصّ،
+   * معلومات) تمرّ بلا meta فلا تُسجَّل: السجلّ للروابط لا لكلّ أمر يُنفَّذ.
+   */
+  const handleRunCommand = async (jobs, title, text, savePath, meta) => {
     const list = Array.isArray(jobs) ? jobs : [jobs]
     setProgress({ title, text, output: '', jobCount: list.length, jobIndex: 1 })
 
@@ -151,6 +160,14 @@ function App() {
     }
 
     const handleDone = (data) => {
+      if (meta && !data.cancelled) {
+        addHistory({
+          ...meta,
+          ok: !!data.success,
+          error: data.success ? null : String(data.output || '').slice(-4000),
+          savePath: data.success ? savePath : null,
+        })
+      }
       setTimeout(() => {
         setProgress(null)
         if (data.cancelled) return
@@ -177,6 +194,17 @@ function App() {
     setProgress(null)
   }
 
+  /**
+   * إعادة محاولة مدخل من السجلّ: يُملأ الرابط وتُفتح شاشته بنوعه نفسه.
+   * كان إغلاق صندوق النتيجة يُضيع الرابط وسبب الفشل معاً.
+   */
+  const handleRetry = (entry) => {
+    setRetryUrl({ url: entry.url, at: Date.now() })
+    setCurrentView(entry.kind === 'audio' ? 'audio'
+                 : entry.kind === 'convert' ? 'smart'
+                 : entry.kind === 'extra' ? 'extra' : 'video')
+  }
+
   const handleExit = () => {
     setShowExitConfirm(true)
   }
@@ -186,7 +214,7 @@ function App() {
   }
 
   const renderView = () => {
-    const props = { setCurrentView, handleRunCommand }
+    const props = { setCurrentView, handleRunCommand, retryUrl }
     switch (currentView) {
       case 'menu': return <MainMenu setCurrentView={setCurrentView} onExit={handleExit} />
       case 'video': return <DownloadVideo {...props} />
@@ -196,6 +224,7 @@ function App() {
       case 'extra': return <ExtraOptions {...props} />
       case 'clip': return <ClipMedia {...props} />
       case 'info': return <MediaInfo {...props} />
+      case 'history': return <History setCurrentView={setCurrentView} onRetry={handleRetry} />
       case 'settings': return <Settings {...props} setYtdlpInstalled={setYtdlpInstalled} setFfmpegInstalled={setFfmpegInstalled} />
       default: return <MainMenu setCurrentView={setCurrentView} onExit={handleExit} />
     }

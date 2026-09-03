@@ -21,22 +21,52 @@ const CACHE_DIR = path.join(os.homedir(), '.cache', 'gmd-gui', 'updates')
 let activeDownload = null      // { req, file, aborted }
 
 // ── version helpers ──────────────────────────────────────────────────────────
-// Tags have been written as "GMD-26.05", "GMD_1.92..." and "v1.1" over time, so
-// pull the first dotted number out of the tag rather than trusting its shape.
+// الوسوم كُتبت بصيغ شتّى عبر الزمن — "GMD-26.05" و"GMD_1.92..." و"v1.1" — فيُنتزع
+// أوّل رقم منقَّط منها بدل الوثوق بشكلها. ومعه لاحقة ما قبل الإصدار إن وُجدت:
+// إهمالها كان يجعل "26.9.0-beta.1" و"26.9.0-alpha.1" سواءً في المقارنة، فلا ينتقل
+// البرنامج بين إصدارين تجريبيَّين يشتركان في الرقم، ولا من تجريبيّ إلى مستقرّ يحمله.
 function parseVersion(str) {
-  const m = String(str || '').match(/(\d+)\.(\d+)(?:\.(\d+))?/)
+  const m = String(str || '').match(/(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?/)
   if (!m) return null
-  return [Number(m[1]), Number(m[2]), Number(m[3] || 0)]
+  const pre = m[4] ? m[4].split('.').filter(Boolean) : []
+  return { num: [Number(m[1]), Number(m[2]), Number(m[3] || 0)], pre }
+}
+
+/** نصّ الإصدار كما يُعرض للمستخدم: بلاحقته لا مبتوراً منها. */
+function versionText(v) {
+  return v.num.join('.') + (v.pre.length ? '-' + v.pre.join('.') : '')
+}
+
+/** ترتيب semver: سالبٌ إن كان a أقدم، موجبٌ إن كان أحدث. */
+function compareVersion(a, b) {
+  for (let i = 0; i < 3; i++) if (a.num[i] !== b.num[i]) return a.num[i] - b.num[i]
+
+  // المستقرّ يسبق ما قبله عند تساوي الرقم: 26.9.0 أحدث من 26.9.0-beta.1
+  if (!a.pre.length && !b.pre.length) return 0
+  if (!a.pre.length) return 1
+  if (!b.pre.length) return -1
+
+  // ثمّ تُقارَن المعرّفات واحداً واحداً: الرقميّ يسبق النصّيّ، والرقميّ يُقارَن
+  // عدداً لا حرفاً — فـbeta.10 بعد beta.9 لا قبلها.
+  for (let i = 0; i < Math.max(a.pre.length, b.pre.length); i++) {
+    if (i >= a.pre.length) return -1
+    if (i >= b.pre.length) return 1
+    const x = a.pre[i], y = b.pre[i]
+    const xn = /^\d+$/.test(x), yn = /^\d+$/.test(y)
+    let c
+    if (xn && yn) c = Number(x) - Number(y)
+    else if (xn) c = -1
+    else if (yn) c = 1
+    else c = x < y ? -1 : x > y ? 1 : 0
+    if (c !== 0) return c
+  }
+  return 0
 }
 
 function isNewer(candidate, current) {
   const a = parseVersion(candidate), b = parseVersion(current)
   if (!a || !b) return false
-  for (let i = 0; i < 3; i++) {
-    if (a[i] > b[i]) return true
-    if (a[i] < b[i]) return false
-  }
-  return false
+  return compareVersion(a, b) > 0
 }
 
 // ── how was this copy installed? ─────────────────────────────────────────────
@@ -119,16 +149,12 @@ async function check({ allowPrerelease = false } = {}) {
     .filter(r => !r.draft)
     .filter(r => allowPrerelease || !r.prerelease)
     .filter(r => parseVersion(r.tag_name))
-    .sort((a, b) => {
-      const va = parseVersion(a.tag_name), vb = parseVersion(b.tag_name)
-      for (let i = 0; i < 3; i++) if (vb[i] !== va[i]) return vb[i] - va[i]
-      return 0
-    })
+    .sort((a, b) => compareVersion(parseVersion(b.tag_name), parseVersion(a.tag_name)))
 
   const latest = usable[0]
   if (!latest) return { ok: true, updateAvailable: false, current, channel: channel.kind }
 
-  const version = parseVersion(latest.tag_name).join('.')
+  const version = versionText(parseVersion(latest.tag_name))
   const asset = pickAsset(latest.assets || [], channel.ext)
 
   return {

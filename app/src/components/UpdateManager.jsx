@@ -42,6 +42,48 @@ function Toggle({ on, onClick, label, desc }) {
   )
 }
 
+/**
+ * يعرض ملاحظات الإصدار نصّاً مقروءاً لا ترميزاً خاماً.
+ *
+ * الملاحظات تأتي من CHANGELOG بصيغة Markdown، وكانت تُعرَض داخل <pre> فتظهر
+ * النجوم والشَّرَطات حروفاً بين يدي القارئ. ولا داعي لمكتبة Markdown كاملة لأجل
+ * بطاقة تحديث: يكفي ما يَرِد فعلاً في سجلّ هذا المشروع — العريض والشيفرة
+ * والعناوين والقوائم.
+ */
+function ReleaseNotes({ text }) {
+  const lines = String(text || '').split('\n')
+  return lines.map((raw, li) => {
+    const line = raw.replace(/\s+$/, '')
+    if (/^-{3,}$/.test(line.trim())) return null           // فاصل أفقيّ لا معنى له هنا
+    if (!line.trim()) return <br key={li} />
+
+    let body = line
+    const heading = /^#{1,6}\s+/.exec(body)
+    if (heading) body = body.slice(heading[0].length)
+    const bullet = /^[-*]\s+/.exec(body)
+    if (bullet) body = body.slice(bullet[0].length)
+
+    // يُقسَم السطر على العريض والشيفرة بحسب ترتيب ورودها
+    const parts = []
+    const re = /\*\*(.+?)\*\*|`([^`]+)`/g
+    let last = 0, m
+    while ((m = re.exec(body)) !== null) {
+      if (m.index > last) parts.push(body.slice(last, m.index))
+      if (m[1] !== undefined) parts.push(<strong key={`b${li}-${m.index}`} className="text-dark-100">{m[1]}</strong>)
+      else parts.push(<code key={`c${li}-${m.index}`} className="font-mono text-gmd-300">{m[2]}</code>)
+      last = m.index + m[0].length
+    }
+    if (last < body.length) parts.push(body.slice(last))
+
+    const content = bullet ? ['• ', ...parts] : parts
+    return (
+      <div key={li} className={heading ? 'font-bold text-dark-100 mt-1' : undefined}>
+        {content}
+      </div>
+    )
+  })
+}
+
 function UpdateManager({ compact = false, onAvailable }) {
   const { t } = useTranslation()
   const [phase, setPhase]   = useState('idle')     // idle|checking|uptodate|available|downloading|downloaded|installing|done|error
@@ -173,9 +215,9 @@ function UpdateManager({ compact = false, onAvailable }) {
                   {t('update.releaseNotes')}
                 </button>
                 {showNotes && (
-                  <pre className="mt-2 max-h-40 overflow-y-auto text-xs text-dark-300 whitespace-pre-wrap bg-dark-950/60 rounded-lg p-3 border border-dark-800">
-                    {info.notes}
-                  </pre>
+                  <div className="mt-2 max-h-40 overflow-y-auto text-xs text-dark-300 whitespace-pre-wrap bg-dark-950/60 rounded-lg p-3 border border-dark-800">
+                    <ReleaseNotes text={info.notes} />
+                  </div>
                 )}
               </div>
             )}
