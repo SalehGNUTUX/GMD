@@ -35,12 +35,18 @@ function App() {
   // each operation swaps the handlers these refs point at. Registering them per
   // operation (as before) left every previous listener attached, so the Nth
   // download processed each output line N times and opened N result dialogs.
-  const onOutputRef = useRef(null)
-  const onDoneRef   = useRef(null)
+  //
+  // والتوزيع بمعرِّف المهمّة لا بمرجعَين مفردَين: كان كلّ استدعاءٍ يكتب فوقهما،
+  // فمهمّةٌ ثانيةٌ تسرق مستمعَ الأولى فيضيع خرجُها ولا يُغلَق صندوقُ تقدُّمها.
+  const handlersRef = useRef(new Map())
 
   useEffect(() => {
-    window.electronAPI.onCommandOutput(data => onOutputRef.current?.(data))
-    window.electronAPI.onCommandDone(data => onDoneRef.current?.(data))
+    const dispatch = which => data => {
+      const entry = data?.jobId ? handlersRef.current.get(data.jobId) : null
+      entry?.[which]?.(data)
+    }
+    window.electronAPI.onCommandOutput(dispatch('onOutput'))
+    window.electronAPI.onCommandDone(dispatch('onDone'))
     return () => {
       window.electronAPI.removeAllListeners('command-output')
       window.electronAPI.removeAllListeners('command-done')
@@ -107,11 +113,15 @@ function App() {
    */
   const handleRunCommand = async (jobs, title, text, savePath, meta) => {
     const list = Array.isArray(jobs) ? jobs : [jobs]
-    setProgress({ title, text, output: '', jobCount: list.length, jobIndex: 1 })
+    // المعرِّف يُولَّد هنا لا في العمليّة الرئيسة: الخرج يبدأ بالوصول قبل أن يعود
+    // ردُّ النداء، فبلا معرِّفٍ سابقٍ لا يُعرَف لمن يُنسَب أوّلُ سطر.
+    const jobId = `${meta?.kind || 'local'}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    setProgress({ jobId, title, text, output: '', jobCount: list.length, jobIndex: 1 })
 
     const handleOutput = (data) => {
       setProgress(prev => {
-        if (!prev) return null
+        // حدثٌ متأخّرٌ من مهمّةٍ سابقةٍ لا يكتب فوق تقدُّمِ مهمّةٍ أخرى
+        if (!prev || prev.jobId !== data.jobId) return prev
         const newOutput = (prev.output || '') + data.data
         const base = {
           ...prev,
@@ -160,6 +170,7 @@ function App() {
     }
 
     const handleDone = (data) => {
+      handlersRef.current.delete(jobId)
       if (meta && !data.cancelled) {
         addHistory({
           ...meta,
@@ -180,17 +191,20 @@ function App() {
       }, 500)
     }
 
-    onOutputRef.current = handleOutput
-    onDoneRef.current   = handleDone
+    handlersRef.current.set(jobId, { onOutput: handleOutput, onDone: handleDone })
 
     // The handlers stay installed after the call returns: 'command-done' is sent
     // just before the IPC reply, and clearing them here would race that event and
-    // leave the progress dialog open forever. The next operation overwrites them.
-    return window.electronAPI.runCommand({ jobs: list, title })
+    // leave the progress dialog open forever. They are dropped when it arrives.
+    try {
+      return await window.electronAPI.runCommand({ jobs: list, title, jobId })
+    } finally {
+      handlersRef.current.delete(jobId)
+    }
   }
 
   const handleCancel = async () => {
-    await window.electronAPI.cancelCommand()
+    await window.electronAPI.cancelCommand(progress?.jobId)
     setProgress(null)
   }
 

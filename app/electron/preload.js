@@ -31,7 +31,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Run shell command (streaming)
   runCommand:     (params) => ipcRenderer.invoke('run-command', params),
-  cancelCommand:  ()       => ipcRenderer.invoke('cancel-command'),
+  /** بلا معرِّفٍ تُلغى كلُّ المهامّ الجارية؛ وبمعرِّفٍ تُلغى واحدةٌ بعينها. */
+  cancelCommand:  (jobId)  => ipcRenderer.invoke('cancel-command', jobId),
+  runningJobs:    ()       => ipcRenderer.invoke('running-jobs'),
   checkPlaylist:  (url)    => ipcRenderer.invoke('check-playlist', url),
 
   // Media info
