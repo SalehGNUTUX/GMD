@@ -4,3 +4,6 @@ app/dist-electron/
 app/test/fixtures/
 *.log
 .DS_Store
+
+# بطاقة AppStream مولَّدة من قالبها وقت البناء
+app/packaging/org.gnutux.gmd.metainfo.xml

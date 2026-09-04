@@ -1,6 +1,6 @@
 {
   "name": "gmd-gui",
-  "version": "26.9.2",
+  "version": "26.9.0-beta.3",
   "description": "GNU Media Downloader — Free and open-source media downloader and converter for GNU/Linux",
   "main": "electron/main.js",
   "author": {
@@ -16,7 +16,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node build-scripts/gen-metainfo.js && vite build",
     "electron:dev": "npm run build && electron .",
     "electron:build": "npm run build && electron-builder",
     "preview": "vite preview",
@@ -97,7 +97,9 @@
         "Categories": "AudioVideo;Network;Utility;",
         "Keywords": "download;video;audio;youtube;convert;media;",
         "StartupNotify": "true"
-      }
+      },
+      "vendor": "SalehGNUTUX",
+      "synopsis": "GNU Media Downloader"
     },
     "deb": {
       "depends": [
@@ -110,11 +112,29 @@
       "packageCategory": "utils",
       "priority": "optional",
       "afterInstall": "build-scripts/after-install.sh",
-      "afterRemove": "build-scripts/after-remove.sh"
+      "afterRemove": "build-scripts/after-remove.sh",
+      "fpm": [
+        "--license",
+        "GPL-3.0-or-later",
+        "--vendor",
+        "SalehGNUTUX",
+        "--url",
+        "https://salehgnutux.github.io/GMD",
+        "packaging/org.gnutux.gmd.metainfo.xml=/usr/share/metainfo/org.gnutux.gmd.metainfo.xml"
+      ]
     },
     "rpm": {
       "depends": [
         "ffmpeg"
+      ],
+      "fpm": [
+        "--license",
+        "GPL-3.0-or-later",
+        "--vendor",
+        "SalehGNUTUX",
+        "--url",
+        "https://salehgnutux.github.io/GMD",
+        "packaging/org.gnutux.gmd.metainfo.xml=/usr/share/metainfo/org.gnutux.gmd.metainfo.xml"
       ]
     },
     "appImage": {}

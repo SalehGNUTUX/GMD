@@ -11,7 +11,7 @@
 
 <div align="center">
 
-![الإصدار](https://img.shields.io/badge/إصدار-26.9.1-red)
+![الإصدار](https://img.shields.io/badge/إصدار-26.9.0--beta.2-red)
 ![الترخيص](https://img.shields.io/badge/ترخيص-GPL%20v3-blue)
 ![المنصة](https://img.shields.io/badge/منصة-غنو%2Fلينكس-green)
 ![المطور](https://img.shields.io/badge/المطور-GNUTUX-orange)
@@ -178,21 +178,21 @@ app/dist-electron/
 
 ## 📥 تنزيل الحزم الجاهزة
 
-### الإصدار 26.9.1 (الأحدث · تجريبيّ)
+### الإصدار 26.9.0-beta.2 (الأحدث · تجريبيّ)
 
 للحواسيبِ ذاتِ المعماريّةِ **x86_64**:
 
 | الحزمة | الرابط | التحقّق |
 |--------|--------|---------|
-| 🐧 **AppImage** | [GMD-26.9.1-x86_64.AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-x86_64.AppImage) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/SHA256SUMS-x64.txt) |
-| 🐧 **DEB** | [GMD-26.9.1-amd64.deb](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-amd64.deb) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/SHA256SUMS-x64.txt) |
-| 🐧 **RPM** | [GMD-26.9.1-x86_64.rpm](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-x86_64.rpm) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/SHA256SUMS-x64.txt) |
+| 🐧 **AppImage** | [GMD-26.9.1-x86_64.AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/GMD-26.9.1-x86_64.AppImage) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/SHA256SUMS-x64.txt) |
+| 🐧 **DEB** | [GMD-26.9.1-amd64.deb](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/GMD-26.9.1-amd64.deb) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/SHA256SUMS-x64.txt) |
+| 🐧 **RPM** | [GMD-26.9.1-x86_64.rpm](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/GMD-26.9.1-x86_64.rpm) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/SHA256SUMS-x64.txt) |
 
 وللمعماريّةِ **arm64**:
-[AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-arm64.AppImage) ·
-[DEB](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-arm64.deb) ·
-[RPM](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-aarch64.rpm) ·
-[SHA256SUMS-arm64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/SHA256SUMS-arm64.txt)
+[AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/GMD-26.9.1-arm64.AppImage) ·
+[DEB](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/GMD-26.9.1-arm64.deb) ·
+[RPM](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/GMD-26.9.1-aarch64.rpm) ·
+[SHA256SUMS-arm64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.2/SHA256SUMS-arm64.txt)
 
 ### الإصدار 26.05.0 (سابق)
 

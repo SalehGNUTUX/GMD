@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  بطاقةُ AppStream: هي ما يقرؤه مركزُ البرامج (‏Discover و GNOME Software) ليعرفَ
+  المطوّرَ والرخصةَ والوصف. وبدونها يعرضُ «Unknown author» و«Licenses: Unknown»
+  مهما كانت حقولُ الحزمةِ مضبوطة — فحزمةُ deb لا حقلَ رخصةٍ فيها أصلاً، والمطوّرُ
+  يُقرَأُ من هنا لا من حقلِ Maintainer.
+
+  هذا الملفُّ **مولَّد**: المصدرُ `org.gnutux.gmd.metainfo.xml.in` ورقمُ الإصدارِ
+  يُملأُ من package.json وحدَه — لا يُكتَبُ رقمٌ في موضعَين.
+-->
+<component type="desktop-application">
+  <id>org.gnutux.gmd</id>
+  <launchable type="desktop-id">GMD.desktop</launchable>
+
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>GMD</name>
+  <name xml:lang="ar">GMD — منزّل وسائط غنو</name>
+  <summary>Download and convert media on GNU/Linux</summary>
+  <summary xml:lang="ar">تنزيلُ الوسائطِ وتحويلُها على غنو/لينكس</summary>
+
+  <developer id="io.github.salehgnutux">
+    <name>SalehGNUTUX</name>
+    <name xml:lang="ar">صالح — GNUTUX</name>
+  </developer>
+  <!-- الوسمُ المهجورُ يبقى: مراكزُ البرامجِ الأقدمُ لا تقرأُ إلّا هذا -->
+  <developer_name>SalehGNUTUX</developer_name>
+  <developer_name xml:lang="ar">صالح — GNUTUX</developer_name>
+
+  <description>
+    <p>
+      GMD is a free and open-source media downloader and converter for GNU/Linux,
+      built on yt-dlp and ffmpeg. It downloads video and audio from hundreds of
+      sites, converts local files, trims a part of a clip, downloads whole
+      playlists into a folder of their own, and keeps a history of every attempt.
+    </p>
+    <p xml:lang="ar">
+      GMD برنامجٌ حرٌّ مفتوحُ المصدرِ لتنزيلِ الوسائطِ وتحويلِها على غنو/لينكس،
+      مبنيٌّ على yt-dlp وffmpeg. يُنزّلُ الفيديو والصوتَ من مئاتِ المواقع، ويُحوّلُ
+      الملفّاتِ المحلّيّة، ويقتصُّ جزءاً من مقطع، ويُنزّلُ قوائمَ التشغيلِ كاملةً في
+      مجلَّدٍ خاصٍّ بها، ويحفظُ سجلّاً لكلِّ محاولة.
+    </p>
+    <p>Features:</p>
+    <p xml:lang="ar">من مزاياه:</p>
+    <ul>
+      <li>Video and audio downloads with a quality or format of your choosing</li>
+      <li xml:lang="ar">تنزيلُ فيديو وصوتٍ بالجودةِ أو الصيغةِ التي تختار</li>
+      <li>Playlists, each in a folder of its own</li>
+      <li xml:lang="ar">قوائمُ التشغيل، ولكلِّ قائمةٍ مجلَّدُها</li>
+      <li>Trimming a part, before or after downloading</li>
+      <li xml:lang="ar">اقتصاصُ جزءٍ قبلَ التنزيلِ أو بعدَه</li>
+      <li>Converting local files between formats</li>
+      <li xml:lang="ar">تحويلُ الملفّاتِ المحلّيّةِ بينَ الصيغ</li>
+      <li>Arabic and English, right-to-left aware</li>
+      <li xml:lang="ar">عربيّةٌ وإنجليزيّةٌ باتّجاهَيهما</li>
+    </ul>
+  </description>
+
+  <url type="homepage">https://salehgnutux.github.io/GMD</url>
+  <url type="bugtracker">https://github.com/SalehGNUTUX/GMD/issues</url>
+  <url type="vcs-browser">https://github.com/SalehGNUTUX/GMD</url>
+
+  <categories>
+    <category>AudioVideo</category>
+    <category>Network</category>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword>download</keyword>
+    <keyword>video</keyword>
+    <keyword>audio</keyword>
+    <keyword>convert</keyword>
+    <keyword>yt-dlp</keyword>
+    <keyword xml:lang="ar">تنزيل</keyword>
+    <keyword xml:lang="ar">فيديو</keyword>
+    <keyword xml:lang="ar">صوت</keyword>
+    <keyword xml:lang="ar">تحويل</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1" />
+
+  <releases>
+    <release version="@VERSION@" date="@DATE@" />
+  </releases>
+</component>

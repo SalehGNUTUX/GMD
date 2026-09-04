@@ -34,3 +34,8 @@ command -v gtk-update-icon-cache   >/dev/null 2>&1 && gtk-update-icon-cache   -f
 command -v gtk4-update-icon-cache  >/dev/null 2>&1 && gtk4-update-icon-cache  -f -q /usr/share/icons/hicolor 2>/dev/null || true
 command -v xdg-icon-resource       >/dev/null 2>&1 && xdg-icon-resource       forceupdate                    2>/dev/null || true
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database /usr/share/applications        2>/dev/null || true
+
+# بطاقة AppStream وُضعت في /usr/share/metainfo، ومركز البرامج لا يراها حتى يُحدَّث
+# مخزنه — فيُحدَّث الآن بدل أن ينتظر المستخدم دورةً يوميّة ليظهر مطوّر البرنامج
+# ورخصته.
+command -v appstreamcli >/dev/null 2>&1 && appstreamcli refresh --force >/dev/null 2>&1 || true
