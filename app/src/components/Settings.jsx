@@ -16,7 +16,7 @@ function SectionHeader({ icon: Icon, title, expanded, onToggle, color = 'text-gm
   return (
     <button
       onClick={onToggle}
-      className="w-full flex items-center gap-3 py-2 text-left group"
+      className="w-full flex items-center gap-3 py-2 text-start group"
     >
       <Icon className={`w-5 h-5 ${color}`} />
       <span className="font-semibold text-white flex-1">{title}</span>
@@ -197,7 +197,7 @@ function SettingsView({ setCurrentView, setYtdlpInstalled, setFfmpegInstalled })
             <motion.button
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
               onClick={handleLanguage}
-              className="w-full glass-panel p-4 flex items-center gap-4 text-left hover:bg-dark-800/80 hover:border-gmd-500/30"
+              className="w-full glass-panel p-4 flex items-center gap-4 text-start hover:bg-dark-800/80 hover:border-gmd-500/30"
             >
               <div className="w-10 h-10 rounded-xl bg-dark-700 flex items-center justify-center flex-shrink-0">
                 <Globe className="w-5 h-5 text-gmd-400" />
@@ -354,7 +354,7 @@ function SettingsView({ setCurrentView, setYtdlpInstalled, setFfmpegInstalled })
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
               onClick={handleUpdateYtdlp}
               disabled={loading === 'ytdlp'}
-              className="w-full glass-panel p-4 flex items-center gap-4 text-left hover:bg-dark-800/80 hover:border-gmd-500/30"
+              className="w-full glass-panel p-4 flex items-center gap-4 text-start hover:bg-dark-800/80 hover:border-gmd-500/30"
             >
               <div className="w-10 h-10 rounded-xl bg-dark-700 flex items-center justify-center flex-shrink-0">
                 <RefreshCw className={`w-5 h-5 text-gmd-400 ${loading === 'ytdlp' ? 'animate-spin' : ''}`} />
@@ -455,7 +455,7 @@ function SettingsView({ setCurrentView, setYtdlpInstalled, setFfmpegInstalled })
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
               onClick={handleInstallDesktop}
               disabled={loading === 'desktop'}
-              className="w-full glass-panel p-4 flex items-center gap-4 text-left hover:bg-dark-800/80 hover:border-gmd-500/30"
+              className="w-full glass-panel p-4 flex items-center gap-4 text-start hover:bg-dark-800/80 hover:border-gmd-500/30"
             >
               <div className="w-10 h-10 rounded-xl bg-dark-700 flex items-center justify-center flex-shrink-0">
                 {loading === 'desktop' ? (
@@ -473,7 +473,7 @@ function SettingsView({ setCurrentView, setYtdlpInstalled, setFfmpegInstalled })
             <motion.button
               whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
               onClick={() => setShowUninstall(true)}
-              className="w-full glass-panel p-4 flex items-center gap-4 text-left hover:bg-dark-800/80 hover:border-red-500/50"
+              className="w-full glass-panel p-4 flex items-center gap-4 text-start hover:bg-dark-800/80 hover:border-red-500/50"
             >
               <div className="w-10 h-10 rounded-xl bg-red-900/30 flex items-center justify-center flex-shrink-0">
                 <Trash2 className="w-5 h-5 text-red-400" />

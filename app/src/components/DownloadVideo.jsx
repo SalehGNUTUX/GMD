@@ -49,7 +49,7 @@ function PlaylistModal({ info, onDownloadAll, onDownloadSelected, onClose, t }) 
         <div className="max-h-64 overflow-y-auto">
           {info.entries.map((entry, i) => (
             <button key={i} onClick={() => toggle(i)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-dark-800/60 transition-colors border-b border-dark-800/30 ${selected.has(i) ? 'bg-dark-800/30' : ''}`}>
+              className={`w-full flex items-center gap-3 px-4 py-2.5 text-start hover:bg-dark-800/60 transition-colors border-b border-dark-800/30 ${selected.has(i) ? 'bg-dark-800/30' : ''}`}>
               <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                 selected.has(i) ? 'bg-gmd-500 border-gmd-500' : 'border-dark-500'
               }`}>
