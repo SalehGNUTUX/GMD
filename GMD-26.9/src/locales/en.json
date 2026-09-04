@@ -13,7 +13,8 @@
     "clipMedia": "Trim Video/Audio",
     "mediaInfo": "Media Info",
     "settings": "Settings",
-    "exit": "Exit"
+    "exit": "Exit",
+    "history": "Download history"
   },
   "descriptions": {
     "downloadVideo": "Download video with quality choice",
@@ -23,7 +24,8 @@
     "extraOptions": "Playlists, channels, direct links, complete package",
     "clipMedia": "Trim clip from URL or existing file",
     "mediaInfo": "View video details before downloading",
-    "settings": "Language, save paths, updates, icon"
+    "settings": "Language, save paths, updates, icon",
+    "history": "Every link tried — succeeded or failed — with its details and error"
   },
   "common": {
     "url": "Video or audio URL",
@@ -271,5 +273,37 @@
     "bannerTitle": "A new version of GMD is available: {{version}}",
     "bannerAction": "Go to updates",
     "bannerDismiss": "Not now"
+  },
+  "clipRange": {
+    "title": "Clip a part",
+    "from": "From",
+    "to": "To",
+    "hint": "Times as 0:30 or 1:05:20 or plain seconds. Only that part is requested from the server. Cuts land on the nearest keyframe, so a second either way is normal. Some sites refuse partial requests — YouTube among them — so use the Clip screen after downloading.",
+    "invalid": "The end must come after the start, and times must read 0:30 or 1:05:20 or plain seconds."
+  },
+  "history": {
+    "title": "Download history",
+    "empty": "No attempts yet",
+    "emptyHint": "Every link you download — succeeded or failed — is kept here, so you can retry it or find out what went wrong.",
+    "filter_all": "All",
+    "filter_ok": "Succeeded",
+    "filter_failed": "Failed",
+    "count": "{{n}} attempts",
+    "selected": "{{n}} selected",
+    "selectAll": "Select all",
+    "selectNone": "Clear selection",
+    "delete": "Delete",
+    "clear": "Clear history",
+    "deleteConfirm": "Delete {{n}} entries? The downloaded files are not touched.",
+    "clearConfirm": "Delete every entry? The downloaded files are not touched.",
+    "kind_video": "Video",
+    "kind_audio": "Audio",
+    "kind_convert": "Download & convert",
+    "kind_extra": "Extra options",
+    "playlistItems": "Playlist — {{n}} items",
+    "retry": "Retry",
+    "again": "Download again",
+    "copyUrl": "Copy link",
+    "copyError": "Copy the error"
   }
 }

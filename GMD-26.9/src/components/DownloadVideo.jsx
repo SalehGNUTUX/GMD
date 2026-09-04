@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link, Folder, Film, ListVideo, Check, Loader2 } from 'lucide-react'
 import UrlInput from './UrlInput'
 import { qualities, videoFormatArgs } from '../quality'
+import { clipArgs, clipValid } from '../clip'
+import ClipRange from './ClipRange'
 
 function PlaylistModal({ info, onDownloadAll, onDownloadSelected, onClose, t }) {
   const [selected, setSelected] = useState(() => new Set(info.entries.map((_, i) => i)))
@@ -75,19 +77,25 @@ function PlaylistModal({ info, onDownloadAll, onDownloadSelected, onClose, t }) 
   )
 }
 
-function DownloadVideo({ setCurrentView, handleRunCommand }) {
+function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl }) {
   const { t } = useTranslation()
   const [url, setUrl]                   = useState('')
   const [savePath, setSavePath]         = useState('')
   const [selectedQuality, setSelectedQuality] = useState('1080p')
   const [checkingPlaylist, setCheckingPlaylist] = useState(false)
   const [playlistInfo, setPlaylistInfo] = useState(null)
+  const [clipOn, setClipOn] = useState(false)
+  const [clipFrom, setClipFrom] = useState('')
+  const [clipTo, setClipTo] = useState('')
 
   useEffect(() => {
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
     if (s.defaultPaths?.enabled && s.defaultPaths?.video) setSavePath(s.defaultPaths.video)
     else if (s.lastSaveDirs?.video) setSavePath(s.lastSaveDirs.video)
   }, [])
+
+  // رابطٌ أُعيدت محاولته من السجلّ؛ الطابع الزمنيّ يجعل تكرار الرابط نفسه حدثاً جديداً
+  useEffect(() => { if (retryUrl?.url) setUrl(retryUrl.url) }, [retryUrl?.at])
 
   const chooseFolder = async () => {
     const folder = await window.electronAPI.selectFolder()
@@ -104,15 +112,26 @@ function DownloadVideo({ setCurrentView, handleRunCommand }) {
     if (playlistItems) {
       // Download specific items: build a comma-separated indices list
       args.push('--playlist-items', playlistItems.map(e => e.index).join(','))
-      args.push('-o', `${savePath}/%(playlist_index)s - %(title)s.%(ext)s`)
+      // ولكلّ قائمة مجلَّدها: كانت مقاطعها تُرمى في المجلَّد المختار مختلطةً بغيرها.
+      // ويكتب yt-dlp اسم القائمة بنفسه، فيُنقّى بـ%(...)s ولا نبنيه نصّاً هنا.
+      args.push('-o', `${savePath}/%(playlist_title,playlist_id|playlist)s/%(playlist_index)02d - %(title)s.%(ext)s`)
+      // عنصر محجوب في قائمة من ثلاثين لا يُهدر التسعة والعشرين
+      args.push('--ignore-errors')
     } else {
+      args.push(...clipArgs(clipOn, clipFrom, clipTo))
       args.push('-o', `${savePath}/%(title)s.%(ext)s`)
     }
     args.push('--', target)
 
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
     localStorage.setItem('gmd-settings', JSON.stringify({ ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), video: savePath } }))
-    await handleRunCommand({ bin: ytdlp, args }, t('video.title'), t('video.downloading'), savePath)
+    await handleRunCommand({ bin: ytdlp, args }, t('video.title'), t('video.downloading'), savePath, {
+      url: target,
+      kind: 'video',
+      choice: quality,
+      title: playlistItems ? (playlistInfo?.title || '') : '',
+      playlist: playlistItems ? { count: playlistItems.length, title: playlistInfo?.title || '' } : null,
+    })
   }
 
   const handleDownload = async () => {
@@ -144,6 +163,12 @@ function DownloadVideo({ setCurrentView, handleRunCommand }) {
         <label className="block text-sm font-medium text-dark-300 mb-2">{t('common.url')}</label>
         <UrlInput value={url} onChange={setUrl} placeholder={t('common.enterUrl')} icon={Link} />
       </div>
+
+      <ClipRange
+        enabled={clipOn} setEnabled={setClipOn}
+        from={clipFrom} setFrom={setClipFrom}
+        to={clipTo} setTo={setClipTo}
+      />
 
       <div className="glass-panel p-6 space-y-4">
         <label className="block text-sm font-medium text-dark-300 mb-2">{t('video.quality')}</label>

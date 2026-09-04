@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link, Folder, Music, FileAudio, ListVideo, Check, Loader2 } from 'lucide-react'
 import UrlInput from './UrlInput'
+import { clipArgs, clipValid } from '../clip'
+import ClipRange from './ClipRange'
 
 const formats = [
   { id: 'mp3',  label: 'audio.mp3',  opts: '--extract-audio --audio-format mp3 --audio-quality 0' },
@@ -79,19 +81,24 @@ function PlaylistModal({ info, onDownloadAll, onDownloadSelected, onClose, t }) 
   )
 }
 
-function DownloadAudio({ setCurrentView, handleRunCommand }) {
+function DownloadAudio({ setCurrentView, handleRunCommand, retryUrl }) {
   const { t } = useTranslation()
   const [url, setUrl]                         = useState('')
   const [savePath, setSavePath]               = useState('')
   const [selectedFormat, setSelectedFormat]   = useState('mp3')
   const [checkingPlaylist, setCheckingPlaylist] = useState(false)
   const [playlistInfo, setPlaylistInfo]       = useState(null)
+  const [clipOn, setClipOn]                   = useState(false)
+  const [clipFrom, setClipFrom]               = useState('')
+  const [clipTo, setClipTo]                   = useState('')
 
   useEffect(() => {
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
     if (s.defaultPaths?.enabled && s.defaultPaths?.audio) setSavePath(s.defaultPaths.audio)
     else if (s.lastSaveDirs?.audio) setSavePath(s.lastSaveDirs.audio)
   }, [])
+
+  useEffect(() => { if (retryUrl?.url) setUrl(retryUrl.url) }, [retryUrl?.at])
 
   const chooseFolder = async () => {
     const folder = await window.electronAPI.selectFolder()
@@ -110,8 +117,11 @@ function DownloadAudio({ setCurrentView, handleRunCommand }) {
     const args = [...fmt.opts.split(' ')]
     if (playlistItems) {
       args.push('--playlist-items', playlistItems.map(e => e.index).join(','))
-      args.push('-o', `${savePath}/%(playlist_index)s - %(title)s.%(ext)s`)
+      // ولكلّ قائمة مجلَّدها، ويكتب yt-dlp اسمها بنفسه فلا نبنيه نصّاً هنا
+      args.push('-o', `${savePath}/%(playlist_title,playlist_id|playlist)s/%(playlist_index)02d - %(title)s.%(ext)s`)
+      args.push('--ignore-errors')
     } else {
+      args.push(...clipArgs(clipOn, clipFrom, clipTo))
       args.push('-o', `${savePath}/%(title)s.%(ext)s`)
     }
     args.push('--', target)
@@ -122,7 +132,13 @@ function DownloadAudio({ setCurrentView, handleRunCommand }) {
         ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), audio: savePath }
       }))
     }
-    await handleRunCommand({ bin: ytdlp, args }, t('audio.title'), t('audio.downloading'), savePath)
+    await handleRunCommand({ bin: ytdlp, args }, t('audio.title'), t('audio.downloading'), savePath, {
+      url: target,
+      kind: 'audio',
+      choice: selectedFormat,
+      title: playlistItems ? (playlistInfo?.title || '') : '',
+      playlist: playlistItems ? { count: playlistItems.length, title: playlistInfo?.title || '' } : null,
+    })
   }
 
   const handleDownload = async () => {
@@ -153,6 +169,12 @@ function DownloadAudio({ setCurrentView, handleRunCommand }) {
         <label className="block text-sm font-medium text-dark-300">{t('common.url')}</label>
         <UrlInput value={url} onChange={setUrl} placeholder={t('common.enterUrl')} icon={Link} />
       </div>
+
+      <ClipRange
+        enabled={clipOn} setEnabled={setClipOn}
+        from={clipFrom} setFrom={setClipFrom}
+        to={clipTo} setTo={setClipTo}
+      />
 
       <div className="glass-panel p-6 space-y-4">
         <label className="block text-sm font-medium text-dark-300">{t('audio.format')}</label>

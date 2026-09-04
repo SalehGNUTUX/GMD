@@ -19,6 +19,18 @@ const LOG_FILE = path.join(os.homedir(), '.config', 'gmd-gui', 'gmd.log')
 let mainWindow
 let activeChild = null
 let cancelRequested = false
+/** يمنع نافذة السؤال من الظهور مرّتين حين نُغلق النافذة بأنفسنا بعد الموافقة. */
+let closeConfirmed = false
+
+/**
+ * نصٌّ بلغة الواجهة. عمليّة main لا ترى i18next الذي يعمل في المُصيِّر، ولغة
+ * المستخدم محفوظة في localStorage هناك — فتُقرأ من لغة النظام، وهي ما اختاره
+ * المستخدم في الغالب. والبديل تمرير كلّ نصّ عبر IPC لأجل نافذتَي حوار.
+ */
+function t(ar, en) {
+  const locale = (app.getLocale() || '').toLowerCase()
+  return locale.startsWith('ar') ? ar : en
+}
 
 // Files the user explicitly picked through one of our dialogs. The media://
 // protocol serves these and nothing else, so a crafted media:// URL cannot read
@@ -84,6 +96,31 @@ function createWindow() {
   }
 
   mainWindow.once('ready-to-show', () => mainWindow.show())
+
+  // إغلاق النافذة وتنزيلٌ جارٍ يقتل العمليّة الابنة فيضيع ما نزل. وخلافاً لنسخة
+  // الهاتف لا خدمة تُكمل هنا، فالسؤال قبل الإغلاق هو كلّ ما يمنع الضياع.
+  mainWindow.on('close', event => {
+    if (!activeChild || closeConfirmed) return
+    event.preventDefault()
+    const { response } = { response: dialog.showMessageBoxSync(mainWindow, {
+      type: 'question',
+      buttons: [t('ابقَ', 'Stay'), t('أغلق وألغِ التنزيل', 'Close and cancel')],
+      defaultId: 0,
+      cancelId: 0,
+      title: t('تنزيلٌ جارٍ', 'Download in progress'),
+      message: t('هناك تنزيلٌ جارٍ الآن.', 'A download is running.'),
+      detail: t(
+        'إغلاق النافذة يُلغيه وما نزل يُهمَل. أتغلق؟',
+        'Closing the window cancels it and discards what has been downloaded. Close anyway?',
+      ),
+    }) }
+    if (response === 1) {
+      closeConfirmed = true
+      cancelRequested = true
+      try { activeChild.kill('SIGTERM') } catch {}
+      mainWindow.close()
+    }
+  })
 
   // Native right-click context menu for editable fields
   mainWindow.webContents.on('context-menu', (event, params) => {

@@ -1,6 +1,6 @@
 {
   "name": "gmd-gui",
-  "version": "26.9.0",
+  "version": "26.9.1",
   "description": "GNU Media Downloader — Free and open-source media downloader and converter for GNU/Linux",
   "main": "electron/main.js",
   "author": {

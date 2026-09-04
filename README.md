@@ -11,7 +11,7 @@
 
 <div align="center">
 
-![الإصدار](https://img.shields.io/badge/إصدار-26.9.0-red)
+![الإصدار](https://img.shields.io/badge/إصدار-26.9.1-red)
 ![الترخيص](https://img.shields.io/badge/ترخيص-GPL%20v3-blue)
 ![المنصة](https://img.shields.io/badge/منصة-غنو%2Fلينكس-green)
 ![المطور](https://img.shields.io/badge/المطور-GNUTUX-orange)
@@ -166,16 +166,35 @@ npx electron-builder --linux rpm
 الحزم تُوضع في مجلد `dist-electron/`:
 ```
 GMD-26.9/dist-electron/
-├── GMD-26.9.0.AppImage
-├── gmd_26.9.0_amd64.deb
-└── gmd-26.9.0.x86_64.rpm
+├── GMD-26.9.1-x86_64.AppImage
+├── GMD-26.9.1-amd64.deb
+└── GMD-26.9.1-x86_64.rpm
 ```
+
+> أسماءُ الحزمِ تختلفُ باختلافِ المعماريّةِ والصيغة: لاحقةُ المعماريّةِ في
+> AppImage‏ `x86_64`/`arm64`، وفي deb‏ `amd64`/`arm64`، وفي rpm‏ `x86_64`/`aarch64`.
 
 ---
 
 ## 📥 تنزيل الحزم الجاهزة
 
-### الإصدار 26.05.0 (النسخة الحديثة)
+### الإصدار 26.9.1 (الأحدث · تجريبيّ)
+
+للحواسيبِ ذاتِ المعماريّةِ **x86_64**:
+
+| الحزمة | الرابط | التحقّق |
+|--------|--------|---------|
+| 🐧 **AppImage** | [GMD-26.9.1-x86_64.AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-x86_64.AppImage) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/SHA256SUMS-x64.txt) |
+| 🐧 **DEB** | [GMD-26.9.1-amd64.deb](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-amd64.deb) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/SHA256SUMS-x64.txt) |
+| 🐧 **RPM** | [GMD-26.9.1-x86_64.rpm](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-x86_64.rpm) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/SHA256SUMS-x64.txt) |
+
+وللمعماريّةِ **arm64**:
+[AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-arm64.AppImage) ·
+[DEB](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-arm64.deb) ·
+[RPM](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/GMD-26.9.1-aarch64.rpm) ·
+[SHA256SUMS-arm64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.1/SHA256SUMS-arm64.txt)
+
+### الإصدار 26.05.0 (سابق)
 
 | الحزمة | الرابط | الحجم | SHA256 |
 |--------|--------|-------|--------|
