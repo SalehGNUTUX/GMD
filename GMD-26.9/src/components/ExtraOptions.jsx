@@ -151,7 +151,7 @@ function ExtraOptions({ setCurrentView, handleRunCommand }) {
             const Icon = opt.icon
             return (
               <button key={opt.id} onClick={() => setSelectedOption(opt.id)}
-                className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+                className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-start ${
                   selectedOption === opt.id ? 'border-gmd-500 bg-gmd-900/30' : 'border-dark-600 bg-dark-800/50 hover:border-dark-500'
                 }`}>
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -181,7 +181,7 @@ function ExtraOptions({ setCurrentView, handleRunCommand }) {
           { id: 'DIRECT_ARIA2C', tool: 'aria2c', desc: 'extra.aria2cDesc', installed: aria2cInstalled },
         ].map(({ id, tool, desc, installed }) => (
           <button key={id} onClick={() => setSelectedOption(id)}
-            className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
+            className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all text-start ${
               selectedOption === id ? 'border-gmd-500 bg-gmd-900/30' : 'border-dark-600 bg-dark-800/50 hover:border-dark-500'
             }`}>
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${

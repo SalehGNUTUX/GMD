@@ -7,7 +7,7 @@ import { Clipboard, X } from 'lucide-react'
  * - Icon is on the LEFT  (start in LTR)
  * - Paste/Clear buttons are on the RIGHT (end in LTR)
  */
-function UrlInput({ value, onChange, placeholder, icon: Icon, className = '' }) {
+function UrlInput({ value, onChange, placeholder, icon: Icon, className = '', disabled = false }) {
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText()
@@ -28,10 +28,11 @@ function UrlInput({ value, onChange, placeholder, icon: Icon, className = '' }) 
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
+        readOnly={disabled}
         className={`input-field ${Icon ? 'pl-12' : 'pl-4'} pr-[4.5rem] ${className}`}
       />
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-        {value.length > 0 && (
+        {value.length > 0 && !disabled && (
           <button
             type="button"
             onClick={handleClear}
@@ -44,6 +45,7 @@ function UrlInput({ value, onChange, placeholder, icon: Icon, className = '' }) 
         <button
           type="button"
           onClick={handlePaste}
+          disabled={disabled}
           title="لصق | Paste"
           className="p-1.5 rounded-lg text-dark-500 hover:text-gmd-400 hover:bg-dark-700 transition-colors"
         >

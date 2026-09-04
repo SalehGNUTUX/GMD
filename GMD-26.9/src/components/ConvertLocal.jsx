@@ -154,14 +154,14 @@ function ConvertLocal({ setCurrentView, handleRunCommand }) {
           className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${
             !multiMode ? 'border-gmd-500 bg-gmd-900/30 text-gmd-300' : 'border-dark-600 bg-dark-800/50 text-dark-400'
           }`}>
-          <File className="w-4 h-4 inline mr-2" />
+          <File className="w-4 h-4 inline me-2" />
           {t('convert.file')}
         </button>
         <button onClick={() => setMultiMode(true)}
           className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${
             multiMode ? 'border-gmd-500 bg-gmd-900/30 text-gmd-300' : 'border-dark-600 bg-dark-800/50 text-dark-400'
           }`}>
-          <Plus className="w-4 h-4 inline mr-2" />
+          <Plus className="w-4 h-4 inline me-2" />
           {t('convert.multiMode')}
         </button>
       </div>

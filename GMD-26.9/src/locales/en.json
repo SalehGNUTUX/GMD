@@ -71,7 +71,12 @@
     "quality720": "720p - Medium",
     "quality480": "480p - Low",
     "qualityBest": "Best available - Highest possible",
-    "downloading": "Downloading video..."
+    "downloading": "Downloading video...",
+    "container": "Format",
+    "containerMp4": "MP4",
+    "containerWebm": "WEBM",
+    "containerMkv": "MKV",
+    "containerBest": "As-is — no remux"
   },
   "audio": {
     "title": "Download Audio",
@@ -305,5 +310,15 @@
     "again": "Download again",
     "copyUrl": "Copy link",
     "copyError": "Copy the error"
+  },
+  "phase": {
+    "downloading": "Downloading",
+    "converting": "Converting",
+    "merging": "Merging audio and video"
+  },
+  "playlist": {
+    "selectedOf": "{{n}} of {{total}} selected",
+    "folderNote": "Each playlist is saved into a folder of its own inside the chosen folder.",
+    "downloadN": "Download {{n}}"
   }
 }

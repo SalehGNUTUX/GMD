@@ -17,10 +17,34 @@ const YTDLP = path.join(BIN_DIR, 'yt-dlp')
 const LOG_FILE = path.join(os.homedir(), '.config', 'gmd-gui', 'gmd.log')
 
 let mainWindow
-let activeChild = null
-let cancelRequested = false
+
+/**
+ * المهامُّ الجارية، لكلٍّ معرِّفٌ يُولِّده المُصيِّر قبل الطلب.
+ *
+ * كان الحال مقبضاً واحداً (`activeChild`) وعَلَمَ إلغاءٍ واحداً على مستوى الوحدة،
+ * فطلبٌ ثانٍ أثناء الأوّل يدهسه: يُصفّر إلغاءه، ويسرق مقبضه، فيقتل `cancel-command`
+ * آخرَ ما بدأ لا ما قصده المستخدم. والأحداث لا تحمل إلّا العنوان فلا يُميَّز خرجُ
+ * مهمّةٍ من أختها. وبالمعرِّف صار لكلّ مهمّةٍ مقبضُها وإلغاؤها ومسارُ خرجها.
+ *
+ * القيمة: `{ child, cancelled, title }`.
+ */
+const jobs = new Map()
+
 /** يمنع نافذة السؤال من الظهور مرّتين حين نُغلق النافذة بأنفسنا بعد الموافقة. */
 let closeConfirmed = false
+
+/** يقتل عمليّة مهمّةٍ ويَسِمها ملغاةً؛ تُستعمل للإلغاء وللإغلاق. */
+function killJob(job) {
+  if (!job) return false
+  job.cancelled = true
+  const child = job.child
+  if (!child) return true
+  try {
+    child.kill('SIGTERM')
+    setTimeout(() => { try { child.kill('SIGKILL') } catch {} }, 2000)
+  } catch {}
+  return true
+}
 
 /**
  * نصٌّ بلغة الواجهة. عمليّة main لا ترى i18next الذي يعمل في المُصيِّر، ولغة
@@ -100,7 +124,7 @@ function createWindow() {
   // إغلاق النافذة وتنزيلٌ جارٍ يقتل العمليّة الابنة فيضيع ما نزل. وخلافاً لنسخة
   // الهاتف لا خدمة تُكمل هنا، فالسؤال قبل الإغلاق هو كلّ ما يمنع الضياع.
   mainWindow.on('close', event => {
-    if (!activeChild || closeConfirmed) return
+    if (jobs.size === 0 || closeConfirmed) return
     event.preventDefault()
     const { response } = { response: dialog.showMessageBoxSync(mainWindow, {
       type: 'question',
@@ -108,7 +132,9 @@ function createWindow() {
       defaultId: 0,
       cancelId: 0,
       title: t('تنزيلٌ جارٍ', 'Download in progress'),
-      message: t('هناك تنزيلٌ جارٍ الآن.', 'A download is running.'),
+      message: jobs.size > 1
+        ? t(`هناك ${jobs.size} مهامّ جارية الآن.`, `${jobs.size} jobs are running.`)
+        : t('هناك تنزيلٌ جارٍ الآن.', 'A download is running.'),
       detail: t(
         'إغلاق النافذة يُلغيه وما نزل يُهمَل. أتغلق؟',
         'Closing the window cancels it and discards what has been downloaded. Close anyway?',
@@ -116,8 +142,7 @@ function createWindow() {
     }) }
     if (response === 1) {
       closeConfirmed = true
-      cancelRequested = true
-      try { activeChild.kill('SIGTERM') } catch {}
+      jobs.forEach(killJob)
       mainWindow.close()
     }
   })
@@ -329,11 +354,25 @@ ipcMain.handle('update-ytdlp', async () =>
 // Success is decided by exit code (plus the existence of outFile when given) —
 // never by grepping the output for the word "error", which yt-dlp and ffmpeg
 // both print on recoverable warnings.
-ipcMain.handle('run-command', async (event, { jobs, title }) => {
-  const list = Array.isArray(jobs) ? jobs.filter(j => j && j.bin) : []
-  if (!list.length) return { success: false, output: '', code: null, cancelled: false }
+/**
+ * ينفّذ مهامَّ متتابعةً تحت معرِّفٍ واحد، ويبثُّ خرجها موسوماً بذلك المعرِّف.
+ *
+ * [jobId] يُولِّده المُصيِّر قبل الطلب لأنّ الخرج يبدأ بالوصول قبل أن يعود ردُّ
+ * هذا النداء — فلو وَلَّدَه main لما عرف المُصيِّر لمن يُنسَب أوّلُ سطر. ومهمّتان
+ * بمعرِّفٍ واحد لا تجتمعان: الثانية تُرَدُّ فوراً بدل أن تدهس الأولى.
+ */
+ipcMain.handle('run-command', async (event, { jobs: list0, title, jobId }) => {
+  const list = Array.isArray(list0) ? list0.filter(j => j && j.bin) : []
+  const id = String(jobId || `job-${Date.now()}`)
+  if (!list.length) return { success: false, output: '', code: null, cancelled: false, jobId: id }
+  if (jobs.has(id)) {
+    return { success: false, output: '[gmd] a job with this id is already running\n',
+             code: null, cancelled: false, jobId: id }
+  }
 
-  cancelRequested = false
+  const job = { child: null, cancelled: false, title }
+  jobs.set(id, job)
+
   let output = ''
   let lastCode = 0
   let failed = false
@@ -341,74 +380,78 @@ ipcMain.handle('run-command', async (event, { jobs, title }) => {
   const send = (data, type, jobIndex) => {
     output += data
     mainWindow?.webContents.send('command-output', {
-      title, data, type, jobIndex: jobIndex + 1, jobCount: list.length
+      jobId: id, title, data, type, jobIndex: jobIndex + 1, jobCount: list.length
     })
   }
 
-  for (let i = 0; i < list.length; i++) {
-    if (cancelRequested) break
-    const { bin, args, outFile } = list[i]
-    const argv = Array.isArray(args) ? args.map(String) : []
-    log(`Running [${i + 1}/${list.length}]: ${bin} ${JSON.stringify(argv)}`)
+  try {
+    for (let i = 0; i < list.length; i++) {
+      if (job.cancelled) break
+      const { bin, args, outFile } = list[i]
+      const argv = Array.isArray(args) ? args.map(String) : []
+      log(`Running ${id} [${i + 1}/${list.length}]: ${bin} ${JSON.stringify(argv)}`)
 
-    lastCode = await new Promise(resolve => {
-      let settled = false
-      const finish = code => {
-        if (settled) return
-        settled = true
-        activeChild = null
-        resolve(code)
-      }
-      let child
-      try {
-        child = spawn(bin, argv)
-      } catch (e) {
-        send(`[gmd] ${e.message}\n`, 'stderr', i)
-        finish(127)
-        return
-      }
-      activeChild = child
-      child.stdout.on('data', d => send(d.toString(), 'stdout', i))
-      child.stderr.on('data', d => send(d.toString(), 'stderr', i))
-      child.on('error', e => { send(`[gmd] ${e.message}\n`, 'stderr', i); finish(127) })
-      child.on('close', code => finish(code))
-    })
+      lastCode = await new Promise(resolve => {
+        let settled = false
+        const finish = code => {
+          if (settled) return
+          settled = true
+          job.child = null
+          resolve(code)
+        }
+        let child
+        try {
+          child = spawn(bin, argv)
+        } catch (e) {
+          send(`[gmd] ${e.message}\n`, 'stderr', i)
+          finish(127)
+          return
+        }
+        job.child = child
+        child.stdout.on('data', d => send(d.toString(), 'stdout', i))
+        child.stderr.on('data', d => send(d.toString(), 'stderr', i))
+        child.on('error', e => { send(`[gmd] ${e.message}\n`, 'stderr', i); finish(127) })
+        child.on('close', code => finish(code))
+      })
 
-    // null / SIGINT / SIGTERM mean the user cancelled, not that the job failed
-    if (cancelRequested || lastCode === null || lastCode === 130 || lastCode === 143) {
-      cancelRequested = true
-      break
+      // null / SIGINT / SIGTERM mean the user cancelled, not that the job failed
+      if (job.cancelled || lastCode === null || lastCode === 130 || lastCode === 143) {
+        job.cancelled = true
+        break
+      }
+      if (lastCode !== 0) { failed = true; break }
+      if (outFile && !fs.existsSync(outFile)) {
+        send(`[gmd] expected output file was not created: ${outFile}\n`, 'stderr', i)
+        failed = true
+        break
+      }
     }
-    if (lastCode !== 0) { failed = true; break }
-    if (outFile && !fs.existsSync(outFile)) {
-      send(`[gmd] expected output file was not created: ${outFile}\n`, 'stderr', i)
-      failed = true
-      break
-    }
+  } finally {
+    jobs.delete(id)
   }
 
-  const cancelled = cancelRequested
+  const cancelled = job.cancelled
   const success = !cancelled && !failed
-  cancelRequested = false
-  mainWindow?.webContents.send('command-done', { title, success, output, cancelled })
-  return { success, output, code: lastCode, cancelled }
+  mainWindow?.webContents.send('command-done', { jobId: id, title, success, output, cancelled })
+  return { success, output, code: lastCode, cancelled, jobId: id }
 })
 
-// ── Cancel active command ─────────────────────────────────────────────────────
-ipcMain.handle('cancel-command', async () => {
-  cancelRequested = true          // also stops any queued jobs that have not started
-  if (activeChild) {
-    const child = activeChild
-    try {
-      child.kill('SIGTERM')
-      setTimeout(() => { try { child.kill('SIGKILL') } catch(e) {} }, 2000)
-    } catch(e) {}
-    return true
-  }
-  return false
+// ── Cancel a running command ─────────────────────────────────────────────────
+/**
+ * [jobId] المهمّة المقصودة. وبلا معرِّفٍ تُلغى كلُّ المهامّ — وهو ما يفعله زرُّ
+ * «أوقف الكلّ». والعَلَمُ يوقف أيضاً ما لم يبدأ من مهامّ المتتابعة.
+ */
+ipcMain.handle('cancel-command', async (event, jobId) => {
+  if (jobId) return killJob(jobs.get(String(jobId)))
+  if (jobs.size === 0) return false
+  jobs.forEach(killJob)
+  return true
 })
 
-// ── Check if URL is a playlist ────────────────────────────────────────────────
+/** ما يجري الآن، ليستعيد المُصيِّر حالته بعد إعادة تحميل الواجهة. */
+ipcMain.handle('running-jobs', async () =>
+  Array.from(jobs.entries()).map(([id, j]) => ({ jobId: id, title: j.title })))
+
 ipcMain.handle('check-playlist', async (event, url) =>
   new Promise(resolve => {
     const argv = ['--flat-playlist', '--dump-single-json', '--no-warnings', '--', String(url)]

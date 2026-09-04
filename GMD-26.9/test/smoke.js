@@ -10,6 +10,7 @@
 //   - success is decided by exit code and output file, never by grepping output
 //   - a batch stops at its first failure and a missing binary is reported
 //   - media:// serves only files the user picked
+//   - مهامٌّ متوازيةٌ لكلٍّ معرِّفُها: لا يختلط خرجُها ولا يُلغي أحدُها الآخر
 const http = require('http'), fs = require('fs'), path = require('path')
 
 // The version lives in package.json only; tests read it rather than repeat it,
@@ -101,6 +102,87 @@ const get = u => new Promise((res, rej) => http.get(u, r => { let d=''; r.on('da
   // 6. a missing binary is reported, not swallowed
   const r6 = await evalJS(`window.electronAPI.runCommand({ title:'missing', jobs:[{ bin:'gmd-no-such-binary-xyz', args:[] }] })`)
   check('missing binary reported as failure', r6.value?.success === false && String(r6.value?.output).includes('[gmd]'))
+
+  // 6.5 مهمّتان معاً: لكلٍّ معرِّفها، ولا يختلط خرجُهما ولا يقتل إلغاءُ إحداهما
+  //     الأخرى — وهو ما كان يقع حين كان في العمليّة الرئيسة مقبضٌ واحدٌ لا خريطة
+  const par = await evalJS(`(async () => {
+    const a = window.electronAPI.runCommand({ jobId:'t-a', title:'A', jobs:[{ bin:'sh', args:['-c','sleep 1; echo AAA'] }] })
+    const b = window.electronAPI.runCommand({ jobId:'t-b', title:'B', jobs:[{ bin:'sh', args:['-c','echo BBB'] }] })
+    const [ra, rb] = await Promise.all([a, b])
+    return { aOut: String(ra.output).trim(), bOut: String(rb.output).trim(),
+             aId: ra.jobId, bId: rb.jobId, aOk: ra.success, bOk: rb.success }
+  })()`)
+  check('two jobs run at once without mixing their output',
+    par.value?.aOut === 'AAA' && par.value?.bOut === 'BBB' &&
+    par.value?.aOk === true && par.value?.bOk === true,
+    JSON.stringify(par.value || par.error).slice(0, 120))
+  check('each job reply carries its own id',
+    par.value?.aId === 't-a' && par.value?.bId === 't-b')
+
+  // 6.6 الإلغاء بمعرِّفٍ يقتل مهمّته وحدَها ويترك أختَها تُكمِل
+  const sel = await evalJS(`(async () => {
+    const keep = window.electronAPI.runCommand({ jobId:'t-keep', title:'K', jobs:[{ bin:'sh', args:['-c','sleep 2; echo KEPT'] }] })
+    const doomed = window.electronAPI.runCommand({ jobId:'t-doomed', title:'D', jobs:[{ bin:'sh', args:['-c','sleep 30; echo NEVER'] }] })
+    await new Promise(r => setTimeout(r, 400))
+    await window.electronAPI.cancelCommand('t-doomed')
+    const [k, d] = await Promise.all([keep, doomed])
+    return { kept: k.success && String(k.output).includes('KEPT'), doomedCancelled: d.cancelled === true }
+  })()`)
+  check('cancelling one job leaves the other running',
+    sel.value?.kept === true && sel.value?.doomedCancelled === true,
+    JSON.stringify(sel.value || sel.error).slice(0, 120))
+
+  // 6.7 معرِّفٌ مستعمَلٌ لا يدهس صاحبَه
+  const dup = await evalJS(`(async () => {
+    const first = window.electronAPI.runCommand({ jobId:'t-dup', title:'1', jobs:[{ bin:'sh', args:['-c','sleep 1; echo FIRST'] }] })
+    await new Promise(r => setTimeout(r, 200))
+    const second = await window.electronAPI.runCommand({ jobId:'t-dup', title:'2', jobs:[{ bin:'sh', args:['-c','echo SECOND'] }] })
+    const f = await first
+    return { firstKept: f.success && String(f.output).includes('FIRST'), secondRefused: second.success === false }
+  })()`)
+  check('a duplicate job id is refused, not allowed to hijack',
+    dup.value?.firstKept === true && dup.value?.secondRefused === true,
+    JSON.stringify(dup.value || dup.error).slice(0, 120))
+
+  // 6.8 حالةُ القسمِ ترتفع إلى App فلا تضيع بالتنقُّل، ولكلِّ قسمٍ حالتُه
+  const nav = label => evalJS(`(() => {
+    const el = [...document.querySelectorAll('button')]
+      .find(e => e.textContent.trim().startsWith(${JSON.stringify(label)}))
+    if (!el) return 'missing:' + ${JSON.stringify(label)}
+    el.click(); return 'ok'
+  })()`)
+  const typeUrl = value => evalJS(`(() => {
+    const input = document.querySelector('input[type=text]')
+    if (!input) return 'no-input'
+    // حقلُ React مضبوطٌ من الحالة، فلا يكفي إسنادُ القيمة: يلزم الضابطُ الأصليّ
+    // ثمّ حدثُ input كي يصلَ التغييرُ إلى onChange
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set
+    setter.call(input, ${JSON.stringify(value)})
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    return input.value
+  })()`)
+  const readUrl = () => evalJS(`(document.querySelector('input[type=text]') || {}).value ?? 'no-input'`)
+  const pause = ms => new Promise(r => setTimeout(r, ms))
+
+  const MARK = 'https://example.com/watch?v=kept'
+  const navVideo = await nav('تنزيل فيديو'); await pause(400)
+  check('the video screen opens from the menu', navVideo.value === 'ok',
+    'nav = ' + JSON.stringify(navVideo.value || navVideo.error))
+  await typeUrl(MARK);      await pause(300)
+  await nav('رجوع');        await pause(400)
+  await nav('تنزيل صوت');   await pause(400)
+  const audioUrl = await readUrl()
+  check('each section keeps its own url', audioUrl.value === '',
+    'audio field = ' + JSON.stringify(audioUrl.value))
+  await nav('رجوع');        await pause(400)
+  await nav('تنزيل فيديو'); await pause(400)
+  const backUrl = await readUrl()
+  check('a section keeps its state across navigation', backUrl.value === MARK,
+    'video field = ' + JSON.stringify(backUrl.value))
+  // الحاوية معروضةٌ في شاشة الفيديو: خيارٌ لم يكن موجوداً قبل هذه الدفعة
+  const hasContainer = await evalJS(`document.body.innerText.includes('WEBM') && document.body.innerText.includes('MKV')`)
+  check('the video screen offers container formats', hasContainer.value === true)
+  await nav('رجوع'); await pause(300)
 
   // 7. media:// only serves files the user picked
   const denied = await evalJS(`fetch('media:///etc/passwd').then(r=>'status:'+r.status).catch(e=>'blocked')`)
