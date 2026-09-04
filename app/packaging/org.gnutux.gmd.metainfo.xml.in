@@ -10,7 +10,10 @@
 -->
 <component type="desktop-application">
   <id>org.gnutux.gmd</id>
-  <launchable type="desktop-id">GMD.desktop</launchable>
+  <!-- اسمُ ملفِّ سطحِ المكتبِ كما يُثبِّتُه electron-builder فعلاً: `gmd-gui.desktop`
+       من حقلِ `name` في package.json لا من `productName`. وبغيرِه لا يربطُ
+       AppStream البطاقةَ بالتطبيقِ فتبقى معلَّقةً بلا أثر. -->
+  <launchable type="desktop-id">gmd-gui.desktop</launchable>
 
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
