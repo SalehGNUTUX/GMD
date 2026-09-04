@@ -71,7 +71,12 @@
     "quality720": "720p - متوسطة",
     "quality480": "480p - منخفضة",
     "qualityBest": "أفضل متاحة - أعلى جودة ممكنة",
-    "downloading": "جاري تنزيل الفيديو..."
+    "downloading": "جاري تنزيل الفيديو...",
+    "container": "الصيغة",
+    "containerMp4": "MP4",
+    "containerWebm": "WEBM",
+    "containerMkv": "MKV",
+    "containerBest": "الأصل — بلا إعادة تغليف"
   },
   "audio": {
     "title": "تنزيل صوت",
@@ -305,5 +310,15 @@
     "again": "نزّله ثانيةً",
     "copyUrl": "انسخ الرابط",
     "copyError": "انسخ الخطأ"
+  },
+  "phase": {
+    "downloading": "جارٍ التنزيل",
+    "converting": "جارٍ التحويل",
+    "merging": "جارٍ تجميع الصوت والصورة"
+  },
+  "playlist": {
+    "selectedOf": "محدَّدٌ {{n}} من {{total}}",
+    "folderNote": "تُحفَظُ كلُّ قائمةٍ في مجلَّدٍ باسمِها داخلَ المجلَّد المختار.",
+    "downloadN": "نزّل {{n}}"
   }
 }

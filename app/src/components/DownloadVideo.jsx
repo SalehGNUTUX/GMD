@@ -1,117 +1,56 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Link, Folder, Film, ListVideo, Check, Loader2 } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Link, Folder, Film, Loader2 } from 'lucide-react'
 import UrlInput from './UrlInput'
-import { qualities, videoFormatArgs } from '../quality'
+import PlaylistCard from './PlaylistCard'
+import JobProgress from './JobProgress'
+import { qualities, containers, videoFormatArgs } from '../quality'
 import { clipArgs, clipValid } from '../clip'
 import ClipRange from './ClipRange'
 
-function PlaylistModal({ info, onDownloadAll, onDownloadSelected, onClose, t }) {
-  const [selected, setSelected] = useState(() => new Set(info.entries.map((_, i) => i)))
-
-  const toggleAll = () => {
-    if (selected.size === info.entries.length)
-      setSelected(new Set())
-    else
-      setSelected(new Set(info.entries.map((_, i) => i)))
-  }
-
-  const toggle = i => setSelected(prev => {
-    const s = new Set(prev)
-    s.has(i) ? s.delete(i) : s.add(i)
-    return s
-  })
-
-  const selectedItems = info.entries.filter((_, i) => selected.has(i))
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="glass-panel w-full max-w-lg overflow-hidden">
-        <div className="p-6 border-b border-dark-700/50">
-          <div className="flex items-center gap-3 mb-1">
-            <ListVideo className="w-6 h-6 text-gmd-400 flex-shrink-0" />
-            <h3 className="text-lg font-bold text-gmd-200">{t('errors.playlistDetected')}</h3>
-          </div>
-          <p className="text-sm text-dark-400 truncate">{info.title}</p>
-          <p className="text-xs text-dark-500 mt-1">{t('errors.playlistWarning', { n: info.count })}</p>
-        </div>
-
-        <div className="px-4 py-2 border-b border-dark-700/30 flex items-center justify-between">
-          <span className="text-xs text-dark-400">{selected.size} / {info.entries.length}</span>
-          <button onClick={toggleAll} className="text-xs text-gmd-400 hover:text-gmd-300">
-            {selected.size === info.entries.length ? t('errors.playlistDeselectAll') : t('errors.playlistSelectAll')}
-          </button>
-        </div>
-
-        <div className="max-h-64 overflow-y-auto">
-          {info.entries.map((entry, i) => (
-            <button key={i} onClick={() => toggle(i)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-start hover:bg-dark-800/60 transition-colors border-b border-dark-800/30 ${selected.has(i) ? 'bg-dark-800/30' : ''}`}>
-              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                selected.has(i) ? 'bg-gmd-500 border-gmd-500' : 'border-dark-500'
-              }`}>
-                {selected.has(i) && <Check className="w-3 h-3 text-white" />}
-              </div>
-              <span className="text-xs text-dark-300 flex-shrink-0 w-6">{entry.index}.</span>
-              <span className="text-sm text-white flex-1 truncate">{entry.title}</span>
-              {entry.duration && <span className="text-xs text-dark-500 flex-shrink-0">{entry.duration}</span>}
-            </button>
-          ))}
-        </div>
-
-        <div className="p-4 flex gap-3">
-          <button onClick={onClose} className="btn-secondary flex-1 text-sm py-2">{t('common.cancel')}</button>
-          <button onClick={() => onDownloadSelected(selectedItems)} disabled={selected.size === 0}
-            className="btn-primary flex-1 text-sm py-2 disabled:opacity-40">
-            {t('errors.playlistDownloadSelected')} ({selected.size})
-          </button>
-          <button onClick={onDownloadAll} className="btn-secondary flex-1 text-sm py-2 border-gmd-700/40 text-gmd-300 hover:bg-gmd-900/30">
-            {t('errors.playlistDownloadAll', { n: info.count })}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl }) {
+/**
+ * تنزيلُ فيديو.
+ *
+ * حالةُ الشاشةِ ليست فيها بل في [section] المرفوعِ إلى `App`: المكوّنُ يُفكَّكُ عندَ
+ * الخروجِ من الشاشة، فكانَ الرابطُ والجودةُ والقائمةُ تضيعُ بمجرَّدِ النظرِ في شاشةٍ
+ * أخرى ثمّ العودة. ولكلِّ قسمٍ حالتُه، فرابطُ الصوتِ لا يظهرُ هنا وتنزيلٌ هنا لا
+ * يمنعُ تنزيلاً هناك.
+ */
+function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, patch, job, onCancel }) {
   const { t } = useTranslation()
-  const [url, setUrl]                   = useState('')
-  const [savePath, setSavePath]         = useState('')
-  const [selectedQuality, setSelectedQuality] = useState('1080p')
-  const [checkingPlaylist, setCheckingPlaylist] = useState(false)
-  const [playlistInfo, setPlaylistInfo] = useState(null)
-  const [clipOn, setClipOn] = useState(false)
-  const [clipFrom, setClipFrom] = useState('')
-  const [clipTo, setClipTo] = useState('')
+  const [checking, setChecking] = useState(false)
+  const running = !!job
+
+  const { url, savePath, quality, container, playlist, selected, clipOn, clipFrom, clipTo } = section
 
   useEffect(() => {
+    if (savePath) return
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
-    if (s.defaultPaths?.enabled && s.defaultPaths?.video) setSavePath(s.defaultPaths.video)
-    else if (s.lastSaveDirs?.video) setSavePath(s.lastSaveDirs.video)
+    if (s.defaultPaths?.enabled && s.defaultPaths?.video) patch({ savePath: s.defaultPaths.video })
+    else if (s.lastSaveDirs?.video) patch({ savePath: s.lastSaveDirs.video })
   }, [])
 
   // رابطٌ أُعيدت محاولته من السجلّ؛ الطابع الزمنيّ يجعل تكرار الرابط نفسه حدثاً جديداً
-  useEffect(() => { if (retryUrl?.url) setUrl(retryUrl.url) }, [retryUrl?.at])
+  useEffect(() => {
+    if (retryUrl?.url) patch({ url: retryUrl.url, playlist: null, selected: null })
+  }, [retryUrl?.at])
 
   const chooseFolder = async () => {
     const folder = await window.electronAPI.selectFolder()
-    if (folder) setSavePath(folder)
+    if (folder) patch({ savePath: folder })
   }
 
-  const runDownload = async (quality, urlOverride, playlistItems) => {
+  const runDownload = async (playlistItems) => {
     if (!savePath) { alert(t('errors.noFolder')); return }
     const homeDir = await window.electronAPI.getHomeDir()
     const ytdlp = `${homeDir}/.local/bin/yt-dlp`
-    const target = urlOverride || url
+    const target = url
 
-    const args = videoFormatArgs(quality)
-    if (playlistItems) {
+    const args = videoFormatArgs(quality, container)
+    if (playlistItems?.length) {
       // Download specific items: build a comma-separated indices list
-      args.push('--playlist-items', playlistItems.map(e => e.index).join(','))
+      args.push('--playlist-items', playlistItems.join(','))
       // ولكلّ قائمة مجلَّدها: كانت مقاطعها تُرمى في المجلَّد المختار مختلطةً بغيرها.
       // ويكتب yt-dlp اسم القائمة بنفسه، فيُنقّى بـ%(...)s ولا نبنيه نصّاً هنا.
       args.push('-o', `${savePath}/%(playlist_title,playlist_id|playlist)s/%(playlist_index)02d - %(title)s.%(ext)s`)
@@ -129,26 +68,47 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl }) {
       url: target,
       kind: 'video',
       choice: quality,
-      title: playlistItems ? (playlistInfo?.title || '') : '',
-      playlist: playlistItems ? { count: playlistItems.length, title: playlistInfo?.title || '' } : null,
+      container,
+      title: playlistItems?.length ? (playlist?.title || '') : '',
+      playlist: playlistItems?.length
+        ? { count: playlistItems.length, title: playlist?.title || '' } : null,
     })
   }
 
-  const handleDownload = async () => {
+  /**
+   * أوّلُ نقرةٍ تكشفُ القائمةَ إن كانت قائمةً، والثانيةُ تُنزّلُ المختار.
+   * ولو نُزّلت من أوّلِ نقرةٍ لما رأى المستخدمُ ما يُنزَّلُ ولا اختارَ منه.
+   */
+  const handleRun = async () => {
     if (!url.trim()) { alert(t('errors.noUrl')); return }
     if (!savePath)   { alert(t('errors.noFolder')); return }
 
-    // Check if playlist
-    setCheckingPlaylist(true)
-    const pInfo = await window.electronAPI.checkPlaylist(url)
-    setCheckingPlaylist(false)
+    if (playlist) { await runDownload(selected); return }
 
-    if (pInfo?.isPlaylist && pInfo.count > 1) {
-      setPlaylistInfo(pInfo)
+    setChecking(true)
+    const info = await window.electronAPI.checkPlaylist(url)
+    setChecking(false)
+
+    if (info?.isPlaylist && info.count > 1) {
+      patch({ playlist: info, selected: info.entries.map(e => e.index) })
       return
     }
-    await runDownload(selectedQuality)
+    await runDownload()
   }
+
+  const toggle = index => patch({
+    selected: selected?.includes(index)
+      ? selected.filter(i => i !== index)
+      : [...(selected || []), index],
+  })
+
+  const toggleAll = () => patch({
+    selected: selected?.length === playlist?.entries.length
+      ? [] : playlist?.entries.map(e => e.index),
+  })
+
+  const ready = url.trim() && savePath && clipValid(clipOn, clipFrom, clipTo) &&
+    (!playlist || (selected?.length ?? 0) > 0)
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -161,27 +121,49 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl }) {
 
       <div className="glass-panel p-6 space-y-4">
         <label className="block text-sm font-medium text-dark-300 mb-2">{t('common.url')}</label>
-        <UrlInput value={url} onChange={setUrl} placeholder={t('common.enterUrl')} icon={Link} />
+        <UrlInput value={url} onChange={v => patch({ url: v, playlist: null, selected: null })}
+          placeholder={t('common.enterUrl')} icon={Link} disabled={running} />
       </div>
 
-      <ClipRange
-        enabled={clipOn} setEnabled={setClipOn}
-        from={clipFrom} setFrom={setClipFrom}
-        to={clipTo} setTo={setClipTo}
+      <PlaylistCard
+        info={playlist} selected={selected} onToggle={toggle} onToggleAll={toggleAll}
+        current={job?.item || 0} running={running}
       />
+
+      {!playlist && (
+        <ClipRange
+          enabled={clipOn} setEnabled={v => patch({ clipOn: v })}
+          from={clipFrom} setFrom={v => patch({ clipFrom: v })}
+          to={clipTo} setTo={v => patch({ clipTo: v })}
+        />
+      )}
 
       <div className="glass-panel p-6 space-y-4">
         <label className="block text-sm font-medium text-dark-300 mb-2">{t('video.quality')}</label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {qualities.map(q => (
-            <button key={q.id} onClick={() => setSelectedQuality(q.id)}
-              className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
-                selectedQuality === q.id ? 'border-gmd-500 bg-gmd-900/30' : 'border-dark-600 bg-dark-800/50 hover:border-dark-500'
+            <button key={q.id} onClick={() => patch({ quality: q.id })} disabled={running}
+              className={`flex items-center gap-3 p-4 rounded-xl border transition-all disabled:opacity-50 ${
+                quality === q.id ? 'border-gmd-500 bg-gmd-900/30' : 'border-dark-600 bg-dark-800/50 hover:border-dark-500'
               }`}>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedQuality === q.id ? 'border-gmd-500' : 'border-dark-500'}`}>
-                {selectedQuality === q.id && <div className="w-2.5 h-2.5 rounded-full bg-gmd-500" />}
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${quality === q.id ? 'border-gmd-500' : 'border-dark-500'}`}>
+                {quality === q.id && <div className="w-2.5 h-2.5 rounded-full bg-gmd-500" />}
               </div>
               <span className="font-medium">{t(q.label)}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* الحاوية: كانت مفروضةً بلا خيار، وWEBM أخفُّ وMKV تقبل كلَّ ترميز */}
+        <label className="block text-sm font-medium text-dark-300 pt-2">{t('video.container')}</label>
+        <div className="flex flex-wrap gap-2">
+          {containers.map(c => (
+            <button key={c.id} onClick={() => patch({ container: c.id })} disabled={running}
+              className={`px-4 py-2 rounded-xl border text-sm transition-all disabled:opacity-50 ${
+                container === c.id ? 'border-gmd-500 bg-gmd-900/30 text-gmd-200'
+                                   : 'border-dark-600 bg-dark-800/50 hover:border-dark-500'
+              }`}>
+              {t(c.label)}
             </button>
           ))}
         </div>
@@ -194,31 +176,23 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl }) {
             <Folder className="absolute start-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500 pointer-events-none z-10" />
             <input type="text" value={savePath} readOnly placeholder={t('common.chooseFolder')} className="input-field ps-12" />
           </div>
-          <button onClick={chooseFolder} className="btn-secondary whitespace-nowrap">{t('common.chooseFolder')}</button>
+          <button onClick={chooseFolder} disabled={running}
+            className="btn-secondary whitespace-nowrap disabled:opacity-50">{t('common.chooseFolder')}</button>
         </div>
       </div>
 
+      {running && <JobProgress job={job} onCancel={onCancel} />}
+
       <div className="flex gap-3 pt-4">
         <button onClick={() => setCurrentView('menu')} className="btn-secondary flex-1">{t('common.back')}</button>
-        <button onClick={handleDownload} disabled={checkingPlaylist}
-          className="btn-primary flex-1 flex items-center justify-center gap-2">
-          {checkingPlaylist ? (
+        <button onClick={handleRun} disabled={checking || running || !ready}
+          className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-40">
+          {checking ? (
             <><Loader2 className="w-4 h-4 animate-spin" />{t('errors.playlistChecking')}</>
-          ) : t('common.run')}
+          ) : playlist ? t('playlist.downloadN', { n: selected?.length ?? 0 })
+            : t('common.run')}
         </button>
       </div>
-
-      <AnimatePresence>
-        {playlistInfo && (
-          <PlaylistModal
-            info={playlistInfo}
-            t={t}
-            onClose={() => setPlaylistInfo(null)}
-            onDownloadAll={() => { setPlaylistInfo(null); runDownload(selectedQuality) }}
-            onDownloadSelected={items => { setPlaylistInfo(null); runDownload(selectedQuality, url, items) }}
-          />
-        )}
-      </AnimatePresence>
     </motion.div>
   )
 }

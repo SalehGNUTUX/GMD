@@ -26,8 +26,40 @@ export const qualities = [
   { id: 'best',  label: 'video.qualityBest', format: 'bv*+ba/b', sort: null       },
 ]
 
-/** وُسَطاءُ yt-dlp لاختيارِ الجودة — مصفوفةٌ لا نصٌّ، فلا صدفةَ ولا حقنَ أوامر. */
-export function videoFormatArgs(id) {
+/**
+ * حاويةُ الفيديو الناتجة — إعادةُ تغليفٍ لا إعادةُ ترميز.
+ *
+ * `--merge-output-format` ينقلُ التيّارَين كما هما إلى حاويةٍ أخرى في ثوانٍ، بينما
+ * إعادةُ الترميزِ دقائقُ وخسارةٌ في الجودة. ولذلك تُفضَّلُ الصيغةُ في **الاختيارِ**
+ * أيضاً (`ext:` في ترتيبِ yt-dlp) فيُنتقى تيّارٌ لا يحتاجُ تغليفاً من أصلِه.
+ *
+ * و`best` لا يفرضُ شيئاً: يأخذُ ما يُعطيه الموقعُ كما هو. و`mkv` تقبلُ كلَّ ترميزٍ
+ * فلا تحتاجُ تفضيلاً في الاختيار.
+ *
+ * ونسخةُ الهاتفِ تحملُ هذه الأربعةَ نفسَها في `Downloader.VideoFormat`.
+ */
+export const containers = [
+  { id: 'mp4',  label: 'video.containerMp4',  ext: 'mp4',  sort: 'ext:mp4'  },
+  { id: 'webm', label: 'video.containerWebm', ext: 'webm', sort: 'ext:webm' },
+  { id: 'mkv',  label: 'video.containerMkv',  ext: 'mkv',  sort: null       },
+  { id: 'best', label: 'video.containerBest', ext: null,   sort: null       },
+]
+
+/**
+ * وُسَطاءُ yt-dlp لاختيارِ الجودةِ والحاوية — مصفوفةٌ لا نصٌّ، فلا صدفةَ ولا حقنَ أوامر.
+ *
+ * والقيدانِ في `-S` واحدٍ مفصولٍ بفواصل: تكرارُ الخيارِ يُلغي أوّلَه فتضيعُ الجودةُ
+ * المطلوبةُ لأجلِ الحاوية.
+ *
+ * [containerId] يُترَكُ `best` افتراضاً كي لا تتبدّلَ سلوكيّاتُ من يستدعيها بلا
+ * حاوية — شاشةُ التنزيلِ مع التحويلِ مثلاً — فتبقى كما كانت.
+ */
+export function videoFormatArgs(id, containerId = 'best') {
   const q = qualities.find(x => x.id === id) || qualities[qualities.length - 1]
-  return q.sort ? ['-f', q.format, '-S', q.sort] : ['-f', q.format]
+  const c = containers.find(x => x.id === containerId) || containers[containers.length - 1]
+  const sort = [q.sort, c.sort].filter(Boolean).join(',')
+  const args = ['-f', q.format]
+  if (sort) args.push('-S', sort)
+  if (c.ext) args.push('--merge-output-format', c.ext)
+  return args
 }

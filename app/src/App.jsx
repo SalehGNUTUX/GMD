@@ -14,15 +14,90 @@ import Settings from './components/Settings'
 import History from './components/History'
 import ProgressModal from './components/ProgressModal'
 import ResultModal from './components/ResultModal'
-import { AlertTriangle, ArrowUpCircle, X } from 'lucide-react'
+import { AlertTriangle, ArrowUpCircle, X, Loader2 } from 'lucide-react'
 import { readUpdatePrefs } from './components/UpdateManager'
 import { addHistory } from './history'
+
+/** حالةُ قسمٍ فارغة. الحقولُ كلُّها هنا كي لا يُنسى واحدٌ عندَ التصفير. */
+const EMPTY_SECTION = {
+  url: '', savePath: '', quality: '1080p', container: 'mp4', format: 'mp3',
+  playlist: null, selected: null, clipOn: false, clipFrom: '', clipTo: '',
+}
+
+/**
+ * يقرأُ خرجَ yt-dlp/ffmpeg فيعرفُ المرحلةَ وموضعَ العنصرِ والنسبة.
+ *
+ * والمرحلةُ ليست زينة: النسبةُ تقفُ عندَ 100٪ حينَ ينتهي التنزيلُ ويبدأُ ما بعدَه —
+ * استخراجُ صوتٍ أو تجميعُ تيّارَين — فيظنُّ المستخدمُ أنّ البرنامجَ تجمّد. ويُقرَأُ
+ * من الخرجِ لأنّ yt-dlp لا يُعلنُ مرحلتَه إلّا فيه.
+ */
+function readProgress(output, prev) {
+  const next = { ...prev }
+  const lines = output.split('\n')
+
+  for (const line of lines.slice(-14)) {
+    if (line.includes('[ExtractAudio]')) next.phase = 'converting'
+    else if (line.includes('[Merger]')) next.phase = 'merging'
+    else if (line.includes('[VideoConvertor]') || line.includes('[Fixup')) next.phase = 'converting'
+    else if (line.includes('[download]')) next.phase = 'downloading'
+    const item = line.match(/Downloading (?:item|video) (\d+) of (\d+)/)
+    if (item) { next.item = +item[1]; next.itemCount = +item[2] }
+  }
+
+  // نسبةُ yt-dlp: من آخرِ سطرِ تنزيلٍ لا من أوّلِه
+  for (let i = lines.length - 1; i >= Math.max(0, lines.length - 10); i--) {
+    const full = lines[i].match(/\[download\]\s+([\d.]+)%.*?at\s+([\d.]+\s*\S+)\s+ETA\s+([\d:]+)/)
+    if (full) {
+      return { ...next, percent: parseFloat(full[1]), speed: full[2].trim(), eta: full[3] }
+    }
+    const simple = lines[i].match(/\[download\]\s+([\d.]+)%/)
+    if (simple) return { ...next, percent: parseFloat(simple[1]) }
+  }
+
+  // نسبةُ ffmpeg من `time=` مقيسةً على المدّة — وهي مرحلةُ تحويلٍ لا تنزيل
+  const dur = output.match(/Duration:\s*(\d+):(\d+):([\d.]+)/)
+  if (dur) {
+    const total = +dur[1] * 3600 + +dur[2] * 60 + parseFloat(dur[3])
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const tm = lines[i].match(/time=(\d+):(\d+):([\d.]+)/)
+      if (!tm) continue
+      const cur = +tm[1] * 3600 + +tm[2] * 60 + parseFloat(tm[3])
+      const sp = lines[i].match(/speed=\s*([\d.]+)x/)
+      let eta = null
+      if (sp && parseFloat(sp[1]) > 0 && total > 0) {
+        const rem = (total - cur) / parseFloat(sp[1])
+        eta = `${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(Math.floor(rem % 60)).padStart(2, '0')}`
+      }
+      return {
+        ...next,
+        phase: next.phase === 'downloading' ? 'converting' : next.phase,
+        percent: total > 0 ? Math.min(99, (cur / total) * 100) : next.percent,
+        speed: sp ? sp[1] + 'x' : next.speed,
+        eta,
+      }
+    }
+  }
+  return next
+}
 
 function App() {
   const { t, i18n } = useTranslation()
   const [currentView, setCurrentView] = useState('menu')
   /** رابطٌ أُعيدت محاولته من السجلّ؛ الطابع الزمنيّ يجعل كلّ إعادةٍ حدثاً جديداً. */
   const [retryUrl, setRetryUrl] = useState(null)
+  /**
+   * حالةُ كلِّ قسمٍ مرفوعةٌ هنا لا في مكوّنِه: المكوّنُ يُفكَّكُ عندَ الخروجِ من
+   * الشاشة، فكانَ الرابطُ والجودةُ والقائمةُ تضيعُ بمجرَّدِ النظرِ في شاشةٍ أخرى.
+   */
+  const [sections, setSections] = useState({
+    video: { ...EMPTY_SECTION },
+    audio: { ...EMPTY_SECTION },
+  })
+  const patchSection = (kind, p) =>
+    setSections(s => ({ ...s, [kind]: { ...s[kind], ...p } }))
+
+  /** المهامُّ الجاريةُ بمفتاحِ قسمِها: فيديو وصوتٌ يعملانِ معاً. */
+  const [jobs, setJobs] = useState({})
   const [progress, setProgress] = useState(null)
   const [result, setResult] = useState(null)
   const [ytdlpInstalled, setYtdlpInstalled] = useState(true)
@@ -111,65 +186,39 @@ function App() {
    * يُسجَّل في سجلّ التنزيلات مهما آلت إليه. والعمليّات المحلّيّة (تحويل ملفّ، قصّ،
    * معلومات) تمرّ بلا meta فلا تُسجَّل: السجلّ للروابط لا لكلّ أمر يُنفَّذ.
    */
-  const handleRunCommand = async (jobs, title, text, savePath, meta) => {
-    const list = Array.isArray(jobs) ? jobs : [jobs]
+  const handleRunCommand = async (jobList, title, text, savePath, meta) => {
+    const list = Array.isArray(jobList) ? jobList : [jobList]
+    const kind = meta?.kind || 'local'
     // المعرِّف يُولَّد هنا لا في العمليّة الرئيسة: الخرج يبدأ بالوصول قبل أن يعود
     // ردُّ النداء، فبلا معرِّفٍ سابقٍ لا يُعرَف لمن يُنسَب أوّلُ سطر.
-    const jobId = `${meta?.kind || 'local'}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
-    setProgress({ jobId, title, text, output: '', jobCount: list.length, jobIndex: 1 })
-
-    const handleOutput = (data) => {
-      setProgress(prev => {
-        // حدثٌ متأخّرٌ من مهمّةٍ سابقةٍ لا يكتب فوق تقدُّمِ مهمّةٍ أخرى
-        if (!prev || prev.jobId !== data.jobId) return prev
-        const newOutput = (prev.output || '') + data.data
-        const base = {
-          ...prev,
-          output: newOutput,
-          jobIndex: data.jobIndex || prev.jobIndex,
-          jobCount: data.jobCount || prev.jobCount,
-        }
-
-        // --- yt-dlp progress ---
-        // [download]  45.2% of 10.23MiB at 1.24MiB/s ETA 00:07
-        const lines = newOutput.split('\n')
-        for (let i = lines.length - 1; i >= Math.max(0, lines.length - 8); i--) {
-          const line = lines[i]
-          const full = line.match(/\[download\]\s+([\d.]+)%.*?at\s+([\d.]+\s*\S+)\s+ETA\s+([\d:]+)/)
-          if (full) {
-            return { ...base, percent: parseFloat(full[1]), speed: full[2].trim(), eta: full[3] }
-          }
-          const simple = line.match(/\[download\]\s+([\d.]+)%/)
-          if (simple) {
-            return { ...base, percent: parseFloat(simple[1]) }
-          }
-        }
-
-        // --- ffmpeg progress (time= based) ---
-        const durM = newOutput.match(/Duration:\s*(\d+):(\d+):([\d.]+)/)
-        if (durM) {
-          const totalSecs = +durM[1] * 3600 + +durM[2] * 60 + parseFloat(durM[3])
-          for (let i = lines.length - 1; i >= 0; i--) {
-            const tm = lines[i].match(/time=(\d+):(\d+):([\d.]+)/)
-            if (!tm) continue
-            const curSecs = +tm[1] * 3600 + +tm[2] * 60 + parseFloat(tm[3])
-            const percent = totalSecs > 0 ? Math.min(99, (curSecs / totalSecs) * 100) : null
-            const spM = lines[i].match(/speed=\s*([\d.]+)x/)
-            const speed = spM ? spM[1] + 'x' : null
-            let eta = null
-            if (spM && parseFloat(spM[1]) > 0 && totalSecs > 0) {
-              const rem = (totalSecs - curSecs) / parseFloat(spM[1])
-              eta = `${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(Math.floor(rem % 60)).padStart(2, '0')}`
-            }
-            return { ...base, percent, speed, eta }
-          }
-        }
-
-        return base
-      })
+    const jobId = `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const base = {
+      jobId, kind, title, text, savePath, output: '',
+      percent: null, phase: 'downloading', item: 0, itemCount: 0,
+      speed: null, eta: null, jobIndex: 1, jobCount: list.length,
     }
 
-    const handleDone = (data) => {
+    setJobs(prev => ({ ...prev, [kind]: base }))
+    // العمليّاتُ المحلّيّة — تحويلٌ وقصٌّ ومعلومات — تبقى في صندوقها: هي هدفُ
+    // الشاشة نفسها ولا شيء يُنتظَر بعدها، بخلاف تنزيلٍ يطول فيُتابَع من أيّ مكان.
+    if (kind === 'local') setProgress(base)
+
+    const handleOutput = data => {
+      const apply = cur => {
+        if (!cur || cur.jobId !== data.jobId) return cur
+        const output = (cur.output || '') + data.data
+        return {
+          ...readProgress(output, cur),
+          output,
+          jobIndex: data.jobIndex || cur.jobIndex,
+          jobCount: data.jobCount || cur.jobCount,
+        }
+      }
+      setJobs(prev => (prev[kind] ? { ...prev, [kind]: apply(prev[kind]) } : prev))
+      if (kind === 'local') setProgress(apply)
+    }
+
+    const handleDone = data => {
       handlersRef.current.delete(jobId)
       if (meta && !data.cancelled) {
         addHistory({
@@ -180,13 +229,19 @@ function App() {
         })
       }
       setTimeout(() => {
-        setProgress(null)
+        setJobs(prev => {
+          if (prev[kind]?.jobId !== data.jobId) return prev
+          const next = { ...prev }
+          delete next[kind]
+          return next
+        })
+        if (kind === 'local') setProgress(null)
         if (data.cancelled) return
         setResult({
           success: data.success,
           message: data.success ? t('common.success') : t('common.failed'),
           output: data.output,
-          savePath: data.success ? savePath : null
+          savePath: data.success ? savePath : null,
         })
       }, 500)
     }
@@ -203,9 +258,13 @@ function App() {
     }
   }
 
-  const handleCancel = async () => {
-    await window.electronAPI.cancelCommand(progress?.jobId)
-    setProgress(null)
+  /** إلغاءُ مهمّةِ قسمٍ بعينِها؛ ما يجري في غيرِه لا يُمَسّ. */
+  const cancelJob = async kind => {
+    const job = kind === 'local' ? progress : jobs[kind]
+    if (!job) return
+    await window.electronAPI.cancelCommand(job.jobId)
+    if (kind === 'local') setProgress(null)
+    else setJobs(prev => { const n = { ...prev }; delete n[kind]; return n })
   }
 
   /**
@@ -231,8 +290,12 @@ function App() {
     const props = { setCurrentView, handleRunCommand, retryUrl }
     switch (currentView) {
       case 'menu': return <MainMenu setCurrentView={setCurrentView} onExit={handleExit} />
-      case 'video': return <DownloadVideo {...props} />
-      case 'audio': return <DownloadAudio {...props} />
+      case 'video': return <DownloadVideo {...props}
+        section={sections.video} patch={p => patchSection('video', p)}
+        job={jobs.video} onCancel={() => cancelJob('video')} />
+      case 'audio': return <DownloadAudio {...props}
+        section={sections.audio} patch={p => patchSection('audio', p)}
+        job={jobs.audio} onCancel={() => cancelJob('audio')} />
       case 'smart': return <DownloadConvert {...props} />
       case 'convert': return <ConvertLocal {...props} />
       case 'extra': return <ExtraOptions {...props} />
@@ -336,8 +399,34 @@ function App() {
             percent={progress.percent}
             speed={progress.speed}
             eta={progress.eta}
-            onCancel={handleCancel}
+            onCancel={() => cancelJob('local')}
           />
+        )}
+      </AnimatePresence>
+
+      {/* ما يجري الآن، من أيِّ شاشةٍ كان: المستخدم قد يبدأ تنزيلاً ثمّ ينظر في
+          شاشةٍ أخرى، وكان الغشاء يمنعه من ذلك أصلاً */}
+      <AnimatePresence>
+        {Object.keys(jobs).filter(k => k !== 'local').length > 0 && (
+          <motion.div
+            initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+            className="fixed bottom-0 inset-x-0 z-30 border-t border-dark-700/60 bg-dark-900/95 backdrop-blur px-4 py-2 flex flex-wrap items-center gap-3"
+          >
+            {Object.entries(jobs).filter(([k]) => k !== 'local').map(([kind, job]) => (
+              <button key={kind} onClick={() => setCurrentView(kind)}
+                className="flex items-center gap-2 text-sm rounded-lg px-3 py-1.5 bg-dark-800/70 hover:bg-dark-700/70 transition-colors">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-gmd-400" />
+                <span className="font-medium">{job.title}</span>
+                <span className="text-dark-400">{t(`phase.${job.phase || 'downloading'}`)}</span>
+                {job.phase === 'downloading' && job.percent != null && (
+                  <span dir="ltr" className="font-mono text-gmd-300">{Math.round(job.percent)}%</span>
+                )}
+                {job.itemCount > 1 && job.item > 0 && (
+                  <span dir="ltr" className="font-mono text-xs text-dark-400">{job.item}/{job.itemCount}</span>
+                )}
+              </button>
+            ))}
+          </motion.div>
         )}
       </AnimatePresence>
 
