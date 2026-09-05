@@ -15,6 +15,13 @@
        AppStream البطاقةَ بالتطبيقِ فتبقى معلَّقةً بلا أثر. -->
   <launchable type="desktop-id">gmd-gui.desktop</launchable>
 
+  <!-- اسمُ حزمةِ النظامِ التي تحملُ التطبيق.
+       بدونه تبقى البطاقةُ مكوّناً معلَّقاً لا يعرفُ مركزُ البرامجِ أيَّ حزمةٍ
+       يربطُها به: حزمتُنا تُثبَّتُ من ملفٍّ لا من مستودَع، فلا فهرسَ توزيعةٍ يقولُ
+       له ذلك. ومن هنا يظلُّ «Unknown author» و«License: Unknown» وإن كانت البطاقةُ
+       مثبَّتةً صحيحةً في `/usr/share/metainfo`. -->
+  <pkgname>gmd-gui</pkgname>
+
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
 
@@ -81,6 +88,21 @@
     <keyword xml:lang="ar">صوت</keyword>
     <keyword xml:lang="ar">تحويل</keyword>
   </keywords>
+
+  <!-- مركزُ البرامجِ يعرضُ صورةً أو فراغاً؛ والصورُ من الموقعِ نفسِه لا من الحزمة:
+       بطاقةُ AppStream لا تحملُ صوراً، وإنّما عناوينَها. -->
+  <screenshots>
+    <screenshot type="default">
+      <caption>The main menu</caption>
+      <caption xml:lang="ar">القائمةُ الرئيسة</caption>
+      <image>https://salehgnutux.github.io/GMD/screenshot/gmd-gui-main-menu-en.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The main menu in Arabic</caption>
+      <caption xml:lang="ar">القائمةُ الرئيسةُ بالعربيّة</caption>
+      <image>https://salehgnutux.github.io/GMD/screenshot/gmd-gui-main-menu-ar.png</image>
+    </screenshot>
+  </screenshots>
 
   <content_rating type="oars-1.1" />
 
