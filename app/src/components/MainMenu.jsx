@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import {
   Film, Music, Brain, RefreshCw, Zap, Scissors,
-  Info, Settings, LogOut, ExternalLink, History
+  Info, Settings, LogOut, ExternalLink, History, Library, AudioLines
 } from 'lucide-react'
 
 const menuItems = [
@@ -14,6 +14,8 @@ const menuItems = [
   { id: 'extra',    icon: Zap,       color: 'from-yellow-600 to-orange-500',  label: 'menu.extraOptions',     desc: 'descriptions.extraOptions' },
   { id: 'clip',     icon: Scissors,  color: 'from-emerald-600 to-teal-500',   label: 'menu.clipMedia',        desc: 'descriptions.clipMedia' },
   { id: 'info',     icon: Info,      color: 'from-sky-600 to-blue-500',       label: 'menu.mediaInfo',        desc: 'descriptions.mediaInfo' },
+  { id: 'gallery',  icon: Library,    color: 'from-emerald-600 to-teal-500',   label: 'menu.gallery',          desc: 'descriptions.gallery' },
+  { id: 'player',   icon: AudioLines, color: 'from-fuchsia-600 to-purple-500', label: 'menu.player',           desc: 'descriptions.player' },
   { id: 'history',  icon: History,   color: 'from-violet-600 to-indigo-500',  label: 'menu.history',          desc: 'descriptions.history' },
   { id: 'settings', icon: Settings,  color: 'from-gray-600 to-gray-500',      label: 'menu.settings',         desc: 'descriptions.settings' },
 ]

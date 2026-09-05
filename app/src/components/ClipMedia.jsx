@@ -115,7 +115,7 @@ const outFormats = [
 ]
 
 // ─── Main component ───────────────────────────────────────────────────────────
-function ClipMedia({ setCurrentView, handleRunCommand }) {
+function ClipMedia({ setCurrentView, handleRunCommand, presetFile }) {
   const { t } = useTranslation()
   const [clipType, setClipType]     = useState('url')
   const [url, setUrl]               = useState('')
@@ -139,9 +139,10 @@ function ClipMedia({ setCurrentView, handleRunCommand }) {
     else if (s.lastSaveDirs?.clip) setSavePath(s.lastSaveDirs.clip)
   }, [])
 
-  const chooseFile = async () => {
-    const file = await window.electronAPI.selectFile()
+  /** يفتحُ ملفّاً بعينِه: من نافذةِ الاختيارِ أو من المعرض. */
+  const loadFile = async (file) => {
     if (!file) return
+    setClipType('file')
     setFilePath(file)
     setLoadingInfo(true)
     const info = await window.electronAPI.getFileInfo(file)
@@ -154,6 +155,15 @@ function ClipMedia({ setCurrentView, handleRunCommand }) {
     }
     if (!savePath) setSavePath(file.substring(0, file.lastIndexOf('/')))
   }
+
+  const chooseFile = async () => loadFile(await window.electronAPI.selectFile())
+
+  // القصُّ من المعرضِ يبدأُ بالمادّةِ في اليد، فلا يُسأَلُ المستخدمُ عن ملفٍّ
+  // اختارَه لتوّه في شاشةٍ أخرى
+  useEffect(() => {
+    if (presetFile?.path) loadFile(presetFile.path)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetFile?.at])
 
   const chooseFolder = async () => {
     const folder = await window.electronAPI.selectFolder()

@@ -10,6 +10,9 @@ import ConvertLocal from './components/ConvertLocal'
 import ExtraOptions from './components/ExtraOptions'
 import ClipMedia from './components/ClipMedia'
 import MediaInfo from './components/MediaInfo'
+import Gallery from './components/Gallery'
+import Player from './components/Player'
+import PlayerBar from './components/PlayerBar'
 import Settings from './components/Settings'
 import History from './components/History'
 import ProgressModal from './components/ProgressModal'
@@ -17,11 +20,14 @@ import ResultModal from './components/ResultModal'
 import { AlertTriangle, ArrowUpCircle, X, Loader2 } from 'lucide-react'
 import { readUpdatePrefs } from './components/UpdateManager'
 import { addHistory } from './history'
+import { clearPosition, loadQueue, positionOf, savePosition, saveQueue } from './library'
 
 /** حالةُ قسمٍ فارغة. الحقولُ كلُّها هنا كي لا يُنسى واحدٌ عندَ التصفير. */
 const EMPTY_SECTION = {
   url: '', savePath: '', quality: '1080p', container: 'mp4', format: 'mp3',
   playlist: null, selected: null, clipOn: false, clipFrom: '', clipTo: '',
+  // معلوماتُ الرابطِ تُجلَبُ من تلقائِها بعدَ لصقِه — انظر `useAutoInfo`
+  info: null, infoLoading: false, infoError: null,
 }
 
 /**
@@ -105,6 +111,120 @@ function App() {
   const [showExitConfirm, setShowExitConfirm] = useState(false)
   const [appVersion, setAppVersion] = useState('')
   const [updateInfo, setUpdateInfo] = useState(null)
+  /** ملفٌّ يُفتَحُ في شاشةِ الاقتصاصِ من المعرض؛ الطابعُ الزمنيُّ يجعلُ كلَّ طلبٍ حدثاً. */
+  const [clipFile, setClipFile] = useState(null)
+
+  /**
+   * المشغّلُ الصوتيُّ الداخليّ.
+   *
+   * عنصرُ `<audio>` واحدٌ يعيشُ في `App` لا في شاشةِ المشغّل: الشاشةُ تُفكَّكُ عندَ
+   * الخروجِ منها، فلو كانَ فيها لانقطعَ الصوتُ كلَّما نظرَ المستخدمُ في شاشةٍ أخرى.
+   * والحالةُ هنا كذلك، فالشريطُ السفليُّ يراها من أيِّ شاشة.
+   */
+  const audioRef = useRef(null)
+  const [queue, setQueue] = useState([])
+  const [trackIndex, setTrackIndex] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const [position, setPosition] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const currentTrack = queue[trackIndex] || null
+
+  // آخرُ صفٍّ استمعَ إليه صاحبُه يعودُ موقوفاً عندَ موضعِه، فيجدُ المشغّلَ كما
+  // تركَه بعدَ إغلاقِ البرنامجِ لا فارغاً
+  useEffect(() => {
+    const saved = loadQueue()
+    if (saved?.queue?.length) {
+      setQueue(saved.queue)
+      setTrackIndex(Math.min(saved.index || 0, saved.queue.length - 1))
+    }
+  }, [])
+
+  useEffect(() => { saveQueue(queue, trackIndex) }, [queue, trackIndex])
+
+  // مصدرُ الصوتِ يتغيّرُ مع المقطع، ويُستأنَفُ من موضعِه المحفوظ
+  useEffect(() => {
+    const el = audioRef.current
+    if (!el || !currentTrack) return
+    el.src = `media://${currentTrack.path}`
+    el.load()
+    setPosition(0)
+    setDuration(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrack?.path])
+
+  const playCurrent = () => { audioRef.current?.play().catch(() => {}) }
+
+  const playerApi = {
+    queue, index: trackIndex, playing, position, duration,
+    toggle: () => {
+      const el = audioRef.current
+      if (!el || !currentTrack) return
+      if (playing) el.pause()
+      else playCurrent()
+    },
+    next: () => {
+      if (trackIndex + 1 >= queue.length) return
+      setTrackIndex(trackIndex + 1)
+      setPlaying(true)
+    },
+    // الرجوعُ في أوّلِ ثوانٍ يعودُ إلى ما قبلَه، وبعدَها يُعيدُ المقطعَ نفسَه —
+    // عُرفٌ يعرفُه كلُّ مستمع
+    previous: () => {
+      const el = audioRef.current
+      if (el && el.currentTime > 5) { el.currentTime = 0; return }
+      if (trackIndex === 0) { if (el) el.currentTime = 0; return }
+      setTrackIndex(trackIndex - 1)
+      setPlaying(true)
+    },
+    seek: (seconds) => {
+      const el = audioRef.current
+      if (!el) return
+      el.currentTime = seconds
+      setPosition(seconds)
+    },
+    jump: (i) => { setTrackIndex(i); setPlaying(true) },
+    stop: () => {
+      audioRef.current?.pause()
+      setQueue([])
+      setTrackIndex(0)
+      setPlaying(false)
+      saveQueue([], 0)
+    },
+  }
+
+  /** يبدأُ صفّاً جديداً من المعرض. */
+  const startQueue = (entries, index) => {
+    setQueue(entries)
+    setTrackIndex(index)
+    setPlaying(true)
+    setCurrentView('player')
+  }
+
+  // المقطعُ الجاهزُ يُشغَّلُ إن كانَ المستخدمُ قد طلبَ التشغيل، ويُستأنَفُ من موضعِه
+  const onLoadedMetadata = () => {
+    const el = audioRef.current
+    if (!el || !currentTrack) return
+    setDuration(el.duration || 0)
+    const resume = positionOf(currentTrack.path, el.duration || 0)
+    if (resume > 0) el.currentTime = resume
+    if (playing) playCurrent()
+  }
+
+  const onTimeUpdate = () => {
+    const el = audioRef.current
+    if (!el) return
+    setPosition(el.currentTime)
+    // موضعُ الاستماعِ يُكتَبُ كلَّ خمسِ ثوانٍ: إغلاقٌ مفاجئٌ لا يُضيعُ أكثرَ من ذلك
+    if (currentTrack && Math.floor(el.currentTime) % 5 === 0) {
+      savePosition(currentTrack.path, el.currentTime)
+    }
+  }
+
+  const onEnded = () => {
+    if (currentTrack) clearPosition(currentTrack.path)
+    if (trackIndex + 1 < queue.length) { setTrackIndex(trackIndex + 1); setPlaying(true) }
+    else setPlaying(false)
+  }
 
   // The IPC listeners are registered exactly once for the lifetime of the app;
   // each operation swaps the handlers these refs point at. Registering them per
@@ -299,7 +419,11 @@ function App() {
       case 'smart': return <DownloadConvert {...props} />
       case 'convert': return <ConvertLocal {...props} />
       case 'extra': return <ExtraOptions {...props} />
-      case 'clip': return <ClipMedia {...props} />
+      case 'clip': return <ClipMedia {...props} presetFile={clipFile} />
+      case 'gallery': return <Gallery setCurrentView={setCurrentView}
+        onPlay={startQueue}
+        onClip={path => { setClipFile({ path, at: Date.now() }); setCurrentView('clip') }} />
+      case 'player': return <Player setCurrentView={setCurrentView} player={playerApi} />
       case 'info': return <MediaInfo {...props} />
       case 'history': return <History setCurrentView={setCurrentView} onRetry={handleRetry} />
       case 'settings': return <Settings {...props} setYtdlpInstalled={setYtdlpInstalled} setFfmpegInstalled={setFfmpegInstalled} />
@@ -386,6 +510,20 @@ function App() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* المشغّلُ الصوتيُّ: عنصرٌ واحدٌ لا يُفكَّكُ مع الشاشات */}
+      <audio
+        ref={audioRef}
+        onLoadedMetadata={onLoadedMetadata}
+        onTimeUpdate={onTimeUpdate}
+        onEnded={onEnded}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        className="hidden"
+      />
+      {currentTrack && currentView !== 'player' && (
+        <PlayerBar player={playerApi} onOpen={() => setCurrentView('player')} />
+      )}
 
       {/* Modals */}
       <AnimatePresence>

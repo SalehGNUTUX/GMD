@@ -1,6 +1,7 @@
 node_modules
 app/dist/
 app/dist-electron/
+app/.vite/
 app/test/fixtures/
 *.log
 .DS_Store
