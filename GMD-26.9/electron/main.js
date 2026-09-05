@@ -474,6 +474,136 @@ ipcMain.handle('check-playlist', async (event, url) =>
   })
 )
 
+// ── المعرض: ما في مجلَّدَي الحفظ ──────────────────────────────────────────────
+//
+// نسخةُ الهاتفِ تقرأُ `Movies/GMD` و`Music/GMD` لأنّ أندرويد يفرضُهما، وهنا
+// المسارُ يختارُه المستخدم — فيُقرَأُ مجلَّدا الحفظِ الافتراضيّانِ من الإعدادات،
+// ومعهما مستوىً واحدٌ من المجلَّدات: كلُّ قائمةِ تشغيلٍ تُنزَّلُ في مجلَّدٍ باسمِها،
+// فذلك المستوى هو القوائم، وما في الجذرِ مفردات.
+const VIDEO_EXT = new Set(['.mp4', '.mkv', '.webm', '.avi', '.mov', '.m4v', '.ts', '.flv'])
+const AUDIO_EXT = new Set(['.mp3', '.m4a', '.opus', '.flac', '.wav', '.ogg', '.oga', '.aac'])
+
+const COVER_DIR = () => path.join(app.getPath('userData'), 'covers')
+
+function scanDir(dir, folder, out, depth) {
+  let entries
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }) } catch (e) { return }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      if (depth > 0) scanDir(full, entry.name, out, depth - 1)
+      continue
+    }
+    if (!entry.isFile()) continue
+    const ext = path.extname(entry.name).toLowerCase()
+    const isAudio = AUDIO_EXT.has(ext)
+    if (!isAudio && !VIDEO_EXT.has(ext)) continue
+    let st
+    try { st = fs.statSync(full) } catch (e) { continue }
+    if (!st.size) continue
+    out.push({
+      path: full,
+      name: entry.name,
+      folder,
+      isAudio,
+      size: st.size,
+      mtime: Math.floor(st.mtimeMs),
+    })
+  }
+}
+
+ipcMain.handle('gallery-list', async (event, roots) => {
+  const seen = new Set()
+  const out = []
+  for (const root of [].concat(roots || [])) {
+    if (!root) continue
+    const resolved = path.resolve(String(root))
+    if (seen.has(resolved) || !fs.existsSync(resolved)) continue
+    seen.add(resolved)
+    scanDir(resolved, null, out, 1)
+  }
+  // ما في المعرضِ مقروءٌ للمشغّلِ الداخليّ: `media://` لا يخدمُ إلّا ما اختارَه
+  // المستخدم، ومجلَّدُ الحفظِ اختيارُه
+  remember(out.map(e => e.path))
+  out.sort((a, b) => b.mtime - a.mtime)
+  return out
+})
+
+/**
+ * صورةُ المقطع: إطارٌ من المرئيِّ أو غلافٌ مدموجٌ في الصوت.
+ *
+ * تُستخرَجُ مرّةً وتُخزَّنُ في `userData/covers` ببصمةِ المسارِ وحجمِه وزمنِه، فلا
+ * يُشغَّلُ ffmpeg على ملفٍّ مرّتين. ومن لا صورةَ له تُكتَبُ له علامةٌ فارغةٌ فلا
+ * يُعادُ السؤالُ عنه كلَّما فُتِحَ المعرض.
+ */
+ipcMain.handle('gallery-thumb', async (event, filePath) => {
+  const target = path.resolve(String(filePath || ''))
+  if (!pickedFiles.has(target)) return null
+  let st
+  try { st = fs.statSync(target) } catch (e) { return null }
+
+  const key = require('crypto').createHash('sha1')
+    .update(`${target}:${st.size}:${Math.floor(st.mtimeMs)}`).digest('hex')
+  const dir = COVER_DIR()
+  ensureDir(dir)
+  const jpg = path.join(dir, key + '.jpg')
+  const none = path.join(dir, key + '.none')
+
+  if (fs.existsSync(none)) return null
+  if (fs.existsSync(jpg)) {
+    try { return 'data:image/jpeg;base64,' + fs.readFileSync(jpg).toString('base64') }
+    catch (e) { return null }
+  }
+
+  const isAudio = AUDIO_EXT.has(path.extname(target).toLowerCase())
+  // الصوتُ: الغلافُ تيّارُ صورةٍ داخلَه. والمرئيُّ: إطارٌ بعدَ ثوانٍ من أوّلِه —
+  // فأوّلُ إطارٍ سوادٌ في أكثرِ المقاطع.
+  const argv = isAudio
+    ? ['-v', 'error', '-i', target, '-an', '-frames:v', '1',
+       '-vf', 'scale=320:-1', '-y', jpg]
+    : ['-v', 'error', '-ss', '3', '-i', target, '-frames:v', '1',
+       '-vf', 'scale=320:-1', '-y', jpg]
+
+  const ok = await new Promise(resolve => {
+    execFile('ffmpeg', argv, { timeout: 20000 }, error => resolve(!error))
+  })
+  if (!ok || !fs.existsSync(jpg) || !fs.statSync(jpg).size) {
+    try { fs.writeFileSync(none, '') } catch (e) {}
+    try { if (fs.existsSync(jpg)) fs.unlinkSync(jpg) } catch (e) {}
+    return null
+  }
+  try { return 'data:image/jpeg;base64,' + fs.readFileSync(jpg).toString('base64') }
+  catch (e) { return null }
+})
+
+/** الحذفُ إلى سلّةِ المهملاتِ لا محواً: خطأُ نقرةٍ لا يُهلِكُ تنزيلَ ساعة. */
+ipcMain.handle('gallery-trash', async (event, paths) => {
+  const list = [].concat(paths || [])
+  let done = 0
+  let message = null
+  for (const p of list) {
+    const target = path.resolve(String(p))
+    if (!pickedFiles.has(target)) continue
+    try { await shell.trashItem(target); done++; pickedFiles.delete(target) }
+    catch (e) { message = e.message || String(e) }
+  }
+  return { count: done, error: done === list.length ? null : message }
+})
+
+ipcMain.handle('gallery-reveal', async (event, filePath) => {
+  const target = path.resolve(String(filePath || ''))
+  if (!pickedFiles.has(target)) return false
+  shell.showItemInFolder(target)
+  return true
+})
+
+ipcMain.handle('gallery-open', async (event, filePath) => {
+  const target = path.resolve(String(filePath || ''))
+  if (!pickedFiles.has(target)) return false
+  const err = await shell.openPath(target)
+  return !err
+})
+
 // ── Media info (online) ──────────────────────────────────────────────────────
 ipcMain.handle('get-media-info', async (event, url) =>
   new Promise(resolve => {

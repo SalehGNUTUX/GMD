@@ -14,7 +14,9 @@
     "mediaInfo": "Media Info",
     "settings": "Settings",
     "exit": "Exit",
-    "history": "Download history"
+    "history": "Download history",
+    "gallery": "Gallery",
+    "player": "Player"
   },
   "descriptions": {
     "downloadVideo": "Download video with quality choice",
@@ -25,7 +27,9 @@
     "clipMedia": "Trim clip from URL or existing file",
     "mediaInfo": "View video details before downloading",
     "settings": "Language, save paths, updates, icon",
-    "history": "Every link tried — succeeded or failed — with its details and error"
+    "history": "Every link tried — succeeded or failed — with its details and error",
+    "gallery": "What you downloaded, in your save folders",
+    "player": "Listen to what you downloaded"
   },
   "common": {
     "url": "Video or audio URL",
@@ -166,7 +170,8 @@
     "duration": "Duration",
     "resolution": "Resolution",
     "format": "Format",
-    "views": "Views"
+    "views": "Views",
+    "unavailable": "Couldn't read this link"
   },
   "settings": {
     "title": "Settings",
@@ -320,5 +325,50 @@
     "selectedOf": "{{n}} of {{total}} selected",
     "folderNote": "Each playlist is saved into a folder of its own inside the chosen folder.",
     "downloadN": "Download {{n}}"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "videos": "Video",
+    "audios": "Audio",
+    "myPlaylists": "My playlists",
+    "downloadedPlaylists": "Downloaded playlists",
+    "singles": "Single clips",
+    "count": "{{n}} files",
+    "selected": "{{n}} selected",
+    "selectAll": "Select all",
+    "selectNone": "Clear selection",
+    "select": "Select",
+    "addToPlaylist": "Add to a playlist",
+    "newPlaylist": "New playlist",
+    "playlistName": "Playlist name",
+    "create": "Create",
+    "rename": "Rename",
+    "deletePlaylist": "Delete the playlist",
+    "removeFromPlaylist": "Remove from the playlist",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "playAll": "Play the whole playlist",
+    "itemCount": "{{n}} items",
+    "clip": "Trim this clip",
+    "reveal": "Show in folder",
+    "trash": "Move to trash",
+    "trashConfirm": "Move {{n}} file(s) to the trash? You can restore them from there.",
+    "refresh": "Rescan",
+    "loading": "Reading your save folders...",
+    "empty": "Nothing in your save folders yet",
+    "emptyHint": "Download something, or set the default save folders in Settings.",
+    "playlistEmpty": "This playlist is empty - its clips may have been deleted.",
+    "playlistHint": "Pick single clips, then add them to a playlist of your own."
+  },
+  "player": {
+    "title": "Player",
+    "play": "Play",
+    "pause": "Pause",
+    "next": "Next",
+    "previous": "Previous",
+    "stop": "Close the player",
+    "queue": "Queue",
+    "itemOf": "Item {{i}} of {{n}}",
+    "empty": "Nothing is loaded. Pick an audio file from the gallery."
   }
 }

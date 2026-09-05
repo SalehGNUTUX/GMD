@@ -4,10 +4,12 @@ import { motion } from 'framer-motion'
 import { Link, Folder, Film, Loader2 } from 'lucide-react'
 import UrlInput from './UrlInput'
 import PlaylistCard from './PlaylistCard'
+import InfoCard from './InfoCard'
 import JobProgress from './JobProgress'
 import { qualities, containers, videoFormatArgs } from '../quality'
 import { clipArgs, clipValid } from '../clip'
 import ClipRange from './ClipRange'
+import { useAutoInfo } from '../autoInfo'
 
 /**
  * تنزيلُ فيديو.
@@ -22,7 +24,13 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, pa
   const [checking, setChecking] = useState(false)
   const running = !!job
 
-  const { url, savePath, quality, container, playlist, selected, clipOn, clipFrom, clipTo } = section
+  const { url, savePath, quality, container, playlist, selected, clipOn, clipFrom, clipTo,
+          info, infoLoading, infoError } = section
+
+  // الرابطُ يُسأَلُ عنه من تلقائِه بعدَ لصقِه، فيرى المستخدمُ ما سيُنزّلُه — أو
+  // عناصرَ قائمتِه — قبلَ أن ينقرَ شيئاً. ولا يُسأَلُ والتنزيلُ جارٍ: إنفاقُ شبكةٍ
+  // على رابطٍ يُنزَّلُ الآن.
+  useAutoInfo(url, patch, { disabled: running })
 
   useEffect(() => {
     if (savePath) return
@@ -124,6 +132,11 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, pa
         <UrlInput value={url} onChange={v => patch({ url: v, playlist: null, selected: null })}
           placeholder={t('common.enterUrl')} icon={Link} disabled={running} />
       </div>
+
+      {/* بطاقةُ المقطع: تُخفى مع قائمةِ التشغيلِ فلتلك بطاقتُها بعناصرِها */}
+      {!playlist && (
+        <InfoCard info={info} loading={infoLoading} error={infoError} />
+      )}
 
       <PlaylistCard
         info={playlist} selected={selected} onToggle={toggle} onToggleAll={toggleAll}

@@ -36,6 +36,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   runningJobs:    ()       => ipcRenderer.invoke('running-jobs'),
   checkPlaylist:  (url)    => ipcRenderer.invoke('check-playlist', url),
 
+  // المعرض والمشغّل
+  galleryList:   (roots)    => ipcRenderer.invoke('gallery-list', roots),
+  galleryThumb:  (filePath) => ipcRenderer.invoke('gallery-thumb', filePath),
+  galleryTrash:  (paths)    => ipcRenderer.invoke('gallery-trash', paths),
+  galleryReveal: (filePath) => ipcRenderer.invoke('gallery-reveal', filePath),
+  galleryOpen:   (filePath) => ipcRenderer.invoke('gallery-open', filePath),
+
   // Media info
   getMediaInfo: (url)      => ipcRenderer.invoke('get-media-info', url),
   getFileInfo:  (filePath) => ipcRenderer.invoke('get-file-info', filePath),
