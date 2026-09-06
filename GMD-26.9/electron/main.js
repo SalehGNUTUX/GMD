@@ -493,9 +493,14 @@ ipcMain.handle('delete-temp', async (event, filePath) => {
 // ── المعرض: ما في مجلَّدَي الحفظ ──────────────────────────────────────────────
 //
 // نسخةُ الهاتفِ تقرأُ `Movies/GMD` و`Music/GMD` لأنّ أندرويد يفرضُهما، وهنا
-// المسارُ يختارُه المستخدم — فيُقرَأُ مجلَّدا الحفظِ الافتراضيّانِ من الإعدادات،
-// ومعهما مستوىً واحدٌ من المجلَّدات: كلُّ قائمةِ تشغيلٍ تُنزَّلُ في مجلَّدٍ باسمِها،
-// فذلك المستوى هو القوائم، وما في الجذرِ مفردات.
+// المسارُ يختارُه المستخدم — فيُقرَأُ مجلَّدا الحفظِ الافتراضيّانِ من الإعدادات.
+//
+// والقراءةُ تنزلُ ثلاثةَ مستويات، والقائمةُ هي **المجلَّدُ الحاضنُ للملفِّ** لا
+// أوّلُ مجلَّدٍ تحتَ الجذر. وكانَ المستوى واحداً والنسبةُ إلى أوّلِ مجلَّد، فمن
+// ضبطَ مجلَّدَ حفظِه على `~/Music` بينما ينزّلُ في `~/Music/GMD/‹القائمة›` لم يُرَ
+// له إلّا مجلَّدُ `GMD` قائمةً واحدةً فارغةً إلّا من مفرداتِه، وضاعت قوائمُه
+// الحقيقيّةُ تحتَه. وهو ما وقعَ في الحزمةِ المثبَّتةِ دونَ شجرةِ التطوير: مسارُ
+// الحفظِ فيهما مختلف.
 const VIDEO_EXT = new Set(['.mp4', '.mkv', '.webm', '.avi', '.mov', '.m4v', '.ts', '.flv'])
 const AUDIO_EXT = new Set(['.mp3', '.m4a', '.opus', '.flac', '.wav', '.ogg', '.oga', '.aac'])
 
@@ -507,6 +512,7 @@ function scanDir(dir, folder, out, depth) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name)
     if (entry.isDirectory()) {
+      // المجلَّدُ الحاضنُ هو القائمة: يُمرَّرُ اسمُه هو لا اسمُ جدِّه
       if (depth > 0) scanDir(full, entry.name, out, depth - 1)
       continue
     }
@@ -536,7 +542,7 @@ ipcMain.handle('gallery-list', async (event, roots) => {
     const resolved = path.resolve(String(root))
     if (seen.has(resolved) || !fs.existsSync(resolved)) continue
     seen.add(resolved)
-    scanDir(resolved, null, out, 1)
+    scanDir(resolved, null, out, 3)
   }
   // ما في المعرضِ مقروءٌ للمشغّلِ الداخليّ: `media://` لا يخدمُ إلّا ما اختارَه
   // المستخدم، ومجلَّدُ الحفظِ اختيارُه
