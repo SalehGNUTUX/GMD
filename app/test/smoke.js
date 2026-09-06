@@ -178,7 +178,10 @@ const get = u => new Promise((res, rej) => http.get(u, r => { let d=''; r.on('da
     return input.value
   })()`)
   const readUrl = () => evalJS(`(document.querySelector('input[type=text]') || {}).value ?? 'no-input'`)
-  const pause = ms => new Promise(r => setTimeout(r, ms))
+  // الانتقالُ بينَ الشاشاتِ رسمٌ متحرّكٌ ينتظرُ `AnimatePresence` خروجَ سابقتِه
+  // قبلَ تركيبِ اللاحقة، وذلك زمنٌ يطولُ على جهازٍ مشغول. وكانت المهلةُ 400ms
+  // فتُقرَأُ الشاشةُ قبلَ أن تُركَّبَ فتسقطُ فحوصٌ لا عطبَ فيها.
+  const pause = ms => new Promise(r => setTimeout(r, Math.max(ms, 1200)))
 
   const MARK = 'https://example.com/watch?v=kept'
   const navVideo = await nav('تنزيل فيديو', 'Download Video'); await pause(400)

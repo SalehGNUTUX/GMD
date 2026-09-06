@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { History as HistoryIcon, Trash2, RotateCcw, Copy, CheckCircle, XCircle, ListVideo } from 'lucide-react'
-import { loadHistory, removeHistory, clearHistory, errorLine } from '../history'
+import { History as HistoryIcon, Trash2, RotateCcw, Copy, CheckCircle, XCircle, ListVideo, Loader2, CircleSlash } from 'lucide-react'
+import { loadHistory, removeHistory, clearHistory, errorLine, statusOf } from '../history'
 
 /**
  * سجلّ المحاولات.
@@ -19,9 +19,13 @@ function History({ setCurrentView, onRetry }) {
 
   useEffect(() => { setItems(loadHistory()) }, [])
 
-  const shown = items.filter(e =>
-    filter === 'all' ? true : filter === 'ok' ? e.ok : !e.ok
-  )
+  // المرشِّحُ على الحالةِ لا على `ok` وحدَه: صارَ للمدخلِ أربعُ حالاتٍ لا حالتان
+  const shown = items.filter(e => {
+    const st = statusOf(e)
+    if (filter === 'all') return true
+    if (filter === 'ok') return st === 'ok'
+    return st !== 'ok'
+  })
 
   const toggle = id => setSelected(prev => {
     const s = new Set(prev)
@@ -90,7 +94,12 @@ function History({ setCurrentView, onRetry }) {
                 <div className="flex items-start gap-3">
                   <input type="checkbox" checked={selected.has(e.id)}
                     onChange={() => toggle(e.id)} className="mt-1 w-4 h-4 accent-gmd-500" />
-                  {e.ok ? <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                  {statusOf(e) === 'ok'
+                    ? <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                    : statusOf(e) === 'running'
+                      ? <Loader2 className="w-4 h-4 text-gmd-400 mt-0.5 animate-spin" />
+                      : statusOf(e) === 'cancelled'
+                        ? <CircleSlash className="w-4 h-4 text-amber-400 mt-0.5" />
                         : <XCircle className="w-4 h-4 text-red-400 mt-0.5" />}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate flex items-center gap-2">
@@ -103,9 +112,11 @@ function History({ setCurrentView, onRetry }) {
                         ? t('history.playlistItems', { n: e.playlist.count })
                         : t(`history.kind_${e.kind || 'video'}`)}
                       {' · '}{fmtDate(e.at)}
+                      {statusOf(e) === 'running' && ' · ' + t('history.state_running')}
+                      {statusOf(e) === 'cancelled' && ' · ' + t('history.state_cancelled')}
                       {e.savePath ? ' · ' + e.savePath : ''}
                     </div>
-                    {!e.ok && e.error && (
+                    {statusOf(e) === 'failed' && e.error && (
                       <pre className="mt-2 text-xs text-red-300 whitespace-pre-wrap max-h-24 overflow-y-auto">
                         {errorLine(e.error)}
                       </pre>
@@ -114,7 +125,7 @@ function History({ setCurrentView, onRetry }) {
                 </div>
                 <div className="flex gap-2 flex-wrap">
                   <button onClick={() => onRetry(e)} className="btn-secondary text-xs px-3 py-1.5">
-                    <RotateCcw className="w-3 h-3 inline" /> {e.ok ? t('history.again') : t('history.retry')}
+                    <RotateCcw className="w-3 h-3 inline" /> {statusOf(e) === 'ok' ? t('history.again') : t('history.retry')}
                   </button>
                   <button onClick={() => navigator.clipboard.writeText(e.url)}
                     className="btn-secondary text-xs px-3 py-1.5">

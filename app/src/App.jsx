@@ -19,7 +19,7 @@ import ProgressModal from './components/ProgressModal'
 import ResultModal from './components/ResultModal'
 import { AlertTriangle, ArrowUpCircle, X, Loader2 } from 'lucide-react'
 import { readUpdatePrefs } from './components/UpdateManager'
-import { addHistory } from './history'
+import { finishHistory, settleOrphans, startHistory } from './history'
 import { clearPosition, loadQueue, positionOf, savePosition, saveQueue } from './library'
 
 /** حالةُ قسمٍ فارغة. الحقولُ كلُّها هنا كي لا يُنسى واحدٌ عندَ التصفير. */
@@ -241,6 +241,10 @@ function App() {
   // فمهمّةٌ ثانيةٌ تسرق مستمعَ الأولى فيضيع خرجُها ولا يُغلَق صندوقُ تقدُّمها.
   const handlersRef = useRef(new Map())
 
+  // ما بقيَ موسوماً «يجري» من جلسةٍ سابقةٍ محاولةٌ انقطعت: لا مهمّةَ تنجو من
+  // إغلاقِ البرنامج
+  useEffect(() => { settleOrphans() }, [])
+
   useEffect(() => {
     const dispatch = which => data => {
       const entry = data?.jobId ? handlersRef.current.get(data.jobId) : null
@@ -331,6 +335,10 @@ function App() {
       speed: null, eta: null, jobIndex: 1, jobCount: list.length,
     }
 
+    // السجلُّ يُفتَحُ لحظةَ البدءِ لا عندَ الانتهاء: ما قُتِلَ في منتصفِه — إغلاقُ
+    // البرنامجِ أو انطفاءُ الجهاز — كانَ لا يترُكُ أثراً إطلاقاً
+    const entryId = (meta && !opts.silent) ? startHistory(meta) : null
+
     setJobs(prev => ({ ...prev, [kind]: base }))
     // العمليّاتُ المحلّيّة — تحويلٌ وقصٌّ ومعلومات — تبقى في صندوقها: هي هدفُ
     // الشاشة نفسها ولا شيء يُنتظَر بعدها، بخلاف تنزيلٍ يطول فيُتابَع من أيّ مكان.
@@ -353,12 +361,12 @@ function App() {
 
     const handleDone = data => {
       handlersRef.current.delete(jobId)
-      if (meta && !data.cancelled && !opts.silent) {
-        addHistory({
-          ...meta,
+      if (entryId !== null) {
+        finishHistory(entryId, {
           ok: !!data.success,
           error: data.success ? null : String(data.output || '').slice(-4000),
           savePath: data.success ? savePath : null,
+          cancelled: !!data.cancelled,
         })
       }
       setTimeout(() => {

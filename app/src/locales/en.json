@@ -317,7 +317,9 @@
     "retry": "Retry",
     "again": "Download again",
     "copyUrl": "Copy link",
-    "copyError": "Copy the error"
+    "copyError": "Copy the error",
+    "state_running": "running",
+    "state_cancelled": "interrupted"
   },
   "phase": {
     "downloading": "Downloading",
@@ -376,5 +378,10 @@
     "queue": "Queue",
     "itemOf": "Item {{i}} of {{n}}",
     "empty": "Nothing is loaded. Pick an audio file from the gallery."
+  },
+  "already": {
+    "title": "Already downloaded",
+    "message": "This link was downloaded before and it succeeded. Download it again?",
+    "again": "Download again"
   }
 }
