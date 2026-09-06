@@ -6,8 +6,10 @@ import UrlInput from './UrlInput'
 import PlaylistCard from './PlaylistCard'
 import InfoCard from './InfoCard'
 import JobProgress from './JobProgress'
+import ConfirmDialog from './ConfirmDialog'
 import { clipArgs, clipValid, parseClock } from '../clip'
 import { audioExt, fallbackPlan } from '../clipFallback'
+import { previousSuccess } from '../history'
 import ClipRange from './ClipRange'
 import { useAutoInfo } from '../autoInfo'
 
@@ -29,6 +31,8 @@ const formats = [
 function DownloadAudio({ setCurrentView, handleRunCommand, retryUrl, section, patch, job, onCancel }) {
   const { t } = useTranslation()
   const [checking, setChecking] = useState(false)
+  /** رابطٌ سبقَ تنزيلُه بنجاح؛ يُسأَلُ صاحبُه قبلَ أن يُنزَّلَ ثانيةً. */
+  const [askAgain, setAskAgain] = useState(null)
   const running = !!job
 
   const { url, savePath, format, playlist, selected, clipOn, clipFrom, clipTo,
@@ -115,10 +119,8 @@ function DownloadAudio({ setCurrentView, handleRunCommand, retryUrl, section, pa
     if (second?.success) await window.electronAPI.deleteTemp(plan.temp)
   }
 
-  const handleRun = async () => {
-    if (!url.trim()) { alert(t('errors.noUrl')); return }
-    if (!savePath)   { alert(t('errors.noFolder')); return }
-
+  /** ما يجري فعلاً بعدَ السؤالِ عن التكرار — أو مباشرةً إن لم يسبق تنزيلُه. */
+  const proceed = async () => {
     if (playlist) { await runDownload(selected); return }
 
     setChecking(true)
@@ -130,6 +132,19 @@ function DownloadAudio({ setCurrentView, handleRunCommand, retryUrl, section, pa
       return
     }
     await runDownload()
+  }
+
+  const handleRun = async () => {
+    if (!url.trim()) { alert(t('errors.noUrl')); return }
+    if (!savePath)   { alert(t('errors.noFolder')); return }
+
+    // سبقَ لهذا الرابطِ تنزيلٌ ناجح: يُسأَلُ صاحبُه قبلَ أن يُنزَّلَ ثانيةً، فقد
+    // يكونُ نسيَ أو أعادَ لصقَ رابطٍ قديمٍ من الحافظة. والمقارنةُ على رابطٍ
+    // مُطبَّعٍ فلا تُخدَعُ بوسمِ تتبُّعٍ أو صيغةٍ مختصرة.
+    const earlier = previousSuccess(url)
+    if (earlier) { setAskAgain(earlier); return }
+
+    await proceed()
   }
 
   const toggle = index => patch({
@@ -165,6 +180,15 @@ function DownloadAudio({ setCurrentView, handleRunCommand, retryUrl, section, pa
       {!playlist && (
         <InfoCard info={info} loading={infoLoading} error={infoError} />
       )}
+
+      <ConfirmDialog
+        open={!!askAgain}
+        title={t('already.title')}
+        message={t('already.message')}
+        confirmLabel={t('already.again')}
+        onConfirm={() => { setAskAgain(null); proceed() }}
+        onCancel={() => setAskAgain(null)}
+      />
 
       <PlaylistCard
         info={playlist} selected={selected} onToggle={toggle} onToggleAll={toggleAll}

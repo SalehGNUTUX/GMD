@@ -19,8 +19,8 @@ import ProgressModal from './components/ProgressModal'
 import ResultModal from './components/ResultModal'
 import { AlertTriangle, ArrowUpCircle, X, Loader2 } from 'lucide-react'
 import { readUpdatePrefs } from './components/UpdateManager'
-import { addHistory } from './history'
-import { clearPosition, loadQueue, positionOf, savePosition, saveQueue } from './library'
+import { finishHistory, settleOrphans, startHistory } from './history'
+import { clearPosition, loadQueue, loadVolume, positionOf, savePosition, saveQueue, saveVolume } from './library'
 
 /** حالةُ قسمٍ فارغة. الحقولُ كلُّها هنا كي لا يُنسى واحدٌ عندَ التصفير. */
 const EMPTY_SECTION = {
@@ -127,6 +127,8 @@ function App() {
   const [playing, setPlaying] = useState(false)
   const [position, setPosition] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [volume, setVolume] = useState(() => loadVolume().volume)
+  const [muted, setMuted] = useState(() => loadVolume().muted)
   const currentTrack = queue[trackIndex] || null
 
   // آخرُ صفٍّ استمعَ إليه صاحبُه يعودُ موقوفاً عندَ موضعِه، فيجدُ المشغّلَ كما
@@ -152,16 +154,29 @@ function App() {
     const el = audioRef.current
     if (!el || !currentTrack) return
     el.src = `media://${currentTrack.path}`
+    el.volume = volume
+    el.muted = muted
     el.load()
     setPosition(0)
     setDuration(0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTrack?.path])
 
+  // مستوى الصوتِ يُطبَّقُ على العنصرِ ويُحفَظُ: من خفضَه لا يريدُه كاملاً غداً
+  useEffect(() => {
+    const el = audioRef.current
+    if (!el) return
+    el.volume = volume
+    el.muted = muted
+    saveVolume(volume, muted)
+  }, [volume, muted])
+
   const playCurrent = () => { audioRef.current?.play().catch(() => {}) }
 
   const playerApi = {
-    queue, index: trackIndex, playing, position, duration,
+    queue, index: trackIndex, playing, position, duration, volume, muted,
+    setVolume: v => { setVolume(v); if (v > 0) setMuted(false) },
+    toggleMute: () => setMuted(m => !m),
     toggle: () => {
       const el = audioRef.current
       if (!el || !currentTrack) return
@@ -240,6 +255,10 @@ function App() {
   // والتوزيع بمعرِّف المهمّة لا بمرجعَين مفردَين: كان كلّ استدعاءٍ يكتب فوقهما،
   // فمهمّةٌ ثانيةٌ تسرق مستمعَ الأولى فيضيع خرجُها ولا يُغلَق صندوقُ تقدُّمها.
   const handlersRef = useRef(new Map())
+
+  // ما بقيَ موسوماً «يجري» من جلسةٍ سابقةٍ محاولةٌ انقطعت: لا مهمّةَ تنجو من
+  // إغلاقِ البرنامج
+  useEffect(() => { settleOrphans() }, [])
 
   useEffect(() => {
     const dispatch = which => data => {
@@ -331,6 +350,10 @@ function App() {
       speed: null, eta: null, jobIndex: 1, jobCount: list.length,
     }
 
+    // السجلُّ يُفتَحُ لحظةَ البدءِ لا عندَ الانتهاء: ما قُتِلَ في منتصفِه — إغلاقُ
+    // البرنامجِ أو انطفاءُ الجهاز — كانَ لا يترُكُ أثراً إطلاقاً
+    const entryId = (meta && !opts.silent) ? startHistory(meta) : null
+
     setJobs(prev => ({ ...prev, [kind]: base }))
     // العمليّاتُ المحلّيّة — تحويلٌ وقصٌّ ومعلومات — تبقى في صندوقها: هي هدفُ
     // الشاشة نفسها ولا شيء يُنتظَر بعدها، بخلاف تنزيلٍ يطول فيُتابَع من أيّ مكان.
@@ -353,12 +376,12 @@ function App() {
 
     const handleDone = data => {
       handlersRef.current.delete(jobId)
-      if (meta && !data.cancelled && !opts.silent) {
-        addHistory({
-          ...meta,
+      if (entryId !== null) {
+        finishHistory(entryId, {
           ok: !!data.success,
           error: data.success ? null : String(data.output || '').slice(-4000),
           savePath: data.success ? savePath : null,
+          cancelled: !!data.cancelled,
         })
       }
       setTimeout(() => {

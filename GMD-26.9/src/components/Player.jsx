@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { AudioLines, Library, Pause, Play, SkipBack, SkipForward } from 'lucide-react'
 import Thumb from './Thumb'
+import VolumeControl from './VolumeControl'
 import { clockOf } from '../library'
 
 /**
@@ -14,7 +15,8 @@ import { clockOf } from '../library'
  */
 function Player({ setCurrentView, player }) {
   const { t } = useTranslation()
-  const { queue, index, playing, position, duration, toggle, next, previous, seek, jump } = player
+  const { queue, index, playing, position, duration, toggle, next, previous, seek, jump,
+          volume, muted, setVolume, toggleMute } = player
   const track = queue[index] || null
 
   if (!track) {
@@ -55,7 +57,7 @@ function Player({ setCurrentView, player }) {
         </div>
 
         <div className="text-center space-y-1">
-          <div className="font-medium break-words">{track.name}</div>
+          <div dir="auto" className="font-medium break-words">{track.name}</div>
           {queue.length > 1 && (
             <div className="text-xs text-dark-400">
               {t('player.itemOf', { i: index + 1, n: queue.length })}
@@ -89,6 +91,11 @@ function Player({ setCurrentView, player }) {
             className="p-2 text-dark-300 hover:text-white disabled:opacity-30" title={t('player.next')}>
             <SkipForward className="w-7 h-7" />
           </button>
+          {/* مستوى الصوتِ إلى جانبِ الأزرارِ لا فوقَ الغلاف: هو ضبطٌ لا فعلُ تشغيل */}
+          <div className="ms-4">
+            <VolumeControl volume={volume} muted={muted} onVolume={setVolume}
+              onToggleMute={toggleMute} up={false} />
+          </div>
         </div>
       </div>
 
@@ -101,7 +108,7 @@ function Player({ setCurrentView, player }) {
                 className={`w-full text-start p-2 rounded-lg flex items-center gap-3 transition-colors
                             ${i === index ? 'bg-gmd-500/15 text-white' : 'text-dark-300 hover:bg-dark-700/60'}`}>
                 <span className="text-xs text-dark-500 w-6 text-center flex-shrink-0">{i + 1}</span>
-                <span className="flex-1 truncate text-sm">{entry.name}</span>
+                <span dir="auto" className="flex-1 truncate text-sm text-start">{entry.name}</span>
               </button>
             ))}
           </div>

@@ -115,6 +115,23 @@ export function clockOf(seconds) {
   return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${m}:${pad(sec)}`
 }
 
+// ── مستوى الصوت ────────────────────────────────────────────────────────────
+//
+// يُحفَظُ كما يُحفَظُ موضعُ الاستماع: من خفضَ الصوتَ لسماعِ كتابٍ ليلاً لا يُريدُ
+// أن يعودَ كاملاً في الجلسةِ التالية.
+const VOLUME_KEY = 'gmd-volume'
+
+export function loadVolume() {
+  const v = read(VOLUME_KEY, null)
+  if (!v || typeof v !== 'object') return { volume: 1, muted: false }
+  return {
+    volume: Math.min(1, Math.max(0, Number(v.volume ?? 1))),
+    muted: !!v.muted,
+  }
+}
+
+export function saveVolume(volume, muted) { write(VOLUME_KEY, { volume, muted }) }
+
 /** آخرُ صفٍّ استمعَ إليه صاحبُه، فيجدُ المشغّلَ كما تركَه لا فارغاً. */
 const QUEUE_KEY = 'gmd-queue'
 export function loadQueue() { return read(QUEUE_KEY, null) }

@@ -39,7 +39,7 @@ function ResultModal({ success, message, output, savePath, onClose }) {
           </h3>
 
           {success && savePath && (
-            <p className="text-dark-400 text-sm mb-6 break-all">{savePath}</p>
+            <p dir="ltr" className="text-dark-400 text-sm mb-6 break-all">{savePath}</p>
           )}
         </div>
 

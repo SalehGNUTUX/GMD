@@ -6,9 +6,11 @@ import UrlInput from './UrlInput'
 import PlaylistCard from './PlaylistCard'
 import InfoCard from './InfoCard'
 import JobProgress from './JobProgress'
+import ConfirmDialog from './ConfirmDialog'
 import { qualities, containers, videoFormatArgs } from '../quality'
 import { clipArgs, clipValid, parseClock } from '../clip'
 import { fallbackPlan, videoExt } from '../clipFallback'
+import { previousSuccess } from '../history'
 import ClipRange from './ClipRange'
 import { useAutoInfo } from '../autoInfo'
 
@@ -23,6 +25,8 @@ import { useAutoInfo } from '../autoInfo'
 function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, patch, job, onCancel }) {
   const { t } = useTranslation()
   const [checking, setChecking] = useState(false)
+  /** رابطٌ سبقَ تنزيلُه بنجاح؛ يُسأَلُ صاحبُه قبلَ أن يُنزَّلَ ثانيةً. */
+  const [askAgain, setAskAgain] = useState(null)
   const running = !!job
 
   const { url, savePath, quality, container, playlist, selected, clipOn, clipFrom, clipTo,
@@ -113,10 +117,8 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, pa
    * أوّلُ نقرةٍ تكشفُ القائمةَ إن كانت قائمةً، والثانيةُ تُنزّلُ المختار.
    * ولو نُزّلت من أوّلِ نقرةٍ لما رأى المستخدمُ ما يُنزَّلُ ولا اختارَ منه.
    */
-  const handleRun = async () => {
-    if (!url.trim()) { alert(t('errors.noUrl')); return }
-    if (!savePath)   { alert(t('errors.noFolder')); return }
-
+  /** ما يجري فعلاً بعدَ السؤالِ عن التكرار — أو مباشرةً إن لم يسبق تنزيلُه. */
+  const proceed = async () => {
     if (playlist) { await runDownload(selected); return }
 
     setChecking(true)
@@ -128,6 +130,19 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, pa
       return
     }
     await runDownload()
+  }
+
+  const handleRun = async () => {
+    if (!url.trim()) { alert(t('errors.noUrl')); return }
+    if (!savePath)   { alert(t('errors.noFolder')); return }
+
+    // سبقَ لهذا الرابطِ تنزيلٌ ناجح: يُسأَلُ صاحبُه قبلَ أن يُنزَّلَ ثانيةً، فقد
+    // يكونُ نسيَ أو أعادَ لصقَ رابطٍ قديمٍ من الحافظة. والمقارنةُ على رابطٍ
+    // مُطبَّعٍ فلا تُخدَعُ بوسمِ تتبُّعٍ أو صيغةٍ مختصرة.
+    const earlier = previousSuccess(url)
+    if (earlier) { setAskAgain(earlier); return }
+
+    await proceed()
   }
 
   const toggle = index => patch({
@@ -163,6 +178,15 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, pa
       {!playlist && (
         <InfoCard info={info} loading={infoLoading} error={infoError} />
       )}
+
+      <ConfirmDialog
+        open={!!askAgain}
+        title={t('already.title')}
+        message={t('already.message')}
+        confirmLabel={t('already.again')}
+        onConfirm={() => { setAskAgain(null); proceed() }}
+        onCancel={() => setAskAgain(null)}
+      />
 
       <PlaylistCard
         info={playlist} selected={selected} onToggle={toggle} onToggleAll={toggleAll}

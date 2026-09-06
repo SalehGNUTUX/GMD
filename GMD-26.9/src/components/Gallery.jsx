@@ -182,7 +182,7 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
         </button>
         <Thumb entry={entry} />
         <div className="min-w-0 flex-1">
-          <div className="text-sm text-white break-words">{entry.name}</div>
+          <div dir="auto" className="text-sm text-white break-words">{entry.name}</div>
           <div className="text-xs text-dark-400">{formatSize(entry.size)}</div>
         </div>
         {openPlaylist && (
@@ -238,7 +238,7 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <ListMusic className="w-4 h-4 text-gmd-400 flex-shrink-0" />
-          <span className="text-sm text-white truncate">{name}</span>
+          <span dir="auto" className="text-sm text-white truncate text-start">{name}</span>
         </div>
         <div className="text-xs text-dark-400">
           {t('gallery.itemCount', { n: entries.length })}
@@ -410,7 +410,7 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
                 <button key={pl.id} onClick={() => commitAdd(pl.id)}
                   className="w-full text-start glass-panel p-3 hover:bg-dark-700/60 flex items-center gap-2">
                   <ListMusic className="w-4 h-4 text-gmd-400" />
-                  <span className="flex-1 truncate">{pl.name}</span>
+                  <span dir="auto" className="flex-1 truncate text-start">{pl.name}</span>
                   <span className="text-xs text-dark-400">{pl.paths.length}</span>
                 </button>
               ))}

@@ -50,7 +50,7 @@ function InfoCard({ info, loading, error }) {
         </div>
         <div className="min-w-0">
           <div className="text-xs text-dark-400">{t('info.mediaTitle')}</div>
-          <div className="font-medium text-white break-words">{info.title}</div>
+          <div dir="auto" className="font-medium text-white break-words">{info.title}</div>
         </div>
       </div>
       {rows.length > 0 && (
