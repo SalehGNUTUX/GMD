@@ -377,7 +377,10 @@
     "stop": "Close the player",
     "queue": "Queue",
     "itemOf": "Item {{i}} of {{n}}",
-    "empty": "Nothing is loaded. Pick an audio file from the gallery."
+    "empty": "Nothing is loaded. Pick an audio file from the gallery.",
+    "volume": "Volume",
+    "mute": "Mute",
+    "unmute": "Unmute"
   },
   "already": {
     "title": "Already downloaded",

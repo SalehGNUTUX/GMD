@@ -20,7 +20,7 @@ import ResultModal from './components/ResultModal'
 import { AlertTriangle, ArrowUpCircle, X, Loader2 } from 'lucide-react'
 import { readUpdatePrefs } from './components/UpdateManager'
 import { finishHistory, settleOrphans, startHistory } from './history'
-import { clearPosition, loadQueue, positionOf, savePosition, saveQueue } from './library'
+import { clearPosition, loadQueue, loadVolume, positionOf, savePosition, saveQueue, saveVolume } from './library'
 
 /** حالةُ قسمٍ فارغة. الحقولُ كلُّها هنا كي لا يُنسى واحدٌ عندَ التصفير. */
 const EMPTY_SECTION = {
@@ -127,6 +127,8 @@ function App() {
   const [playing, setPlaying] = useState(false)
   const [position, setPosition] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [volume, setVolume] = useState(() => loadVolume().volume)
+  const [muted, setMuted] = useState(() => loadVolume().muted)
   const currentTrack = queue[trackIndex] || null
 
   // آخرُ صفٍّ استمعَ إليه صاحبُه يعودُ موقوفاً عندَ موضعِه، فيجدُ المشغّلَ كما
@@ -152,16 +154,29 @@ function App() {
     const el = audioRef.current
     if (!el || !currentTrack) return
     el.src = `media://${currentTrack.path}`
+    el.volume = volume
+    el.muted = muted
     el.load()
     setPosition(0)
     setDuration(0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTrack?.path])
 
+  // مستوى الصوتِ يُطبَّقُ على العنصرِ ويُحفَظُ: من خفضَه لا يريدُه كاملاً غداً
+  useEffect(() => {
+    const el = audioRef.current
+    if (!el) return
+    el.volume = volume
+    el.muted = muted
+    saveVolume(volume, muted)
+  }, [volume, muted])
+
   const playCurrent = () => { audioRef.current?.play().catch(() => {}) }
 
   const playerApi = {
-    queue, index: trackIndex, playing, position, duration,
+    queue, index: trackIndex, playing, position, duration, volume, muted,
+    setVolume: v => { setVolume(v); if (v > 0) setMuted(false) },
+    toggleMute: () => setMuted(m => !m),
     toggle: () => {
       const el = audioRef.current
       if (!el || !currentTrack) return

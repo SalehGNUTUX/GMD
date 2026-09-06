@@ -102,7 +102,7 @@ function History({ setCurrentView, onRetry }) {
                         ? <CircleSlash className="w-4 h-4 text-amber-400 mt-0.5" />
                         : <XCircle className="w-4 h-4 text-red-400 mt-0.5" />}
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate flex items-center gap-2">
+                    <div dir="auto" className="font-medium truncate flex items-center gap-2 text-start">
                       {e.playlist && <ListVideo className="w-3 h-3 text-gmd-400 shrink-0" />}
                       {e.title || e.url}
                     </div>
