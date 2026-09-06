@@ -139,7 +139,13 @@ function App() {
     }
   }, [])
 
-  useEffect(() => { saveQueue(queue, trackIndex) }, [queue, trackIndex])
+  // لا يُكتَبُ الصفُّ قبلَ استعادتِه: أوّلُ تمريرةٍ حالتُها فارغةٌ، فكتابتُها
+  // تمحو ما حُفِظَ في الجلسةِ السابقةِ قبلَ أن يُقرَأ
+  const queueRestored = useRef(false)
+  useEffect(() => {
+    if (!queueRestored.current) { queueRestored.current = true; return }
+    saveQueue(queue, trackIndex)
+  }, [queue, trackIndex])
 
   // مصدرُ الصوتِ يتغيّرُ مع المقطع، ويُستأنَفُ من موضعِه المحفوظ
   useEffect(() => {
@@ -306,7 +312,14 @@ function App() {
    * يُسجَّل في سجلّ التنزيلات مهما آلت إليه. والعمليّات المحلّيّة (تحويل ملفّ، قصّ،
    * معلومات) تمرّ بلا meta فلا تُسجَّل: السجلّ للروابط لا لكلّ أمر يُنفَّذ.
    */
-  const handleRunCommand = async (jobList, title, text, savePath, meta) => {
+  /**
+   * [opts.silent] محاولةٌ لها ما بعدَها: لا تُظهِرُ نتيجةً ولا تكتبُ سجلّاً.
+   *
+   * يستعملُها المسلكُ الأوّلُ للاقتصاصِ عندَ التنزيل: إن سقطَ تبعتْه محاولةٌ
+   * ثانيةٌ تُنزّلُ كاملاً ثمّ تقتصّ، فلا يرى المستخدمُ صندوقَ فشلٍ لعملٍ ما زالَ
+   * يجري، ولا يُكتَبُ في السجلِّ سطرُ فشلٍ لمحاولةٍ نجحَ بديلُها.
+   */
+  const handleRunCommand = async (jobList, title, text, savePath, meta, opts = {}) => {
     const list = Array.isArray(jobList) ? jobList : [jobList]
     const kind = meta?.kind || 'local'
     // المعرِّف يُولَّد هنا لا في العمليّة الرئيسة: الخرج يبدأ بالوصول قبل أن يعود
@@ -340,7 +353,7 @@ function App() {
 
     const handleDone = data => {
       handlersRef.current.delete(jobId)
-      if (meta && !data.cancelled) {
+      if (meta && !data.cancelled && !opts.silent) {
         addHistory({
           ...meta,
           ok: !!data.success,
@@ -356,7 +369,7 @@ function App() {
           return next
         })
         if (kind === 'local') setProgress(null)
-        if (data.cancelled) return
+        if (data.cancelled || opts.silent) return
         setResult({
           success: data.success,
           message: data.success ? t('common.success') : t('common.failed'),

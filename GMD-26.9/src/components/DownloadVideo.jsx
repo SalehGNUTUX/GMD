@@ -7,7 +7,8 @@ import PlaylistCard from './PlaylistCard'
 import InfoCard from './InfoCard'
 import JobProgress from './JobProgress'
 import { qualities, containers, videoFormatArgs } from '../quality'
-import { clipArgs, clipValid } from '../clip'
+import { clipArgs, clipValid, parseClock } from '../clip'
+import { fallbackPlan, videoExt } from '../clipFallback'
 import ClipRange from './ClipRange'
 import { useAutoInfo } from '../autoInfo'
 
@@ -72,7 +73,8 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, pa
 
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
     localStorage.setItem('gmd-settings', JSON.stringify({ ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), video: savePath } }))
-    await handleRunCommand({ bin: ytdlp, args }, t('video.title'), t('video.downloading'), savePath, {
+
+    const meta = {
       url: target,
       kind: 'video',
       choice: quality,
@@ -80,7 +82,31 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, pa
       title: playlistItems?.length ? (playlist?.title || '') : '',
       playlist: playlistItems?.length
         ? { count: playlistItems.length, title: playlist?.title || '' } : null,
+    }
+
+    // اقتصاصٌ مطلوبٌ لمقطعٍ مفرد: للمحاولةِ الأولى بديلٌ إن سقطت، فتُخفى نتيجتُها
+    const section = !playlistItems?.length && clipOn
+      ? { from: parseClock(clipFrom) ?? 0, to: parseClock(clipTo) }
+      : null
+    const canFallback = !!(section && section.to !== null && section.to > section.from)
+
+    const first = await handleRunCommand(
+      { bin: ytdlp, args }, t('video.title'), t('video.downloading'), savePath, meta,
+      { silent: canFallback },
+    )
+    if (!canFallback || first?.success || first?.cancelled) return
+
+    // المسلكُ الثاني: تُنزَّلُ المادّةُ كاملةً ثمّ تُقتَصُّ في الجهاز
+    const ext = videoExt(container)
+    const plan = fallbackPlan({
+      ytdlp, url: target, savePath, from: section.from, to: section.to, ext,
+      title: info?.title, isAudio: false,
+      baseArgs: videoFormatArgs(quality, container),
     })
+    const second = await handleRunCommand(
+      plan.jobs, t('video.title'), t('clip.trimming'), savePath, meta,
+    )
+    if (second?.success) await window.electronAPI.deleteTemp(plan.temp)
   }
 
   /**
@@ -148,6 +174,7 @@ function DownloadVideo({ setCurrentView, handleRunCommand, retryUrl, section, pa
           enabled={clipOn} setEnabled={v => patch({ clipOn: v })}
           from={clipFrom} setFrom={v => patch({ clipFrom: v })}
           to={clipTo} setTo={v => patch({ clipTo: v })}
+          duration={parseClock(info?.duration) ?? null}
         />
       )}
 

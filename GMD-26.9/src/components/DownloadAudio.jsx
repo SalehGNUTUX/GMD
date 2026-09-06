@@ -6,7 +6,8 @@ import UrlInput from './UrlInput'
 import PlaylistCard from './PlaylistCard'
 import InfoCard from './InfoCard'
 import JobProgress from './JobProgress'
-import { clipArgs, clipValid } from '../clip'
+import { clipArgs, clipValid, parseClock } from '../clip'
+import { audioExt, fallbackPlan } from '../clipFallback'
 import ClipRange from './ClipRange'
 import { useAutoInfo } from '../autoInfo'
 
@@ -81,14 +82,37 @@ function DownloadAudio({ setCurrentView, handleRunCommand, retryUrl, section, pa
         ...s, lastSaveDirs: { ...(s.lastSaveDirs || {}), audio: savePath }
       }))
     }
-    await handleRunCommand({ bin: ytdlp, args }, t('audio.title'), t('audio.downloading'), savePath, {
+    const meta = {
       url: target,
       kind: 'audio',
       choice: format,
       title: playlistItems?.length ? (playlist?.title || '') : '',
       playlist: playlistItems?.length
         ? { count: playlistItems.length, title: playlist?.title || '' } : null,
+    }
+
+    // اقتصاصٌ مطلوبٌ لمقطعٍ مفرد: للمحاولةِ الأولى بديلٌ إن سقطت، فتُخفى نتيجتُها
+    const section = !playlistItems?.length && clipOn
+      ? { from: parseClock(clipFrom) ?? 0, to: parseClock(clipTo) }
+      : null
+    const canFallback = !!(section && section.to !== null && section.to > section.from)
+
+    const first = await handleRunCommand(
+      { bin: ytdlp, args }, t('audio.title'), t('audio.downloading'), savePath, meta,
+      { silent: canFallback },
+    )
+    if (!canFallback || first?.success || first?.cancelled) return
+
+    // المسلكُ الثاني: تُنزَّلُ المادّةُ كاملةً ثمّ تُقتَصُّ في الجهاز
+    const plan = fallbackPlan({
+      ytdlp, url: target, savePath, from: section.from, to: section.to,
+      ext: audioExt(format), title: info?.title, isAudio: true,
+      baseArgs: [...fmt.opts.split(' ')],
     })
+    const second = await handleRunCommand(
+      plan.jobs, t('audio.title'), t('clip.trimming'), savePath, meta,
+    )
+    if (second?.success) await window.electronAPI.deleteTemp(plan.temp)
   }
 
   const handleRun = async () => {
@@ -152,6 +176,7 @@ function DownloadAudio({ setCurrentView, handleRunCommand, retryUrl, section, pa
           enabled={clipOn} setEnabled={v => patch({ clipOn: v })}
           from={clipFrom} setFrom={v => patch({ clipFrom: v })}
           to={clipTo} setTo={v => patch({ clipTo: v })}
+          duration={parseClock(info?.duration) ?? null}
         />
       )}
 
