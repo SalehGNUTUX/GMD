@@ -132,13 +132,22 @@ function App() {
   const currentTrack = queue[trackIndex] || null
 
   // آخرُ صفٍّ استمعَ إليه صاحبُه يعودُ موقوفاً عندَ موضعِه، فيجدُ المشغّلَ كما
-  // تركَه بعدَ إغلاقِ البرنامجِ لا فارغاً
+  // تركَه بعدَ إغلاقِ البرنامجِ لا فارغاً.
+  //
+  // وتُقرَأُ مجلَّداتُ الحفظِ معه: بروتوكولُ `media://` لا يخدمُ إلّا ما اختارَه
+  // المستخدمُ فعلاً في هذه الجلسة، والقراءةُ هي التي تُسجّلُ ذلك. فبلا هذا يعودُ
+  // الصفُّ ظاهراً ولا يُشغَّلُ منه شيءٌ حتّى يفتحَ المستخدمُ المعرضَ بنفسِه.
   useEffect(() => {
     const saved = loadQueue()
-    if (saved?.queue?.length) {
-      setQueue(saved.queue)
-      setTrackIndex(Math.min(saved.index || 0, saved.queue.length - 1))
-    }
+    if (!saved?.queue?.length) return
+    setQueue(saved.queue)
+    setTrackIndex(Math.min(saved.index || 0, saved.queue.length - 1))
+    const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
+    const roots = [...new Set([
+      s.defaultPaths?.video, s.defaultPaths?.audio,
+      s.lastSaveDirs?.video, s.lastSaveDirs?.audio,
+    ].filter(Boolean))]
+    if (roots.length) window.electronAPI.galleryList(roots).catch(() => {})
   }, [])
 
   // لا يُكتَبُ الصفُّ قبلَ استعادتِه: أوّلُ تمريرةٍ حالتُها فارغةٌ، فكتابتُها
