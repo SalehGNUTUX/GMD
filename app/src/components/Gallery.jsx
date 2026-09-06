@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import {
@@ -30,6 +30,16 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
   const [newName, setNewName] = useState('')
   const [renaming, setRenaming] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  /**
+   * حذفٌ مؤجَّلٌ بمهلةِ تراجع.
+   *
+   * التأكيدُ وحدَه لا يكفي: من نقرَ «احذف» وهو ساهٍ لا يُنقِذُه سؤالٌ نقرَ عليه
+   * ساهياً أيضاً. فالمقاطعُ تختفي من المعرضِ فوراً — فيرى أثرَ فعلِه — ولا تُنقَلُ
+   * إلى المهملاتِ إلّا بعدَ المهلة، وزرُّ «تراجع» يُلغي كلَّ شيءٍ فتعودُ مكانَها.
+   */
+  const [pending, setPending] = useState(null)   // { paths, count }
+  const [left, setLeft] = useState(0)
+  const pendingTimer = useRef(null)
 
   const roots = useMemo(() => {
     const s = JSON.parse(localStorage.getItem('gmd-settings') || '{}')
@@ -52,6 +62,7 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
   /** المعروضُ الآن: قائمةُ مستخدمٍ بترتيبِها، أو مجلَّدُ تنزيلٍ، أو مفرداتُ التبويب. */
   const list = useMemo(() => {
     if (!items) return null
+    // المحذوفُ المعلَّقُ يغيبُ عن العرضِ فوراً، ويعودُ إن تراجعَ صاحبُه
     if (openPlaylist) {
       return openPlaylist.paths
         .map(p => items.find(e => e.path === p))
@@ -64,6 +75,11 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
     }
     return items.filter(e => !e.folder && e.isAudio === audioTab)
   }, [items, openPlaylist, openFolder, audioTab])
+
+  const visible = useMemo(
+    () => (list || []).filter(e => !pending?.paths.includes(e.path)),
+    [list, pending],
+  )
 
   const folders = useMemo(() => {
     if (!items) return []
@@ -92,13 +108,49 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
     onPlay(audio, Math.max(0, index))
   }
 
-  const doTrash = async () => {
-    setConfirmDelete(false)
-    const r = await window.electronAPI.galleryTrash(chosen.map(e => e.path))
-    setSelected([])
+  /** مهلةُ التراجعِ بالثواني: تكفي لإدراكِ الخطأِ ولا تُطيلُ انتظارَ من قصد. */
+  const UNDO_SECONDS = 8
+
+  /** يُنفّذُ الحذفَ فعلاً — يُستدعى عندَ انقضاءِ المهلةِ أو عندَ مغادرةِ الشاشة. */
+  const commitTrash = async paths => {
+    if (!paths?.length) return
+    const r = await window.electronAPI.galleryTrash(paths)
     if (r?.error) alert(r.error)
     reload()
   }
+
+  const startTrash = () => {
+    setConfirmDelete(false)
+    const paths = chosen.map(e => e.path)
+    if (!paths.length) return
+    // حذفٌ سابقٌ ما زالَ في مهلتِه: يُنفَّذُ الآنَ ولا يُنسى
+    if (pending) commitTrash(pending.paths)
+    clearInterval(pendingTimer.current)
+    setSelected([])
+    setPending({ paths, count: paths.length })
+    setLeft(UNDO_SECONDS)
+    let remaining = UNDO_SECONDS
+    pendingTimer.current = setInterval(() => {
+      remaining -= 1
+      setLeft(remaining)
+      if (remaining <= 0) {
+        clearInterval(pendingTimer.current)
+        setPending(cur => { if (cur) commitTrash(cur.paths); return null })
+      }
+    }, 1000)
+  }
+
+  const undoTrash = () => {
+    clearInterval(pendingTimer.current)
+    setPending(null)
+  }
+
+  // مغادرةُ الشاشةِ لا تُلغي الحذفَ ولا تُبقيه معلَّقاً إلى الأبد: يُنفَّذُ حالاً
+  useEffect(() => () => {
+    clearInterval(pendingTimer.current)
+    setPending(cur => { if (cur) commitTrash(cur.paths); return null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const commitAdd = (id) => {
     if (id) addToPlaylist(id, adding)
@@ -288,10 +340,10 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
         <div className="glass-panel p-10 text-center text-dark-400">{t('gallery.loading')}</div>
       ) : (openPlaylist || openFolder) ? (
         <div className="space-y-2">
-          {list.length === 0 && (
+          {visible.length === 0 && (
             <div className="glass-panel p-8 text-center text-dark-400">{t('gallery.playlistEmpty')}</div>
           )}
-          {list.map((e, i) => <Row key={e.path} entry={e} index={i} />)}
+          {visible.map((e, i) => <Row key={e.path} entry={e} index={i} />)}
         </div>
       ) : (list.length === 0 && folders.length === 0 && userPlaylists.length === 0) ? (
         <div className="glass-panel p-8 text-center space-y-2">
@@ -339,7 +391,7 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
                 {audioTab ? <Music className="w-4 h-4 text-gmd-400" /> : <Film className="w-4 h-4 text-gmd-400" />}
                 {t('gallery.singles')} - {list.length}
               </div>
-              {list.map((e, i) => <Row key={e.path} entry={e} index={i} />)}
+              {visible.map((e, i) => <Row key={e.path} entry={e} index={i} />)}
               {userPlaylists.length === 0 && (
                 <p className="text-xs text-dark-500">{t('gallery.playlistHint')}</p>
               )}
@@ -410,12 +462,25 @@ function Gallery({ setCurrentView, onPlay, onClip }) {
           <div className="glass-panel p-6 w-full max-w-md space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg">{t('gallery.trash')}</h3>
             <p className="text-sm text-dark-300">{t('gallery.trashConfirm', { n: chosen.length })}</p>
+            <p className="text-xs text-dark-400">{t('gallery.trashUndoHint', { n: UNDO_SECONDS })}</p>
             <div className="flex gap-2">
-              <button className="btn-primary flex-1" onClick={doTrash}>{t('gallery.trash')}</button>
+              <button className="btn-primary flex-1" onClick={startTrash}>{t('gallery.trash')}</button>
               <button className="btn-secondary flex-1" onClick={() => setConfirmDelete(false)}>
                 {t('common.cancel')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {pending && (
+        <div className="fixed bottom-6 inset-x-0 flex justify-center z-40 pointer-events-none">
+          <div className="glass-panel px-4 py-3 flex items-center gap-4 pointer-events-auto shadow-lg">
+            <span className="text-sm">{t('gallery.trashed', { n: pending.count })}</span>
+            <span className="text-xs text-dark-400">{left}</span>
+            <button onClick={undoTrash} className="text-gmd-400 hover:text-gmd-300 font-medium text-sm">
+              {t('gallery.undo')}
+            </button>
           </div>
         </div>
       )}

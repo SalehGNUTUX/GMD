@@ -289,7 +289,10 @@
     "from": "From",
     "to": "To",
     "hint": "Times as 0:30 or 1:05:20 or plain seconds. Only that part is requested from the server. Cuts land on the nearest keyframe, so a second either way is normal. Some sites refuse partial requests — YouTube among them — so use the Clip screen after downloading.",
-    "invalid": "The end must come after the start, and times must read 0:30 or 1:05:20 or plain seconds."
+    "invalid": "The end must come after the start, and times must read 0:30 or 1:05:20 or plain seconds.",
+    "hours": "hh",
+    "minutes": "mm",
+    "seconds": "ss"
   },
   "history": {
     "title": "Download history",
@@ -358,7 +361,10 @@
     "empty": "Nothing in your save folders yet",
     "emptyHint": "Download something, or set the default save folders in Settings.",
     "playlistEmpty": "This playlist is empty - its clips may have been deleted.",
-    "playlistHint": "Pick single clips, then add them to a playlist of your own."
+    "playlistHint": "Pick single clips, then add them to a playlist of your own.",
+    "trashed": "{{n}} deleted — you can undo",
+    "undo": "Undo",
+    "trashUndoHint": "You'll have {{n}} seconds to undo, then it moves to the trash."
   },
   "player": {
     "title": "Player",

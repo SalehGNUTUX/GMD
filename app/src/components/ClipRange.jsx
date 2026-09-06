@@ -2,6 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Scissors } from 'lucide-react'
 import { parseClock, clipValid } from '../clip'
+import ClockInput, { clockOfSeconds } from './ClockInput'
 
 /**
  * اقتصاص جزء من المادّة قبل تنزيلها.
@@ -12,7 +13,7 @@ import { parseClock, clipValid } from '../clip'
  * والوقت يُحلَّل عند الطلب لا مع كلّ حرف: لو حُوِّل رقماً مع كلّ ضغطة لمُسحت «:»
  * قبل أن يبلغها المستخدم فتعذّر عليه كتابة «1:05» أصلاً.
  */
-function ClipRange({ enabled, setEnabled, from, setFrom, to, setTo }) {
+function ClipRange({ enabled, setEnabled, from, setFrom, to, setTo, duration = null }) {
   const { t } = useTranslation()
   const fromOk = from.trim() === '' || parseClock(from) !== null
   const toOk = to.trim() === '' || parseClock(to) !== null
@@ -24,7 +25,14 @@ function ClipRange({ enabled, setEnabled, from, setFrom, to, setTo }) {
         <input
           type="checkbox"
           checked={enabled}
-          onChange={e => setEnabled(e.target.checked)}
+          onChange={e => {
+            setEnabled(e.target.checked)
+            // مدّةُ المقطعِ تُملأُ في «إلى» عندَ فتحِ القسم: القصُّ يُقلِّمُ طرفَي
+            // مقطعٍ كامل، فالمدّةُ هي المبدأُ الطبيعيُّ لا حقلٌ فارغٌ يُملأُ باليد.
+            // وهي من معلوماتِ الرابطِ المجلوبةِ تلقائيّاً، فإن لم تُعرَف بقيَ
+            // الحقلُ فارغاً كما كان.
+            if (e.target.checked && !to.trim() && duration) setTo(clockOfSeconds(duration))
+          }}
           className="w-4 h-4 accent-gmd-500"
         />
         <Scissors className="w-4 h-4 text-gmd-400" />
@@ -34,22 +42,10 @@ function ClipRange({ enabled, setEnabled, from, setFrom, to, setTo }) {
       {enabled && (
         <>
           <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-xs text-dark-400 mb-1">{t('clipRange.from')}</label>
-              <input
-                type="text" dir="ltr" placeholder="0:00"
-                value={from} onChange={e => setFrom(e.target.value)}
-                className={`input-field w-full ${fromOk ? '' : 'border-red-500'}`}
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-xs text-dark-400 mb-1">{t('clipRange.to')}</label>
-              <input
-                type="text" dir="ltr" placeholder="1:30"
-                value={to} onChange={e => setTo(e.target.value)}
-                className={`input-field w-full ${toOk ? '' : 'border-red-500'}`}
-              />
-            </div>
+            <ClockInput label={t('clipRange.from')} value={from} onChange={setFrom}
+              invalid={!fromOk} />
+            <ClockInput label={t('clipRange.to')} value={to} onChange={setTo}
+              invalid={!toOk} />
           </div>
           <p className={`text-xs ${rangeOk ? 'text-dark-500' : 'text-red-400'}`}>
             {rangeOk ? t('clipRange.hint') : t('clipRange.invalid')}

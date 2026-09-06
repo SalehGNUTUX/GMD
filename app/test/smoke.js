@@ -57,6 +57,17 @@ const get = u => new Promise((res, rej) => http.get(u, r => { let d=''; r.on('da
   let pass = 0, fail = 0
   const check = (label, ok, extra='') => { ok ? pass++ : fail++; console.log(`${ok?'PASS':'FAIL'}  ${label}${extra?'  — '+extra:''}`) }
 
+  // يُنتظَرُ تركيبُ الواجهةِ قبلَ أيِّ فحص. وخادمُ Vite يردُّ على `/` قبلَ أن
+  // ينتهيَ من تحسينِ الاعتماديّات، ثمّ **يُعيدُ تحميلَ الصفحة** حينَ ينتهي — فتُمحى
+  // حالةُ React في منتصفِ الفحصِ وتسقطُ فحوصٌ لا عطبَ فيها. والانتظارُ هنا يجعلُ
+  // الفحصَ يبدأُ على صفحةٍ مستقرّة.
+  for (let i = 0; i < 60; i++) {
+    const ready = await evalJS(`document.body.innerText.trim().length > 0`)
+    if (ready.value === true) break
+    await new Promise(r => setTimeout(r, 500))
+  }
+  await new Promise(r => setTimeout(r, 1000))
+
   // 1. app mounted and the version comes from package.json over IPC
   const title = await evalJS(`document.querySelector('h1,header h1,[class*="text-lg"]')?.textContent || document.body.innerText.slice(0,80)`)
   const ver = await evalJS(`window.electronAPI.getAppVersion()`)

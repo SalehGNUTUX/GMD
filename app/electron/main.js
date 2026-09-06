@@ -474,6 +474,22 @@ ipcMain.handle('check-playlist', async (event, url) =>
   })
 )
 
+// ── ملفُّ العملِ المؤقّتُ للاقتصاص ────────────────────────────────────────────
+//
+// المسلكُ الثاني للاقتصاصِ يُنزّلُ المادّةَ كاملةً ثمّ يقتصُّها، فيبقى الكاملُ
+// على القرصِ ولا حاجةَ إليه. والحذفُ مقصورٌ على ما أنشأناه نحن: اسمٌ ببادئتِنا
+// ولاحقةِ وسائطٍ معروفة، وإلّا صارَ النداءُ ممحاةً لأيِّ مسارٍ يُرسَلُ إليه.
+const CLIP_TEMP_PREFIX = 'gmd-clip-'
+
+ipcMain.handle('delete-temp', async (event, filePath) => {
+  const target = path.resolve(String(filePath || ''))
+  const name = path.basename(target)
+  if (!name.startsWith(CLIP_TEMP_PREFIX)) return false
+  const ext = path.extname(name).toLowerCase()
+  if (!VIDEO_EXT.has(ext) && !AUDIO_EXT.has(ext)) return false
+  try { fs.unlinkSync(target); return true } catch (e) { return false }
+})
+
 // ── المعرض: ما في مجلَّدَي الحفظ ──────────────────────────────────────────────
 //
 // نسخةُ الهاتفِ تقرأُ `Movies/GMD` و`Music/GMD` لأنّ أندرويد يفرضُهما، وهنا
