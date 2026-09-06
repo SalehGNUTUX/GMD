@@ -155,7 +155,10 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
           name: GMD ${{ steps.notes.outputs.version }}
           body_path: RELEASE_NOTES.md
-          # كلّ إصدار تجريبيّ حتّى يُعلَن استقراره يدوياً
-          prerelease: true
+          # تجريبيٌّ ما دامَ في الوسمِ لاحقةُ ما قبلَ الإصدار (`-beta.3`)، ومستقرٌّ
+          # إن خلا منها (`v26.9.0`). والقاعدةُ من الوسمِ نفسِه لا من يدٍ تُبدّلُها
+          # عندَ كلِّ إصدار، فلا يُنشَرُ مستقرٌّ سهواً ولا يبقى المستقرُّ تجريبيّاً.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ !contains(github.ref_name, '-') }}
           files: artifacts/**
           fail_on_unmatched_files: true
