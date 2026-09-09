@@ -474,6 +474,22 @@ ipcMain.handle('check-playlist', async (event, url) =>
   })
 )
 
+// ── مشاركةُ حزمةِ البرنامج ───────────────────────────────────────────────────
+//
+// لا ورقةَ مشاركةٍ في غنو/لينكس كالتي في أندرويد، فالمعنى يُؤدّى بأقربِ ما
+// يُؤدّيه سطحُ المكتب: من يعملُ من AppImage تُكشَفُ له الحزمةُ في مديرِ الملفّاتِ
+// جاهزةً للإرفاقِ في أيِّ تطبيق، ومن ثبَّتَ deb أو rpm فلا ملفَّ عندَه أصلاً —
+// المُثبِّتُ فكَّ الحزمةَ ومحاها — فتُفتَحُ له صفحةُ الإصداراتِ لينزّلَ ما يشاركُه.
+ipcMain.handle('share-package', async () => {
+  const appImage = process.env.APPIMAGE
+  if (appImage && fs.existsSync(appImage)) {
+    shell.showItemInFolder(appImage)
+    return { kind: 'appimage', path: appImage }
+  }
+  await shell.openExternal('https://github.com/SalehGNUTUX/GMD/releases/latest')
+  return { kind: 'releases' }
+})
+
 // ── ملفُّ العملِ المؤقّتُ للاقتصاص ────────────────────────────────────────────
 //
 // المسلكُ الثاني للاقتصاصِ يُنزّلُ المادّةَ كاملةً ثمّ يقتصُّها، فيبقى الكاملُ

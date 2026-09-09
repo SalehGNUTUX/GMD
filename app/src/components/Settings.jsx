@@ -5,7 +5,7 @@ import {
   Settings, Globe, RefreshCw, Monitor, Trash2, AlertTriangle,
   Folder, FolderOpen, ToggleLeft, ToggleRight, Sliders,
   Package, CheckCircle, Copy, ExternalLink, Info, ChevronDown, ChevronUp, Type,
-  ArrowUpCircle
+  ArrowUpCircle, Share2, Send
 } from 'lucide-react'
 import UpdateManager from './UpdateManager'
 
@@ -37,11 +37,51 @@ function SettingsView({ setCurrentView, setYtdlpInstalled, setFfmpegInstalled })
 
   // Sections expand state
   const [sections, setSections] = useState({
-    general: true, fonts: false, updates: false, paths: false, encoding: false, deps: false, app: false, about: false
+    general: true, fonts: false, updates: false, paths: false, encoding: false,
+    deps: false, app: false, share: false, about: false
   })
 
   const toggleSection = (key) =>
     setSections(prev => ({ ...prev, [key]: !prev[key] }))
+
+  // ── مشاركةُ البرنامج ───────────────────────────────────────────────────────
+  //
+  // لا ورقةَ مشاركةٍ في سطحِ المكتبِ كالتي في أندرويد، فالمعنى يُؤدّى بأقربِ ما
+  // يُؤدّيه: نصٌّ يُنسَخُ إلى الحافظةِ فيُلصَقُ حيثُ شاءَ صاحبُه، وحزمةٌ تُكشَفُ في
+  // مديرِ الملفّاتِ جاهزةً للإرفاق. والنصُّ بلغةِ الواجهةِ ومعه وسومُها.
+  const [shareCopied, setShareCopied] = useState(false)
+  const [shareHint, setShareHint] = useState('')
+  // الرقمُ من `package.json` عبرَ النداء، مصدرُه الوحيدُ في المشروع
+  const [version, setVersion] = useState('')
+  useEffect(() => {
+    window.electronAPI.getAppVersion().then(v => setVersion(v || '')).catch(() => {})
+  }, [])
+
+  const shareText = () => {
+    const lines = [
+      t('share.pitch'),
+      '',
+      t('share.version', { v: version || '' }).trim(),
+      `${t('share.site')}: https://salehgnutux.github.io/GMD/`,
+      `${t('share.repo')}: https://github.com/SalehGNUTUX/GMD`,
+      `${t('share.repoPhone')}: https://github.com/SalehGNUTUX/GMD-PHONE`,
+      '',
+      t('share.hashtags'),
+    ]
+    return lines.join('\n')
+  }
+
+  const copyShareText = async () => {
+    try { await navigator.clipboard.writeText(shareText()) } catch (e) { return }
+    setShareCopied(true)
+    setTimeout(() => setShareCopied(false), 2500)
+  }
+
+  const sharePackage = async () => {
+    const r = await window.electronAPI.sharePackage()
+    setShareHint(r?.kind === 'appimage' ? t('share.revealed') : t('share.openedReleases'))
+    setTimeout(() => setShareHint(''), 6000)
+  }
 
   // Default paths settings (localStorage)
   const [pathsEnabled, setPathsEnabled] = useState(false)
@@ -481,6 +521,52 @@ function SettingsView({ setCurrentView, setYtdlpInstalled, setFfmpegInstalled })
               <div>
                 <div className="font-semibold text-red-400">{t('settings.uninstall')}</div>
                 <div className="text-sm text-dark-400">{t('settings.uninstallDesc')}</div>
+              </div>
+            </motion.button>
+          </motion.div>
+        )}
+      </div>
+
+      {/* ── مشاركة ── */}
+      <div className="glass-panel p-5">
+        <SectionHeader icon={Share2} title={t('share.title')} expanded={sections.share}
+          onToggle={() => toggleSection('share')} color="text-emerald-400" />
+        {sections.share && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+            className="mt-4 space-y-3">
+            <p className="text-sm text-dark-400">{t('share.desc')}</p>
+
+            <motion.button
+              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+              onClick={copyShareText}
+              className="w-full glass-panel p-4 flex items-center gap-4 text-start hover:bg-dark-800/80 hover:border-emerald-500/30"
+            >
+              <div className="w-10 h-10 rounded-xl bg-dark-700 flex items-center justify-center flex-shrink-0">
+                {shareCopied
+                  ? <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  : <Copy className="w-5 h-5 text-emerald-400" />}
+              </div>
+              <div>
+                <div className="font-semibold text-white">
+                  {shareCopied ? t('share.copied') : t('share.copyText')}
+                </div>
+                <div className="text-sm text-dark-400">{t('share.copyTextDesc')}</div>
+              </div>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
+              onClick={sharePackage}
+              className="w-full glass-panel p-4 flex items-center gap-4 text-start hover:bg-dark-800/80 hover:border-emerald-500/30"
+            >
+              <div className="w-10 h-10 rounded-xl bg-dark-700 flex items-center justify-center flex-shrink-0">
+                <Send className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <div className="font-semibold text-white">{t('share.package')}</div>
+                <div className="text-sm text-dark-400">
+                  {shareHint || t('share.packageDesc')}
+                </div>
               </div>
             </motion.button>
           </motion.div>

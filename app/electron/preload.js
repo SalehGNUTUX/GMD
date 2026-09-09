@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   galleryReveal: (filePath) => ipcRenderer.invoke('gallery-reveal', filePath),
   galleryOpen:   (filePath) => ipcRenderer.invoke('gallery-open', filePath),
   deleteTemp:    (filePath) => ipcRenderer.invoke('delete-temp', filePath),
+  sharePackage:  ()         => ipcRenderer.invoke('share-package'),
 
   // Media info
   getMediaInfo: (url)      => ipcRenderer.invoke('get-media-info', url),
