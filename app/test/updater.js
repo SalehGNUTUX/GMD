@@ -30,12 +30,25 @@ const check = (l, ok, extra='') => { ok ? pass++ : fail++; console.log(`${ok?'PA
   const ch = await up.detectChannel()
   check('dev tree detected as dev', ch.kind === 'dev', 'kind=' + ch.kind)
 
+  // صيغُ الوسمِ تبدَّلت عبرَ عمرِ المشروع، والمحلِّلُ يجبُ أن يقرأَها كلَّها.
+  // وتُختبَرُ على وسومٍ مكتوبةٍ هنا لا على ما يُصادِفُ أن يكونَ أحدثَ إصدارٍ
+  // منشورٍ يومَ تشغيلِ الفحص — فذاك يتبدّلُ مع كلِّ نشرٍ ويُسقِطُ الفحصَ بلا عطب.
+  const parsed = tag => up._versionText(up._parseVersion(tag))
+  check('tag "GMD-26.05" parses to 26.5.0', parsed('GMD-26.05') === '26.5.0', parsed('GMD-26.05'))
+  check('tag "v26.9.0" parses to 26.9.0', parsed('v26.9.0') === '26.9.0', parsed('v26.9.0'))
+  check('tag "v26.9.0-beta.2" keeps its pre-release suffix',
+        parsed('v26.9.0-beta.2') === '26.9.0-beta.2', parsed('v26.9.0-beta.2'))
+  check('a stable release outranks its own beta',
+        up._compareVersion(up._parseVersion('v26.9.0'), up._parseVersion('v26.9.0-beta.9')) > 0)
+
   // a live check against the real repo
   const r = await up.check({ allowPrerelease: false })
   check('check() reaches the GitHub releases API', r.ok === true, r.error || '')
   if (r.ok) {
     check('newest stable release resolves to a version', /^\d+\.\d+\.\d+$/.test(r.version), 'version=' + r.version)
-    check('tag "GMD-26.05" parses to 26.5.0', r.version === '26.5.0', 'tag=' + r.tag + ' version=' + r.version)
+    check('the published tag parses to a comparable version',
+          up._versionText(up._parseVersion(r.tag)) === r.version,
+          'tag=' + r.tag + ' version=' + r.version)
     check('the current build is not offered an older release', r.updateAvailable === false,
           PKG_VERSION + ' vs published ' + r.version)
     check('release notes and url returned', typeof r.notes === 'string' && /github\.com/.test(r.releaseUrl || ''))
