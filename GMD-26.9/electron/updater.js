@@ -336,4 +336,7 @@ module.exports = {
   check, download, cancelDownload, install, restart,
   detectChannel, revealFile: f => shell.showItemInFolder(f),
   CACHE_DIR,
+  // للفحصِ وحدَه: يُختبَرُ تحليلُ الوسمِ على وسمٍ بعينِه لا على ما يُصادِفُ أن
+  // يكونَ أحدثَ إصدارٍ منشورٍ يومَ تشغيلِ الفحص
+  _parseVersion: parseVersion, _versionText: versionText, _compareVersion: compareVersion,
 }

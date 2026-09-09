@@ -386,5 +386,22 @@
     "title": "Already downloaded",
     "message": "This link was downloaded before and it succeeded. Download it again?",
     "again": "Download again"
+  },
+  "share": {
+    "title": "Share GMD",
+    "desc": "Spread the word: copy a description with links and hashtags, or share the package itself.",
+    "copyText": "Copy the description",
+    "copyTextDesc": "Pitch + version + website + both repos + hashtags — in the interface language",
+    "copied": "Copied — paste it wherever you like",
+    "package": "Share the package",
+    "packageDesc": "Reveals your package in the file manager, or opens the releases page if you installed it",
+    "revealed": "Your package is in the file manager — attach it anywhere",
+    "openedReleases": "Releases page opened: download the package you want to share",
+    "pitch": "GMD — GNU Media Downloader: free software for GNU/Linux that downloads video and audio from hundreds of sites, converts and trims, downloads whole playlists, and plays what you saved — all on your machine, with no ads, no tracking and no account.",
+    "version": "Version {{v}}",
+    "site": "Website",
+    "repo": "Source (GNU/Linux)",
+    "repoPhone": "Source (Android)",
+    "hashtags": "#GMD #GNUTUX #FreeSoftware #OpenSource #Linux #Downloader #ytdlp #GPLv3"
   }
 }
