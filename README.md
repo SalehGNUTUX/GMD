@@ -11,7 +11,7 @@
 
 <div align="center">
 
-![الإصدار](https://img.shields.io/badge/إصدار-26.9.0--beta.3-red)
+![الإصدار](https://img.shields.io/badge/إصدار-26.9.0-brightgreen)
 ![الترخيص](https://img.shields.io/badge/ترخيص-GPL%20v3-blue)
 ![المنصة](https://img.shields.io/badge/منصة-غنو%2Fلينكس-green)
 ![المطور](https://img.shields.io/badge/المطور-GNUTUX-orange)
@@ -103,10 +103,10 @@
 
 ## 🚀 التشغيل والتطوير
 
-> جميع أوامر التطوير تُنفَّذ داخل مجلَّد `GMD-26.9/`.
+> جميع أوامر التطوير تُنفَّذ داخل مجلَّد `app/`.
 
 ```bash
-cd GMD-26.9
+cd app
 
 # تثبيت التبعيات
 npm install
@@ -165,10 +165,10 @@ npx electron-builder --linux rpm
 
 الحزم تُوضع في مجلد `dist-electron/`:
 ```
-GMD-26.9/dist-electron/
-├── GMD-26.9.0-beta.3-x86_64.AppImage
-├── GMD-26.9.0-beta.3-amd64.deb
-└── GMD-26.9.0-beta.3-x86_64.rpm
+app/dist-electron/
+├── GMD-26.9.1-x86_64.AppImage
+├── GMD-26.9.1-amd64.deb
+└── GMD-26.9.1-x86_64.rpm
 ```
 
 > أسماءُ الحزمِ تختلفُ باختلافِ المعماريّةِ والصيغة: لاحقةُ المعماريّةِ في
@@ -178,21 +178,23 @@ GMD-26.9/dist-electron/
 
 ## 📥 تنزيل الحزم الجاهزة
 
-### الإصدار 26.9.0-beta.3 (الأحدث · تجريبيّ)
+### الإصدار 26.9.0 (الأحدث · مستقرّ)
 
 للحواسيبِ ذاتِ المعماريّةِ **x86_64**:
 
 | الحزمة | الرابط | التحقّق |
 |--------|--------|---------|
-| 🐧 **AppImage** | [GMD-26.9.0-beta.3-x86_64.AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/GMD-26.9.0-beta.3-x86_64.AppImage) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/SHA256SUMS-x64.txt) |
-| 🐧 **DEB** | [GMD-26.9.0-beta.3-amd64.deb](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/GMD-26.9.0-beta.3-amd64.deb) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/SHA256SUMS-x64.txt) |
-| 🐧 **RPM** | [GMD-26.9.0-beta.3-x86_64.rpm](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/GMD-26.9.0-beta.3-x86_64.rpm) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/SHA256SUMS-x64.txt) |
+| 🐧 **AppImage** | [GMD-26.9.0-x86_64.AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-x86_64.AppImage) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/SHA256SUMS-x64.txt) |
+| 🐧 **DEB** | [GMD-26.9.0-amd64.deb](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-amd64.deb) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/SHA256SUMS-x64.txt) |
+| 🐧 **RPM** | [GMD-26.9.0-x86_64.rpm](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-x86_64.rpm) | [SHA256SUMS-x64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/SHA256SUMS-x64.txt) |
 
 وللمعماريّةِ **arm64**:
-[AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/GMD-26.9.0-beta.3-arm64.AppImage) ·
-[DEB](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/GMD-26.9.0-beta.3-arm64.deb) ·
-[RPM](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/GMD-26.9.0-beta.3-aarch64.rpm) ·
-[SHA256SUMS-arm64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0-beta.3/SHA256SUMS-arm64.txt)
+[AppImage](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-arm64.AppImage) ·
+[DEB](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-arm64.deb) ·
+[RPM](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/GMD-26.9.0-aarch64.rpm) ·
+[SHA256SUMS-arm64.txt](https://github.com/SalehGNUTUX/GMD/releases/download/v26.9.0/SHA256SUMS-arm64.txt)
+
+> وأحدثُ إصدارٍ دائماً في [صفحة الإصدارات](https://github.com/SalehGNUTUX/GMD/releases/latest).
 
 ### الإصدار 26.05.0 (سابق)
 
@@ -265,7 +267,7 @@ bash <(curl -sL https://raw.githubusercontent.com/SalehGNUTUX/GMD/main/gmd-gui.s
 ## 🏛️ البنية التقنية
 
 ```
-GMD-26.9/
+app/
 ├── electron/
 │   ├── main.js          # العملية الرئيسية — كل عمليات النظام
 │   ├── updater.js       # التحقُّق من التحديثات وتنزيلها وتثبيتها
