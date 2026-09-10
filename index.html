@@ -69,6 +69,48 @@
     }
 
     /* شريط التنقل */
+
+    /* ── الهاتف ─────────────────────────────────────────────────────────────
+       الصفحةُ كانت مبنيّةً لشاشةِ حاسوبٍ وحدَها بلا استعلامِ وسائطٍ واحد، فشريطُ
+       الخيارات — وهو `flex-wrap: wrap` — يتكسّرُ على الهاتفِ إلى خمسةِ صفوفٍ
+       تلتهمُ الشاشةَ قبلَ أن يُقرَأَ سطرٌ من المحتوى.
+
+       والعلاجُ صفٌّ واحدٌ يُمرَّرُ أفقيّاً بالإصبع: يبقى ارتفاعُه سطراً واحداً
+       مهما كثُرت الأزرار، ولا يُخفي منها شيئاً — وهو نمطُ أشرطةِ التبويبِ في
+       تطبيقاتِ الهاتفِ نفسِها. ويُخفى شريطُ التمريرِ لأنّه زينةٌ على اللمس. */
+    @media (max-width: 760px) {
+      body { padding: 0.8rem; }
+
+      .nav-glass {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        gap: 0.4rem;
+        padding: 0.5rem 0.6rem;
+        border-radius: 1.5rem;
+        top: 0.5rem;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .nav-glass::-webkit-scrollbar { display: none; }
+      .nav-btn, .lang-btn {
+        flex: 0 0 auto;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
+      }
+
+      .glass-card { padding: 1.3rem; border-radius: 1.5rem; }
+      .hero-title { font-size: 2rem; line-height: 1.25; }
+      /* العنوانُ الطويلُ يُكسَرُ عندَ الفواصلِ لا وسطَ الكلمة */
+      .section-title { font-size: 1.15rem; line-height: 1.5; flex-wrap: wrap; }
+      .download-grid, .features-grid, .screenshot-row { grid-template-columns: 1fr; }
+      .cmd-row { flex-wrap: wrap; }
+      .cmd-row code { word-break: break-all; font-size: 0.8rem; }
+      .sha-box { word-break: break-all; font-size: 0.75rem; }
+      table { display: block; overflow-x: auto; }
+    }
+
     .nav-glass {
       background: var(--surface-glass);
       backdrop-filter: blur(24px);
